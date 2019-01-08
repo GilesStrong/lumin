@@ -37,3 +37,11 @@ class PlotSettings:
 
         self.targ2class = {0: 'Background', 1: 'Signal'} if 'targ2class' not in kargs else kargs['targ2class']
         self.sample2col = None if 'sample2col' not in kargs else kargs['sample2col']
+
+    def str2sz(self, sz:str, ax=str) -> float:
+        sz,ax = sz.lower(),ax.lower()
+        if sz == 'small': return self.w_small if ax == 'x' else self.h_small
+        if sz == 'mid':   return self.w_mid   if ax == 'x' else self.h_mid
+        if sz == 'large': return self.w_large if ax == 'x' else self.h_large
+        if sz == 'huge':  return self.w_huge  if ax == 'x' else self.h_huge
+

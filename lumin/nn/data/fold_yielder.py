@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import h5py
 from typing import Dict, Optional, Union, List
+from sklearn.pipeline import Pipeline
 import warnings
 
 '''
@@ -13,7 +14,8 @@ Todo:
 
 
 class FoldYielder:
-    def __init__(self, source_file:h5py.File):
+    def __init__(self, source_file:h5py.File, feats:List[str]):
+        self.feats = feats
         self.augmented = False
         self.aug_mult = 0
         self.train_time_aug = False
@@ -24,8 +26,11 @@ class FoldYielder:
         self.source = source_file
         self.n_folds = len(self.source)
 
+    def add_input_pipe(self, input_pipe:Pipeline) -> None:
+        self.input_pipe = input_pipe
+
     def get_fold(self, index:int) -> Dict[str,np.ndarray]:
-        return self.get_data(n_folds=1, fold_id=index, use_newaxis=True)
+        return self.get_data(n_folds=1, fold_id=index)
 
     def get_fold_df(self, index:int, pred_name:str='preds', weight_name:str='weights') -> pd.DataFrame:
         data = pd.DataFrame()
@@ -34,7 +39,7 @@ class FoldYielder:
         if f'fold_{index}/{pred_name}'   in self.source: data['pred']       = np.array(self.source[f'fold_{index}/{pred_name}'])
         return data
 
-    def get_column(self, column:str, n_folds:Optional[int]=None, fold_id:Optional[int]=None, use_newaxis:bool=False) -> Union[np.ndarray, None]:
+    def get_column(self, column:str, n_folds:Optional[int]=None, fold_id:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
         if f'fold_0/{column}' not in self.source: return None
 
         if fold_id is None:
@@ -46,18 +51,23 @@ class FoldYielder:
 
         else:
             data = np.array(self.source[f'fold_{fold_id}/{column}'])
-        return data[:, None] if data[0].shape is () and use_newaxis else data
+        return data[:, None] if data[0].shape is () and add_newaxis else data
 
-    def get_data(self, n_folds:Optional[int]=None, fold_id:Optional[int]=None, use_newaxis:bool=False) -> Dict[str,np.ndarray]:
-        return {'inputs': np.nan_to_num(self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id, use_newaxis=True)),
-                'targets':              self.get_column('targets', n_folds=n_folds, fold_id=fold_id, use_newaxis=True),
-                'weights':              self.get_column('weights', n_folds=n_folds, fold_id=fold_id, use_newaxis=True)}
+    def get_data(self, n_folds:Optional[int]=None, fold_id:Optional[int]=None) -> Dict[str,np.ndarray]:
+        return {'inputs': np.nan_to_num(self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)),
+                'targets':              self.get_column('targets', n_folds=n_folds, fold_id=fold_id, add_newaxis=True),
+                'weights':              self.get_column('weights', n_folds=n_folds, fold_id=fold_id, add_newaxis=True)}
 
-    def get_df(self, pred_name:str='pred', n_load:Optional[int]=None, fold_id:Optional[int]=None):
-        data = pd.DataFrame()
-        data['gen_target'] = self.get_column('targets', n_folds=n_load, fold_id=fold_id)
-        data['gen_weight'] = self.get_column('weights', n_folds=n_load, fold_id=fold_id)
-        data['pred']       = self.get_column(pred_name, n_folds=n_load, fold_id=fold_id)
+    def get_df(self, pred_name:str='pred', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False) -> pd.DataFrame:
+        if inc_inputs:
+            inputs = self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)
+            if deprocess: inputs = self.input_pipe.inverse_transform(inputs)
+            data = pd.DataFrame(np.nan_to_num(inputs), columns=self.feats)
+        else:
+            data = pd.DataFrame()
+        data['gen_target'] = self.get_column('targets', n_folds=n_folds, fold_id=fold_id)
+        data['gen_weight'] = self.get_column('weights', n_folds=n_folds, fold_id=fold_id)
+        data['pred']       = self.get_column(pred_name, n_folds=n_folds, fold_id=fold_id)
         print(f'{len(data)} candidates loaded')
         return data
 
@@ -67,7 +77,7 @@ class HEPAugFoldYielder(FoldYielder):
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
                  train_time_aug:bool=True, test_time_aug:bool=True):
-        super().__init__(source_file)
+        super().__init__(source_file=source_file, feats=feats)
 
         if rot_mult > 0 and not random_rot and rot_mult % 2 != 0:
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')
@@ -158,14 +168,11 @@ class HEPAugFoldYielder(FoldYielder):
         if len(self.reflect_axes) > 0 and self.rot_mult > 0:
             rot_index = aug_index % self.rot_mult
             ref_index = self._get_ref_index(aug_index)
-            #print('\nAug index = ', aug_index)
             if self.random_rot: inputs['aug_angle'] = 2*np.pi*np.random.random(size=len(inputs))
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[rot_index]
-            #print('rotating, index = ', rot_index, ' amount = ', inputs['aug_angle'][0])
             self.rotate(inputs)            
 
             for i, coord in enumerate(self.reflect_axes): inputs[f'aug{coord}'] = int(ref_index[i])
-            #print('reflecting, coords = ', self.reflect_axes, ' index = ', ref_index)
             self.reflect(inputs)
             
         elif len(self.reflect_axes) > 0:

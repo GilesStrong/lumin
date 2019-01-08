@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union
+from typing import Union, Tuple
 
 from torch.tensor import Tensor
 
@@ -28,3 +28,19 @@ def uncert_round(value, uncert):
         round_uncert = int(round_uncert)
         round_value = int(round_value)
     return round_value, round_uncert
+
+
+def str2bool(x:str) -> bool:
+    if isinstance(x, bool): return x
+    else: return x.lower() in ("yes", "true", "t", "1")
+
+
+def get_moments(x:np.ndarray) -> Tuple[float,float,float,float]:
+    n = len(x)
+    m = np.mean(x)
+    m_4 = np.mean((x-m)**4)
+    s = np.std(x, ddof=1)
+    s4 = s**4
+    se_s2 = ((m_4-(s4*(n-3)/(n-1)))/n)**0.25
+    se_s = se_s2/(2*s)
+    return m, s/np.sqrt(n), s, se_s

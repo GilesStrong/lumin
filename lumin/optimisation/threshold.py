@@ -1,23 +1,22 @@
 import pandas as pd
 import numpy as np
-from scipy.constants import golden_ratio
 
 from ..evaluation.ams import calc_ams
+from ..plotting.plot_settings import PlotSettings
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set_style("whitegrid")
 
 '''
 Todo:
 - Multithread ams calc
-- Imporve plot colours
 '''
 
 
 def binary_class_cut(in_data:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
                      w_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
-                     pred_name:str='pred', targ_name:str='gen_target', weight_name:str='gen_weight') -> float:
+                     pred_name:str='pred', targ_name:str='gen_target', weight_name:str='gen_weight',
+                     plot_settings:PlotSettings=PlotSettings()) -> float:
     '''Find a fluctaution resiliant cut which should generalise better by 
     taking the mean class prediction of the top top_perc percentage of points
     as ranked by AMS'''
@@ -40,14 +39,15 @@ def binary_class_cut(in_data:pd.DataFrame, top_perc:float=0.05, min_pred:float=0
     
     print(f'Mean cut at {cut} corresponds to AMS of {ams}')
     print(f'Maximum AMS for data is {in_data.iloc[0]["ams"]} at cut of {in_data.iloc[0][pred_name]}')
-    plt.figure(figsize=(5*golden_ratio, 5))
-    sns.distplot(cuts, label=f'Top {top_perc}%')
-    plt.axvline(x=cut, label='Mean prediction', color='green')
-    plt.axvline(x=in_data.iloc[0][pred_name], label='Max. AMS', color='red')
-    plt.legend(loc='best', fontsize=14)
-    plt.xticks(fontsize=16, color='black')
-    plt.yticks(fontsize=16, color='black')
-    plt.xlabel('Class prediction', fontsize=24, color='black')
-    plt.ylabel(r"$\frac{1}{N}\ \frac{dN}{dp}$", fontsize=24, color='black')
-    plt.show()
+    with sns.axes_style(plot_settings.style), sns.color_palette(plot_settings.palette) as palette:
+        plt.figure(figsize=(plot_settings.w_small, plot_settings.h_small))
+        sns.distplot(cuts, label=f'Top {top_perc}%')
+        plt.axvline(x=cut, label='Mean prediction', color=palette[1])
+        plt.axvline(x=in_data.iloc[0][pred_name], label='Max. AMS', color=palette[2])
+        plt.legend(loc=plot_settings.leg_loc, fontsize=plot_settings.leg_sz)
+        plt.xticks(fontsize=plot_settings.tk_sz, color=plot_settings.tk_col)
+        plt.yticks(fontsize=plot_settings.tk_sz, color=plot_settings.tk_col)
+        plt.xlabel('Class prediction', fontsize=plot_settings.lbl_sz, color=plot_settings.lbl_col)
+        plt.ylabel(r"$\frac{1}{N}\ \frac{dN}{dp}$", fontsize=plot_settings.lbl_sz, color=plot_settings.lbl_col)
+        plt.show()
     return cut
