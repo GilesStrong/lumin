@@ -1,3 +1,6 @@
+#Dev
+lumin.code-workspace
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

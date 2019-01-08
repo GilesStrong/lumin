@@ -1,0 +1,116 @@
+import numpy as np
+from typing import Optional
+from abc import abstractmethod
+import copy
+
+import torch.tensor as Tensor
+
+from ..models.model import Model
+from .callback import Callback
+from .cyclic_callbacks import AbsCyclicCallback
+from ...utils.misc import to_tensor
+
+
+class AbsModelCallback(Callback):
+    def __init__(self, model:Optional[Model]=None, val_fold:Optional[np.ndarray]=None, cyclic_callback:Optional[AbsCyclicCallback]=None):
+        super().__init__(model=model)
+        self.val_fold = val_fold
+        self.cyclic_callback = cyclic_callback
+        self.active = False
+
+    def set_val_fold(self, val_fold:np.ndarray) -> None:
+        self.val_fold = val_fold
+
+    def set_cyclic_callback(self, cyclic_callback:AbsCyclicCallback) -> None:
+        self.cyclic_callback = cyclic_callback
+
+    @abstractmethod
+    def get_loss(self) -> float: pass
+
+
+class SWA(AbsModelCallback):
+    def __init__(self, start_epoch:int, renewal_period:int=-1, 
+                 model:Optional[Model]=None, val_fold:Optional[np.ndarray]=None, cyclic_callback:Optional[AbsCyclicCallback]=None, verbose=False):
+        super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback)
+        self.start_epoch,self.renewal_period,self.cyclic_callback,self.verbose = start_epoch,renewal_period,cyclic_callback,verbose
+        self.weights = None
+        self.loss = None
+        
+    def on_train_begin(self, logs={}) -> None:
+        if self.weights is None:
+            self.weights = copy.deepcopy(self.model.get_weights())
+            self.weights_new = copy.deepcopy(self.model.get_weights())
+            self.test_model = copy.deepcopy(self.model)
+            self.epoch = 0
+            self.swa_n = 0
+            self.n_since_renewal = 0
+            self.first_completed = False
+            self.cycle_since_replacement = 1
+            self.active = False
+            
+    def on_epoch_begin(self, logs={}) -> None:
+        self.loss = None
+
+    def on_epoch_end(self, logs={}) -> None:
+        if self.epoch >= self.start_epoch and (self.cyclic_callback is None or self.cyclic_callback.cycle_end):
+            if self.swa_n == 0 and not self.active:
+                if self.verbose: print("SWA beginning")
+                self.active = True
+            elif self.cyclic_callback is not None and self.cyclic_callback.cycle_mult > 1:
+                if self.verbose: print("Updating average")
+                self.active = True
+            self.update_average_model()
+            self.swa_n += 1
+            
+            if self.swa_n > self.renewal_period:
+                self.first_completed = True
+                self.n_since_renewal += 1
+                if self.n_since_renewal > self.cycle_since_replacement*self.renewal_period and self.renewal_period > 0: self.compare_averages()
+            
+        if self.cyclic_callback is None or self.cyclic_callback.cycle_end: self.epoch += 1
+        if self.active and not (self.cyclic_callback is None or self.cyclic_callback.cycle_end or self.cyclic_callback.cycle_mult == 1): self.active = False
+            
+    def update_average_model(self) -> None:
+        if self.verbose: print(f"Model is {self.swa_n} epochs old")
+        c_weights = self.model.get_weights()
+        for param in self.weights:
+            self.weights[param] *= self.swa_n
+            self.weights[param] += c_weights[param]
+            self.weights[param] /= self.swa_n+1
+        
+        if self.swa_n > self.renewal_period and self.first_completed and self.renewal_period > 0:
+            if self.verbose: print(f"New model is {self.n_since_renewal} epochs old")
+            for param in self.weights_new:
+                self.weights_new[param] *= self.n_since_renewal
+                self.weights_new[param] += c_weights[param]
+                self.weights_new[param] /= (self.n_since_renewal+1)
+            
+    def compare_averages(self) -> None:
+        if self.loss is None:
+            self.test_model.set_weights(self.weights)
+            self.loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+        self.test_model.set_weights(self.weights_new)
+        new_loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+        
+        if self.verbose: print(f"Checking renewal of swa model, current model: {self.loss}, new model: {new_loss}")
+        if new_loss < self.loss:
+            if self.verbose: print("New model better, replacing\n____________________\n\n")
+            self.loss = new_loss
+            self.swa_n = self.n_since_renewal
+            self.n_since_renewal = 1
+            self.weights = copy.deepcopy(self.weights_new)
+            self.weights_new = copy.deepcopy(self.model.get_weights())
+            self.cycle_since_replacement = 1
+
+        else:
+            if self.verbose: print("Current model better, keeping\n____________________\n\n")
+            self.weights_new = copy.deepcopy(self.model.get_weights())
+            self.n_since_renewal = 1
+            self.test_model.set_weights(self.weights)
+            self.cycle_since_replacement += 1
+                
+    def get_loss(self) -> float:
+        if self.loss is None:
+            self.test_model.set_weights(self.weights)
+            self.loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+        return self.loss
