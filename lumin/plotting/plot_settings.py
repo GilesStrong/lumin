@@ -1,0 +1,39 @@
+from scipy.constants import golden
+from pathlib import Path
+
+
+class PlotSettings:
+    def __init__(self, **kargs):
+        self.style  = 'whitegrid'   if 'style'  not in kargs else kargs['style']
+        self.palette = 'colorblind' if 'palette' not in kargs else kargs['palette']
+        
+        self.tk_sz   = 16      if 'tk_sz'   not in kargs else kargs['tk_sz']
+        self.tk_col  = 'black' if 'tk_col'  not in kargs else kargs['tk_col']
+        self.lbl_sz  = 24      if 'lbl_sz'  not in kargs else kargs['lbl_sz']
+        self.lbl_col = 'black' if 'lbl_col' not in kargs else kargs['lbl_col']
+
+        self.title     = ''      if 'title'     not in kargs else kargs['title']
+        self.title_sz  = 26      if 'title_sz'  not in kargs else kargs['title_sz']
+        self.title_col = 'black' if 'title_col' not in kargs else kargs['title_col']
+        self.title_loc = 'left'  if 'title_loc' not in kargs else kargs['title_loc']
+
+        self.leg_sz  = 16     if 'leg_sz'  not in kargs else kargs['leg_sz']
+        self.leg_loc = 'best' if 'leg_loc' not in kargs else kargs['leg_loc']
+
+        self.savepath = Path('.') if 'savepath' not in kargs else kargs['savepath']
+        self.format   = '.pdf'    if 'format'   not in kargs else kargs['format']
+
+        self.h_small = 4  if 'h_small' not in kargs else kargs['h_small']
+        self.h_mid   = 8  if 'h_mid'   not in kargs else kargs['h_mid']
+        self.h_large = 12 if 'h_large' not in kargs else kargs['h_large']
+        self.h_huge  = 16 if 'h_huge'  not in kargs else kargs['h_huge']
+
+        self.aspect = golden if 'aspect' not in kargs else kargs['aspect']
+
+        self.w_small = self.aspect*self.h_small if 'w_small' not in kargs else kargs['w_small']
+        self.w_mid   = self.aspect*self.h_mid   if 'w_mid'   not in kargs else kargs['w_mid']
+        self.w_large = self.aspect*self.h_large if 'w_large' not in kargs else kargs['w_large']
+        self.w_huge  = self.aspect*self.h_huge  if 'w_huge'  not in kargs else kargs['w_huge']
+
+        self.targ2class = {0: 'Background', 1: 'Signal'} if 'targ2class' not in kargs else kargs['targ2class']
+        self.sample2col = None if 'sample2col' not in kargs else kargs['sample2col']

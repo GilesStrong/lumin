@@ -3,8 +3,9 @@ from abc import ABC
 
 
 class AbsCallback(ABC):
-    def __init__(self):                pass
-    def set_model(self):               pass
+    def __init__(self): pass
+    def set_model(self): pass
+    def set_plot_settings(self): pass
     def on_train_begin(self, logs:Dict[str,Any]={}): pass  
     def on_train_end(self,   logs:Dict[str,Any]={}): pass  
     def on_epoch_begin(self, logs:Dict[str,Any]={}): pass

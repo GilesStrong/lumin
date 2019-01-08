@@ -4,15 +4,15 @@ from typing import Tuple, Optional, Dict, Any
 
 from .callback import Callback
 from ..models.model import Model
+from ...plotting.plot_settings import PlotSettings
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set_style("whitegrid")
 
 
 class LRFinder(Callback):
-    def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[Model]=None):
-        super().__init__(model=model)
+    def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[Model]=None, plot_settings:PlotSettings=PlotSettings()):
+        super().__init__(model=model, plot_settings=plot_settings)
         self.lr_bounds = lr_bounds
         self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/nb)
         
@@ -27,27 +27,29 @@ class LRFinder(Callback):
     def calc_lr(self):
         return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
-    def plot(self, n_skip=0, n_max:Optional[int]=None, ylim=None):
-        plt.figure(figsize=(16, 8))
-        plt.plot(self.history['lr'][n_skip:n_max], self.history['loss'][n_skip:n_max], label='Training loss', color='g')
-        if np.log10(self.lr_bounds[1])-np.log10(self.lr_bounds[0]) >= 3: plt.xscale('log')
-        plt.ylim(ylim)
-        plt.grid(True, which="both")
-        plt.legend(loc='best', fontsize=16)
-        plt.xticks(fontsize=16, color='black')
-        plt.yticks(fontsize=16, color='black')
-        plt.ylabel("Loss", fontsize=24, color='black')
-        plt.xlabel("Learning rate", fontsize=24, color='black')
-        plt.show()
+    def plot(self, n_skip=0, n_max:Optional[int]=None, lim_y=None):
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.palette):
+            plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
+            plt.plot(self.history['lr'][n_skip:n_max], self.history['loss'][n_skip:n_max], label='Training loss', color='g')
+            if np.log10(self.lr_bounds[1])-np.log10(self.lr_bounds[0]) >= 3: plt.xscale('log')
+            plt.ylim(lim_y)
+            plt.grid(True, which="both")
+            plt.legend(loc=self.plot_settings.leg_loc, fontsize=self.plot_settings.leg_sz)
+            plt.xticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
+            plt.yticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
+            plt.ylabel("Loss", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            plt.xlabel("Learning rate", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            plt.show()
         
     def plot_lr(self):
-        plt.figure(figsize=(4, 4))
-        plt.xlabel("Iterations", fontsize=24, color='black')
-        plt.ylabel("Learning rate", fontsize=24, color='black')
-        plt.plot(range(len(self.history['lr'])), self.history['lr'])
-        plt.xticks(fontsize=16, color='black')
-        plt.yticks(fontsize=16, color='black')
-        plt.show()
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.palette):
+            plt.figure(figsize=(self.plot_settings.h_small, self.plot_settings.h_small))
+            plt.plot(range(len(self.history['lr'])), self.history['lr'])
+            plt.xticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
+            plt.yticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
+            plt.ylabel("Learning rate", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            plt.xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            plt.show()
 
     def on_batch_end(self, logs:Dict[str,Any]={}):
         loss = logs['loss']

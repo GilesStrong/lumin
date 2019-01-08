@@ -3,6 +3,7 @@ from typing import Optional, Dict, Any, Tuple, Union
 
 from .callback import Callback
 from ..models.model import Model
+from ...plotting.plot_settings import PlotSettings
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -10,8 +11,9 @@ sns.set_style("whitegrid")
 
 
 class AbsCyclicCallback(Callback):
-    def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease:bool=False, scale:int=1, model:Optional[Model]=None, nb:Optional[int]=None):
-        super().__init__(model=model)
+    def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease:bool=False, scale:int=1,
+                 model:Optional[Model]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
+        super().__init__(model=model, plot_settings=plot_settings)
         self.param_range,self.cycle_mult,self.decrease,self.scale = param_range,cycle_mult,decrease,scale
         self.interp = interp.lower()
         if nb is not None: self.nb = self.scale*nb
@@ -32,16 +34,17 @@ class AbsCyclicCallback(Callback):
             self.cycle_end = True
 
     def plot(self) -> None:
-        plt.figure(figsize=(16, 8))
-        plt.xlabel("Iterations", fontsize=24, color='black')
-        plt.ylabel(self.param_name, fontsize=24, color='black')
-        plt.plot(range(len(self.hist)), self.hist)
-        plt.xticks(fontsize=16, color='black')
-        plt.yticks(fontsize=16, color='black')
-        plt.show()
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.palette):
+            plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
+            plt.xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            plt.ylabel(self.param_name, fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            plt.plot(range(len(self.hist)), self.hist)
+            plt.xticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
+            plt.yticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
+            plt.show()
 
     def calc_param(self) -> float:
-        if   self.interp == 'cosine':
+        if self.interp == 'cosine':
             x = np.cos(np.pi*(self.cycle_iter)/self.nb)+1
             dx = (self.param_range[1]-self.param_range[0])*x/2
             return self.param_range[1]-dx if not self.decrease else dx+self.param_range[0]
@@ -65,9 +68,10 @@ class AbsCyclicCallback(Callback):
 
 
 class CycleLR(AbsCyclicCallback):
-    def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease:Union[str,bool]='auto', scale:int=1, model:Optional[Model]=None, nb:Optional[int]=None):
+    def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease:Union[str,bool]='auto', scale:int=1,
+                 model:Optional[Model]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease == 'auto': decrease = True if interp == 'cosine' else False
-        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult, decrease=decrease, scale=scale, model=model, nb=nb)
+        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult, decrease=decrease, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
         self.param_name = 'Learning Rate'
         
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
@@ -76,9 +80,10 @@ class CycleLR(AbsCyclicCallback):
 
 
 class CycleMom(AbsCyclicCallback):
-    def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease:Union[str,bool]='auto', scale:int=1, model:Optional[Model]=None, nb:Optional[int]=None):
+    def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease:Union[str,bool]='auto', scale:int=1,
+                 model:Optional[Model]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease == 'auto': decrease = False if interp == 'cosine' else True
-        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult, decrease=decrease, scale=scale, model=model, nb=nb)
+        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult, decrease=decrease, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
         self.param_name = 'Momentum'
         
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
@@ -87,8 +92,9 @@ class CycleMom(AbsCyclicCallback):
 
 
 class OneCycle(AbsCyclicCallback):
-    def __init__(self, lengths:Tuple[int,int], lr_range:Tuple[float,float], mom_range:Tuple[float,float], interp:str='cosine', model:Optional[Model]=None, nb:Optional[int]=None):
-        super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb)
+    def __init__(self, lengths:Tuple[int,int], lr_range:Tuple[float,float], mom_range:Tuple[float,float], interp:str='cosine',
+                 model:Optional[Model]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
+        super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
         self.lengths,self.lr_range,self.mom_range = lengths,lr_range,mom_range
         self.hist = {'lr': [], 'mom': []}
 
@@ -117,10 +123,14 @@ class OneCycle(AbsCyclicCallback):
             self.model.stop_train = True
 
     def plot(self):
-        fig, axs = plt.subplots(2, 1, figsize=(16, 6))
-        axs[1].set_xlabel("Iterations", fontsize=20, color='black')
-        axs[0].set_ylabel("Learning Rate", fontsize=20, color='black')
-        axs[1].set_ylabel("Momentum", fontsize=20, color='black')
-        axs[0].plot(range(len(self.hist['lr'])), self.hist['lr'])
-        axs[1].plot(range(len(self.hist['mom'])), self.hist['mom'])
-        plt.show()
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.palette):
+            fig, axs = plt.subplots(2, 1, figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
+            axs[1].set_xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            axs[0].set_ylabel("Learning Rate", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            axs[1].set_ylabel("Momentum", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            axs[0].plot(range(len(self.hist['lr'])), self.hist['lr'])
+            axs[1].plot(range(len(self.hist['mom'])), self.hist['mom'])
+            for ax in axs:
+                ax.tick_params(axis='x', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+                ax.tick_params(axis='y', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+            plt.show()

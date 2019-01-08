@@ -1,12 +1,18 @@
 from typing import Optional
+
 from .abs_callback import AbsCallback
 from ..models.model import Model
+from ...plotting.plot_settings import PlotSettings
 
 
 class Callback(AbsCallback):
-    def __init__(self, model:Optional[Model]=None):
+    def __init__(self, model:Optional[Model]=None, plot_settings:PlotSettings=PlotSettings()):
         if model is not None: self.set_model(model)
+        self.set_plot_settings(plot_settings)
 
     def set_model(self, model:Model) -> None:
         self.model = model
+
+    def set_plot_settings(self, plot_settings:PlotSettings) -> None:
+        self.plot_settings = plot_settings
         

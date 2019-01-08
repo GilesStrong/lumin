@@ -1,4 +1,4 @@
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 from six.moves import cPickle as pickle
@@ -20,10 +20,9 @@ from ..callbacks.model_callbacks import AbsModelCallback
 from ...utils.misc import to_tensor, uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history
+from ...plotting.plot_settings import PlotSettings
 
-import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set_style("whitegrid")
 
 
 def get_folds(n, n_splits, shuffle_folds:bool=True,):
@@ -36,7 +35,8 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, train_params:Dic
                         use_callbacks:Dict[str,Dict[str,Any]]={}, eval_metrics:Dict[str,EvalMetric]={},
                         train_on_weights:bool=True, eval_on_weights:bool=True, patience:int=10, max_epochs:int=200,
                         plots:List[str]=['history'], shuffle_fold:bool=True, shuffle_folds:bool=True,
-                        saveloc:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False):
+                        saveloc:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
+                        plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     
     os.makedirs(saveloc, exist_ok=True)
     os.system(f"rm {saveloc}/*.h5 {saveloc}/*.json {saveloc}/*.pkl {saveloc}/*.png {saveloc}/*.log")
@@ -160,7 +160,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, train_params:Dic
     print("\n______________________________________")
     print("Training finished")
     print("Cross-validation took {:.3f}s ".format(timeit.default_timer() - start))
-    if 'history' in plots: plot_train_history(histories, saveloc/'loss_history.png')
+    if 'history' in plots: plot_train_history(histories, saveloc/'loss_history.png', settings=plot_settings)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
