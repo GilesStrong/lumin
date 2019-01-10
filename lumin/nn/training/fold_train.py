@@ -148,18 +148,18 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, train_params:Dic
         if len(eval_metrics) > 0:
             y_pred = model.predict(Tensor(val_fold['inputs']))
             for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fold_yielder, val_id, y_pred)
-        print("Scores are:", results[-1])
+        print(f"Scores are: {results[-1]}")
         with open(saveloc/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)
         with open(saveloc/'cycle_file.pkl', 'wb') as fout: pickle.dump(cycle_losses, fout)
 
         delattr(model_bar, 'fig')
         plt.clf()
         if 'cycle' in plots and cyclic_callback is not None: cyclic_callback.plot()
-        print("Fold took {:.3f}s\n".format(timeit.default_timer()-model_start))
+        print(f"Fold took {timeit.default_timer()-model_start:.3f}s\n")
 
     print("\n______________________________________")
     print("Training finished")
-    print("Cross-validation took {:.3f}s ".format(timeit.default_timer() - start))
+    print(f"Cross-validation took {timeit.default_timer()-start:.3f}s ")
     if 'history' in plots: plot_train_history(histories, saveloc/'loss_history.png', settings=plot_settings)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))

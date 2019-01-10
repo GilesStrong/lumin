@@ -142,7 +142,7 @@ class HEPAugFoldYielder(FoldYielder):
         inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
 
         if self.rot_mult:
-            inputs['aug_angle'] = 2*np.pi*np.random.random(size=len(inputs))
+            inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             self.rotate(inputs)
             
         for coord in self.reflect_axes:
@@ -168,7 +168,7 @@ class HEPAugFoldYielder(FoldYielder):
         if len(self.reflect_axes) > 0 and self.rot_mult > 0:
             rot_index = aug_index % self.rot_mult
             ref_index = self._get_ref_index(aug_index)
-            if self.random_rot: inputs['aug_angle'] = 2*np.pi*np.random.random(size=len(inputs))
+            if self.random_rot: inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[rot_index]
             self.rotate(inputs)            
 
@@ -181,7 +181,7 @@ class HEPAugFoldYielder(FoldYielder):
             self.reflect(inputs)
             
         elif self.rot_mult:
-            if self.random_rot: inputs['aug_angle'] = 2*np.pi*np.random.random(size=len(inputs))
+            if self.random_rot: inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[aug_index]
             self.rotate(inputs)
             

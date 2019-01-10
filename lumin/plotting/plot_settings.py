@@ -1,4 +1,3 @@
-from scipy.constants import golden
 from pathlib import Path
 
 
@@ -28,7 +27,7 @@ class PlotSettings:
         self.h_large = 12 if 'h_large' not in kargs else kargs['h_large']
         self.h_huge  = 16 if 'h_huge'  not in kargs else kargs['h_huge']
 
-        self.aspect = golden if 'aspect' not in kargs else kargs['aspect']
+        self.aspect = 16/9 if 'aspect' not in kargs else kargs['aspect']
 
         self.w_small = self.aspect*self.h_small if 'w_small' not in kargs else kargs['w_small']
         self.w_mid   = self.aspect*self.h_mid   if 'w_mid'   not in kargs else kargs['w_mid']

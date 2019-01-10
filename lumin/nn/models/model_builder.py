@@ -37,7 +37,6 @@ class ModelBuilder(object):
         self.depth = 4      if 'depth' not in model_args else model_args['depth']
         self.do    = 0      if 'do'    not in model_args else model_args['do']
         self.bn    = False  if 'bn'    not in model_args else model_args['bn']
-        self.l2    = False  if 'l2'    not in model_args else model_args['l2']
         self.act   = 'relu' if 'act'   not in model_args else model_args['act'].lower()
     
     def parse_opt_args(self, opt_args:Dict[str,Any]) -> None:
