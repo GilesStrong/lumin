@@ -14,8 +14,9 @@ Todo:
 
 
 class FoldYielder:
-    def __init__(self, source_file:h5py.File, feats:List[str]):
-        self.feats = feats
+    def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str]):
+        self.cont_feats,self.cat_feats = cont_feats,cat_feats
+        self.input_feats = self.cont_feats + self.cat_feats
         self.augmented = False
         self.aug_mult = 0
         self.train_time_aug = False
@@ -61,8 +62,8 @@ class FoldYielder:
     def get_df(self, pred_name:str='pred', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False) -> pd.DataFrame:
         if inc_inputs:
             inputs = self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)
-            if deprocess: inputs = self.input_pipe.inverse_transform(inputs)
-            data = pd.DataFrame(np.nan_to_num(inputs), columns=self.feats)
+            if deprocess: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:, :len(self.cont_feats)]), inputs[:, len(self.cont_feats):]))
+            data = pd.DataFrame(np.nan_to_num(inputs), columns=self.input_feats)
         else:
             data = pd.DataFrame()
         data['gen_target'] = self.get_column('targets', n_folds=n_folds, fold_id=fold_id)
@@ -73,21 +74,21 @@ class FoldYielder:
 
 
 class HEPAugFoldYielder(FoldYielder):
-    def __init__(self, source_file:h5py.File, feats:List[str],
+    def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str],
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
                  train_time_aug:bool=True, test_time_aug:bool=True):
-        super().__init__(source_file=source_file, feats=feats)
+        super().__init__(source_file=source_file, cont_feats=cont_feats, cat_feats=cat_feats)
 
         if rot_mult > 0 and not random_rot and rot_mult % 2 != 0:
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')
             rot_mult += 1
 
-        self.input_feats,self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug = feats,rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug
+        self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug = rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug
         self.augmented = True
         self.reflect_axes = []
         self.aug_mult = 1
-        self.vectors = [x[:-3] for x in self.input_feats if '_px' in x]
+        self.vectors = [x[:-3] for x in self.cont_feats if '_px' in x]
 
         if self.rot_mult:
             print("Augmenting via phi rotations")
