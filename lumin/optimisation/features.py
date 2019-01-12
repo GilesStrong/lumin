@@ -28,8 +28,8 @@ def rf_rank_features(df_trn:pd.DataFrame, df_val:pd.DataFrame, objective:str,
     print(f"\n{len(top_feats)} features found with importance greater than {cut}:\n", top_feats)
     print("\nOptimising new RF")
     _, rf_new = get_opt_rf_params(df_trn[top_feats], df_trn[targ_name], w_trn,
-                                  df_val[top_feats], df_val[targ_name], w_val, objective, verbose=False)                         
-    print(f"RF score with all features:\t{rf.score(df_val[train_feats], df_val[targ_name], w_val):.5f}")
-    print(f"RF score with top features:\t{rf_new.score(df_val[top_feats], df_val[targ_name], w_val):.5f}")
-    print("Higher is better")
+                                  df_val[top_feats], df_val[targ_name], w_val, objective, verbose=False)  
+    print("Comparing RF scores, higher = better")                           
+    print(f"All features:\t{rf.score(df_val[train_feats], df_val[targ_name], w_val):.5f}")
+    print(f"Top features:\t{rf_new.score(df_val[top_feats], df_val[targ_name], w_val):.5f}")
     return top_feats

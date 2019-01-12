@@ -56,7 +56,10 @@ def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, w_trn:np.ndarray,
     mb.names = ['Best', 'Scores']
     if verbose: mb.update_graph([[[],[]], [[], []]])
     for param in mb:
-        for value in progress_bar(params[param], parent=mb):
+        pb = progress_bar(params[param], parent=mb)
+        pb.comment = f'{param} = {params[param][0]}'
+        for i, value in enumerate(pb):
+            pb.comment = f'{param} = {params[param][min(i+1, len(params[param])-1)]}'
             m = rf(**{**best_params, param: value})
             m.fit(X_trn, y_trn, w_trn)
             scores.append(m.score(X_val, y_val, w_val))
