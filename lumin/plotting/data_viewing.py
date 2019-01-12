@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 from typing import Union, List, Optional, Dict, Any
 
+import scipy
+from scipy.cluster import hierarchy as hc
+
 from .plot_settings import PlotSettings
 from ..utils.misc import uncert_round, get_moments
 
@@ -96,3 +99,17 @@ def compare_events(events: list) -> None:
             ax.set_ylabel(r"$p_y$", fontsize=16, color='black')
             ax.legend(loc='right', fontsize=12)
         fig.show()
+
+
+def plot_dendrogram(df: pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    with sns.axes_style('white'), sns.color_palette(settings.palette):
+        corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
+        corr_condensed = hc.distance.squareform(1-corr)
+        z = hc.linkage(corr_condensed, method='average')
+
+        plt.figure(figsize=(settings.w_large, (0.5*len(df.columns))))
+        hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz)
+        plt.xlabel('Distance', fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        plt.show()

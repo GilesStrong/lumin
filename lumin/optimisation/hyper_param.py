@@ -1,6 +1,10 @@
-from typing import List, Tuple
-from fastprogress import progress_bar
+from typing import List, Tuple, Dict
+from fastprogress import master_bar, progress_bar
 import timeit
+import numpy as np
+from collections import OrderedDict
+
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 from ..nn.data.fold_yielder import FoldYielder
 from ..nn.data.batch_yielder import BatchYielder
@@ -9,6 +13,8 @@ from ..nn.models.model import Model
 from ..nn.callbacks.opt_callbacks import LRFinder
 from ..plotting.training import plot_lr_finders
 from ..plotting.plot_settings import PlotSettings
+
+import matplotlib.pyplot as plt
 
 
 def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
@@ -34,3 +40,33 @@ def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
         lr_finders[0].plot_lr()    
         lr_finders[0].plot(n_skip=5)
     return lr_finders
+
+
+def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, w_trn:np.ndarray,
+                      X_val:np.ndarray, y_val:np.ndarray, w_val:np.ndarray, objective:str,
+                      params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
+                      verbose=True) -> Dict[str,float]:
+    rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
+    
+    best_params = {'n_estimators': 40, 'n_jobs': -1, 'max_features':'sqrt'}
+    best_scores = []
+    scores = []
+    mb = master_bar(params)
+    mb.names = ['Best', 'Scores']
+    mb.update_graph([[[],[]], [[], []]])
+    for param in mb:
+        for value in progress_bar(params[param], parent=mb):
+            m = rf(**{**best_params, param: value})
+            m.fit(X_trn, y_trn, w_trn)
+            scores.append(m.score(X_val, y_val, w_val))
+            if len(best_scores) == 0 or scores[-1] > best_scores[-1]:
+                best_scores.append(scores[-1])
+                best_params[param] = value
+                if verbose: print(f'Better score schieved: {param} @ {value} = {best_scores[-1]:.4f}')
+            else:
+                best_scores.append(best_scores[-1])
+            mb.update_graph([[range(len(best_scores)), best_scores], [range(len(scores)), scores]])
+    
+    delattr(mb, 'fig')
+    plt.clf()
+    return best_params
