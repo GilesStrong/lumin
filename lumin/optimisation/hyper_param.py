@@ -4,6 +4,7 @@ import timeit
 import numpy as np
 from collections import OrderedDict
 
+from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 from ..nn.data.fold_yielder import FoldYielder
@@ -45,7 +46,7 @@ def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
 def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, w_trn:np.ndarray,
                       X_val:np.ndarray, y_val:np.ndarray, w_val:np.ndarray, objective:str,
                       params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
-                      verbose=True) -> Dict[str,float]:
+                      verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
     rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
     
     best_params = {'n_estimators': 40, 'n_jobs': -1, 'max_features':'sqrt'}
@@ -53,7 +54,7 @@ def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, w_trn:np.ndarray,
     scores = []
     mb = master_bar(params)
     mb.names = ['Best', 'Scores']
-    mb.update_graph([[[],[]], [[], []]])
+    if verbose: mb.update_graph([[[],[]], [[], []]])
     for param in mb:
         for value in progress_bar(params[param], parent=mb):
             m = rf(**{**best_params, param: value})
@@ -63,10 +64,11 @@ def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, w_trn:np.ndarray,
                 best_scores.append(scores[-1])
                 best_params[param] = value
                 if verbose: print(f'Better score schieved: {param} @ {value} = {best_scores[-1]:.4f}')
+                best_m = m
             else:
                 best_scores.append(best_scores[-1])
-            mb.update_graph([[range(len(best_scores)), best_scores], [range(len(scores)), scores]])
+            if verbose: mb.update_graph([[range(len(best_scores)), best_scores], [range(len(scores)), scores]])
     
-    delattr(mb, 'fig')
-    plt.clf()
-    return best_params
+    if verbose: delattr(mb, 'fig')
+    if verbose: plt.clf()
+    return best_params, best_m
