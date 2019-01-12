@@ -172,3 +172,6 @@ class Ensemble():
         try: 
             with open(f'{name}_feats.pkl', 'rb')       as fin: self.feats       = pickle.load(fin)
         except FileNotFoundError: pass
+
+    def export2onnx(self, base_name:str, bs:int=1) -> None:
+        for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)

@@ -76,4 +76,9 @@ class Model():
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
         state = torch.load(name)
         self.model.load_state_dict(state['model'])
-        self.opt.load_state_dict(state['opt'])        
+        self.opt.load_state_dict(state['opt'])
+
+    def export2onnx(self, name:str, bs:int=1) -> None:
+        if '.onnx' not in name: name += '.onnx'
+        dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.n_cat_in)
+        torch.onnx.export(self.model, dummy_input, name)     

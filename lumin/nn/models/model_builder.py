@@ -1,4 +1,7 @@
+
+import numpy as np
 from typing import Dict, Union, Any, Callable, Tuple, Optional
+from pathlib import Path
 
 import torch.nn as nn
 import torch.optim as optim
@@ -6,7 +9,8 @@ from torch.tensor import Tensor
 
 from .layers.activations import lookup_act
 from .initialisations import lookup_init
-from .blocks.fully_connected import FullyConnected
+from .blocks.body import FullyConnected
+from .blocks.head import CatEmbHead
 
 '''
 Todo
@@ -15,16 +19,33 @@ Todo
 
 
 class ModelBuilder(object):
-    def __init__(self, objective:str, n_in:int, n_out:int,
-                 model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={},
+    def __init__(self, objective:str, n_cont_in:int, n_out:int,
+                 model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_args:Dict[str,Any]=None,
                  loss:Union[Any,'auto']='auto', body:Callable[[int,int,float,bool,str,bool,bool],nn.Module]=FullyConnected,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
                  lookup_act:Callable[[str], nn.Module]=lookup_act):
-        self.objective,self.n_in,self.n_out,self.body,self.lookup_init,self.lookup_act = objective.lower(),n_in,n_out,body,lookup_init,lookup_act
+        self.objective,self.n_cont_in,self.n_out,self.body,self.lookup_init,self.lookup_act = objective.lower(),n_cont_in,n_out,body,lookup_init,lookup_act
         self.parse_loss(loss)
         self.parse_model_args(model_args)
         self.parse_opt_args(opt_args)
-
+        self.parse_cat_args(cat_args)
+    
+    def parse_cat_args(self, cat_args) -> None:
+        cat_args = {k.lower(): cat_args[k] for k in cat_args}
+        self.n_cat_in     = 0    if 'n_cat_in'     not in cat_args else cat_args['n_cat_in']
+        self.cat_szs      = None if 'cat_szs'      not in cat_args else cat_args['cat_szs']
+        self.emb_szs      = None if 'emb_szs'      not in cat_args else cat_args['emb_szs']
+        self.cat_names    = None if 'cat_names'    not in cat_args else cat_args['cat_names']
+        self.emb_load_path = None if 'emb_load_path' not in cat_args else cat_args['emb_load_path']
+        
+        if self.cat_szs is None:
+            self.n_cat_in = 0  # Treat cats as conts
+            return
+        if self.emb_szs is None:
+            self.emb_szs = np.array([(sz, min(50, 1+(sz//2))) for sz in self.cat_szs])
+        if isinstance(self.emb_load_path, str):
+            self.emb_load_path = Path(self.emb_load_path)
+            
     def parse_loss(self, loss:Union[Any,'auto']='auto') -> None:
         if loss is 'auto':
             if 'class' in self.objective:
@@ -35,14 +56,16 @@ class ModelBuilder(object):
                 self.loss = loss
 
     def parse_model_args(self, model_args:Dict[str,Any]) -> None:
-        model_args = {k.lower(): model_args[k] for k in model_args}
-        self.width = 100    if 'width' not in model_args else model_args['width']
-        self.depth = 4      if 'depth' not in model_args else model_args['depth']
-        self.do    = 0      if 'do'    not in model_args else model_args['do']
-        self.bn    = False  if 'bn'    not in model_args else model_args['bn']
-        self.act   = 'relu' if 'act'   not in model_args else model_args['act'].lower()
-        self.res   = False  if 'res'   not in model_args else model_args['res']
-        self.dense = False  if 'dense' not in model_args else model_args['dense']
+        model_args   = {k.lower(): model_args[k] for k in model_args}
+        self.width   = 100    if 'width'   not in model_args else model_args['width']
+        self.depth   = 4      if 'depth'   not in model_args else model_args['depth']
+        self.do      = 0      if 'do'      not in model_args else model_args['do']
+        self.do_cat  = 0      if 'do_cat'  not in model_args else model_args['do_cat']
+        self.do_cont = 0      if 'do_cont' not in model_args else model_args['do_cont']
+        self.bn      = False  if 'bn'      not in model_args else model_args['bn']
+        self.act     = 'relu' if 'act'     not in model_args else model_args['act'].lower()
+        self.res     = False  if 'res'     not in model_args else model_args['res']
+        self.dense   = False  if 'dense'   not in model_args else model_args['dense']
     
     def parse_opt_args(self, opt_args:Dict[str,Any]) -> None:
         opt_args = {k.lower(): opt_args[k] for k in opt_args}
@@ -77,7 +100,9 @@ class ModelBuilder(object):
         return nn.Sequential(*layers)
 
     def get_head(self) -> nn.Module:
-        return self.get_dense(self.n_in)
+        inputs = CatEmbHead(self.n_cont_in, self.n_cat_in, self.emb_szs, self.do_cont, self.do_cat, self.cat_names, self.emb_load_path)
+        linear = self.get_dense(inputs.get_out_size())
+        return nn.Sequential(inputs, linear)
 
     def get_body(self, depth:int) -> nn.Module:
         return self.body(depth, self.width, self.do, self.bn, self.act, self.res, self.dense)
