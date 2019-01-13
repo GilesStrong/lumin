@@ -1,5 +1,6 @@
 from __future__ import division
 import numpy as np
+import pandas as pd
 import os
 from six.moves import cPickle as pickle
 import glob
@@ -16,6 +17,7 @@ from torch.tensor import Tensor
 from ..models.model import Model
 from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
+from ..interpretation.features import get_ensemble_feat_importance
 
 
 class Ensemble():
@@ -175,3 +177,6 @@ class Ensemble():
 
     def export2onnx(self, base_name:str, bs:int=1) -> None:
         for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)
+
+    def get_feat_importance(self, fold_yielder:FoldYielder) -> pd.DataFrame:
+        return get_ensemble_feat_importance(self, fold_yielder)

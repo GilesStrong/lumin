@@ -17,6 +17,7 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     out_dict,scores = {},[]
     if 'name' not in args: args['name'] = ''
     if 'n'    not in args: args['n']    = 100
+    np.random.seed()
     if 'weights' in args: 
         for i in range(args['n']):
             points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)

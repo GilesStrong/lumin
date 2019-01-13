@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import List, Optional, Union
 from collections import OrderedDict
 
@@ -9,6 +10,8 @@ from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
 from ...utils.misc import to_np
+from ..data.fold_yielder import FoldYielder
+from ..interpretation.features import get_nn_feat_importance
 
 
 class Model():
@@ -82,3 +85,6 @@ class Model():
         if '.onnx' not in name: name += '.onnx'
         dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.n_cat_in)
         torch.onnx.export(self.model, dummy_input, name)     
+
+    def get_feat_importance(self, fold_yielder:FoldYielder) -> pd.DataFrame:
+        return get_nn_feat_importance(self, fold_yielder)
