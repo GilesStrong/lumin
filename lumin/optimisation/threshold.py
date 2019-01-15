@@ -39,7 +39,7 @@ def binary_class_cut(in_data:pd.DataFrame, top_perc:float=0.05, min_pred:float=0
     
     print(f'Mean cut at {cut} corresponds to AMS of {ams}')
     print(f'Maximum AMS for data is {in_data.iloc[0]["ams"]} at cut of {in_data.iloc[0][pred_name]}')
-    with sns.axes_style(plot_settings.style), sns.color_palette(plot_settings.palette) as palette:
+    with sns.axes_style(plot_settings.style), sns.color_palette(plot_settings.cat_palette) as palette:
         plt.figure(figsize=(plot_settings.w_small, plot_settings.h_small))
         sns.distplot(cuts, label=f'Top {top_perc}%')
         plt.axvline(x=cut, label='Mean prediction', color=palette[1])

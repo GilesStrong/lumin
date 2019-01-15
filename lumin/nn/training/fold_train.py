@@ -17,7 +17,8 @@ from ..models.model_builder import ModelBuilder
 from ..models.model import Model
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.model_callbacks import AbsModelCallback
-from ...utils.misc import to_tensor, uncert_round
+from ...utils.misc import to_tensor
+from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history
 from ...plotting.plot_settings import PlotSettings

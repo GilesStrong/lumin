@@ -9,6 +9,9 @@ import torch.nn as nn
 from torch.tensor import Tensor
 import torch
 
+from ....plotting.plot_settings import PlotSettings
+from ....plotting.interpretation import plot_embedding
+
 
 class CatEmbHead(nn.Module):
     def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float, cat_names:Optional[List[str]], emb_load_path:Optional[Path]):
@@ -49,3 +52,6 @@ class CatEmbHead(nn.Module):
     
     def get_out_size(self) -> int:
         return self.out_size
+
+    def plot_embeds(self, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+        for i, n in enumerate(self.cat_names): plot_embedding(self.embeds[i].state_dict(), n, savename=savename, settings=settings)

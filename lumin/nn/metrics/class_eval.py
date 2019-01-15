@@ -10,6 +10,7 @@ class AMS(EvalMetric):
                  targ_name:str='targets', weight_name:str='orig_weights'):
         super().__init__(targ_name, weight_name)
         self.n_total,self.br,self.syst_unc_b,self.use_quick_scan = n_total,br,syst_unc_b,use_quick_scan
+        self.lower_better = False
 
     def evaluate(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> float:
         df = self.get_df(data, index, y_pred)

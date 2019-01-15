@@ -6,18 +6,24 @@ from collections import OrderedDict
 import torch
 from torch.tensor import Tensor
 
+from .abs_model import AbsModel
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
 from ...utils.misc import to_np
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
+from ..metrics.eval_metric import EvalMetric
 
 
-class Model():
+class Model(AbsModel):
     def __init__(self, model_builder:ModelBuilder=None):
         self.model_builder = model_builder
-        if self.model_builder is not None: self.model, self.opt, self.loss = self.model_builder.get_model()
+        if self.model_builder is not None:
+            self.model, self.opt, self.loss = self.model_builder.get_model()
+            self.head = self.model[0][0]
+            self.body = self.model[1]
+            self.tail = self.model[2]
         
     def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]) -> float:
         self.model.train()
@@ -86,5 +92,5 @@ class Model():
         dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.n_cat_in)
         torch.onnx.export(self.model, dummy_input, name)     
 
-    def get_feat_importance(self, fold_yielder:FoldYielder) -> pd.DataFrame:
-        return get_nn_feat_importance(self, fold_yielder)
+    def get_feat_importance(self, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+        return get_nn_feat_importance(self, fold_yielder, eval_metric)

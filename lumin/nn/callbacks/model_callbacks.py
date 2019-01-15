@@ -5,7 +5,7 @@ import copy
 
 import torch.tensor as Tensor
 
-from ..models.model import Model
+from ..models.abs_model import AbsModel
 from .callback import Callback
 from .cyclic_callbacks import AbsCyclicCallback
 from ...utils.misc import to_tensor
@@ -13,7 +13,7 @@ from ...plotting.plot_settings import PlotSettings
 
 
 class AbsModelCallback(Callback):
-    def __init__(self, model:Optional[Model]=None, val_fold:Optional[np.ndarray]=None, cyclic_callback:Optional[AbsCyclicCallback]=None, plot_settings:PlotSettings=PlotSettings()):
+    def __init__(self, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None, cyclic_callback:Optional[AbsCyclicCallback]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.val_fold = val_fold
         self.cyclic_callback = cyclic_callback
@@ -30,7 +30,7 @@ class AbsModelCallback(Callback):
 
 
 class SWA(AbsModelCallback):
-    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[Model]=None, val_fold:Optional[np.ndarray]=None,
+    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, verbose=False, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback, plot_settings=plot_settings)
         self.start_epoch,self.renewal_period,self.cyclic_callback,self.verbose = start_epoch,renewal_period,cyclic_callback,verbose

@@ -5,7 +5,7 @@ from typing import List, Optional, Dict, Any, Union, Tuple
 import multiprocessing as mp
 
 from .plot_settings import PlotSettings
-from ..utils.misc import uncert_round
+from ..utils.statistics import uncert_round
 from ..utils.multiprocessing import mp_run
 
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset, inset_axes
@@ -33,7 +33,7 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
 def plot_roc(in_data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', weight_name:Optional[str]=None, 
              labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
              bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    with sns.axes_style(settings.style), sns.color_palette(settings.palette):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         if isinstance(in_data, pd.DataFrame):
             in_data = [in_data]
             plot_params = [plot_params]
@@ -90,7 +90,7 @@ def _get_samples(in_data, sample_name, weight_name):
 def plot_binary_class_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', weight_name=None, weight_scale:float=1,
                            log_y:bool=False, lim_x:Tuple[float,float]=(0,1), density=True, 
                            savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    with sns.axes_style(settings.style), sns.color_palette(settings.palette):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for targ in sorted(set(in_data[targ_name])):
             cut = in_data[targ_name] == targ
@@ -125,7 +125,7 @@ def plot_sample_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_
     sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
     width_scale = 1.6 if zoom_args is not None and 'width_scale' not in zoom_args else zoom_args['width_scale']
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.palette):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid)) if zoom_args is None else plt.subplots(figsize=(width_scale*settings.w_mid, settings.h_mid))
         if zoom_args is not None: axins = inset_axes(ax, 3, 5, loc='right', bbox_to_anchor=(0,0,0.92,1), bbox_transform=ax.figure.transFigure)
         ax.hist([in_data[in_data[sample_name] == sample][pred_name] for sample in bkg_samples],

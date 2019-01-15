@@ -8,6 +8,7 @@ from ..data.fold_yielder import FoldYielder
 class EvalMetric(ABC):
     def __init__(self, targ_name, weight_name):
         self.targ_name,self.weight_name = targ_name,weight_name
+        self.lower_better = True
 
     def get_df(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> pd.DataFrame:
         df = pd.DataFrame()

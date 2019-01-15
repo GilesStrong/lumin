@@ -14,13 +14,15 @@ import h5py
 
 from torch.tensor import Tensor
 
+from .abs_ensemble import AbsEnsemble
 from ..models.model import Model
 from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
+from ..metrics.eval_metric import EvalMetric
 
 
-class Ensemble():
+class Ensemble(AbsEnsemble):
     def __init__(self, input_pipe:Pipeline=None, output_pipe:Pipeline=None):
         self.input_pipe,self.output_pipe = input_pipe,output_pipe
         self.models = []
@@ -178,5 +180,5 @@ class Ensemble():
     def export2onnx(self, base_name:str, bs:int=1) -> None:
         for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)
 
-    def get_feat_importance(self, fold_yielder:FoldYielder) -> pd.DataFrame:
-        return get_ensemble_feat_importance(self, fold_yielder)
+    def get_feat_importance(self, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+        return get_ensemble_feat_importance(self, fold_yielder, eval_metric)

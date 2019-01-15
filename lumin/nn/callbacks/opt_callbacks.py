@@ -3,7 +3,7 @@ import math
 from typing import Tuple, Optional, Dict, Any
 
 from .callback import Callback
-from ..models.model import Model
+from ..models.abs_model import AbsModel
 from ...plotting.plot_settings import PlotSettings
 
 import seaborn as sns
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class LRFinder(Callback):
-    def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[Model]=None, plot_settings:PlotSettings=PlotSettings()):
+    def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.lr_bounds = lr_bounds
         self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/nb)
@@ -28,7 +28,7 @@ class LRFinder(Callback):
         return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
     def plot(self, n_skip=0, n_max:Optional[int]=None, lim_y=None):
-        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.palette):
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
             plt.plot(self.history['lr'][n_skip:n_max], self.history['loss'][n_skip:n_max], label='Training loss', color='g')
             if np.log10(self.lr_bounds[1])-np.log10(self.lr_bounds[0]) >= 3: plt.xscale('log')
@@ -42,7 +42,7 @@ class LRFinder(Callback):
             plt.show()
         
     def plot_lr(self):
-        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.palette):
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             plt.figure(figsize=(self.plot_settings.h_small, self.plot_settings.h_small))
             plt.plot(range(len(self.history['lr'])), self.history['lr'])
             plt.xticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)

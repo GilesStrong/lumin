@@ -6,7 +6,7 @@ import scipy
 from scipy.cluster import hierarchy as hc
 
 from .plot_settings import PlotSettings
-from ..utils.misc import uncert_round, get_moments
+from ..utils.statistics import uncert_round, get_moments
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ def plot_feat(in_data:Union[pd.DataFrame,List[pd.DataFrame]], feat:str, weight_n
     if not isinstance(cuts, list): raise ValueError(f"{len(cuts)} plots requested, but no labels passed")
     elif len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
        
-    with sns.axes_style(settings.style), sns.color_palette(settings.palette):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
         for i in range(len(cuts)):
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
@@ -102,7 +102,7 @@ def compare_events(events: list) -> None:
 
 
 def plot_dendrogram(df: pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    with sns.axes_style('white'), sns.color_palette(settings.palette):
+    with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
         corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
         corr_condensed = hc.distance.squareform(1-corr)
         z = hc.linkage(corr_condensed, method='average')
