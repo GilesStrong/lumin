@@ -54,6 +54,7 @@ class Model(AbsModel):
             
     def predict(self, inputs, as_np:bool=True) -> Union[np.ndarray, Tensor]:
         self.model.eval()
+        if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
         pred = self.model(inputs.float())
         if as_np: return to_np(pred)
