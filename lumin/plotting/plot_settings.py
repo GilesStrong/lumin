@@ -6,7 +6,7 @@ class PlotSettings:
         self.style       = 'whitegrid'  if 'style'       not in kargs else kargs['style']
         self.cat_palette = 'colorblind' if 'cat_palette' not in kargs else kargs['cat_palette']
         self.div_palette = 'RdBu_r'     if 'div_palette' not in kargs else kargs['div_palette']
-        self.seq_palette = 'cubehelix'  if 'seq_palette' not in kargs else kargs['seq_palette']
+        self.seq_palette = 'viridis'    if 'seq_palette' not in kargs else kargs['seq_palette']
         
         self.tk_sz   = 16      if 'tk_sz'   not in kargs else kargs['tk_sz']
         self.tk_col  = 'black' if 'tk_col'  not in kargs else kargs['tk_col']

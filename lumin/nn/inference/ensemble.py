@@ -23,8 +23,8 @@ from ..metrics.eval_metric import EvalMetric
 
 
 class Ensemble(AbsEnsemble):
-    def __init__(self, input_pipe:Pipeline=None, output_pipe:Pipeline=None):
-        self.input_pipe,self.output_pipe = input_pipe,output_pipe
+    def __init__(self, input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None, model_builder:Optional[ModelBuilder]=None):
+        self.input_pipe,self.output_pipe,self.model_builder = input_pipe,output_pipe,model_builder
         self.models = []
         self.weights = []
         self.size = 0
@@ -36,8 +36,8 @@ class Ensemble(AbsEnsemble):
         self.output_pipe = pipe
     
     @staticmethod
-    def load_trained_model(model_id:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model: 
-        model = Model(model_builder)
+    def load_trained_model(model_id:int, model_builder:Optional[ModelBuilder]=None, name:str='train_weights/train_') -> Model: 
+        model = Model(self.model_builder) if model_builder is None else Model(model_builder)
         model.load(f'{name}{model_id}.h5')
         return model
     
@@ -52,7 +52,7 @@ class Ensemble(AbsEnsemble):
                        metric:str='loss', weighting:str='reciprocal',
                        snapshot_args:Dict[str,Any]={},
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
-
+        self.model_builder = model_builder
         cycle_losses     = None if 'cycle_losses'     not in snapshot_args else snapshot_args['cycle_losses']
         n_cycles         = None if 'n_cycles'         not in snapshot_args else snapshot_args['n_cycles']
         load_cycles_only = None if 'load_cycles_only' not in snapshot_args else snapshot_args['load_cycles_only']
@@ -77,7 +77,7 @@ class Ensemble(AbsEnsemble):
     
         for i in progress_bar(range(min([size, len(results)]))):
             if not (load_cycles_only and n_cycles):
-                self.models.append(self.load_trained_model(values[i]['model'], model_builder, location/'train_'))
+                self.models.append(self.load_trained_model(values[i]['model'], name=location/'train_'))
                 weights.append(self._get_weights(values[i]['result'], metric, weighting))
                 if verbose: print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result']}")
 
@@ -85,7 +85,7 @@ class Ensemble(AbsEnsemble):
                 end_cycle = len(cycle_losses[values[i]['model']])-patience
                 if load_cycles_only: end_cycle += 1
                 for n, c in enumerate(range(end_cycle, max(0, end_cycle-n_cycles), -1)):
-                    self.models.append(self.load_trained_model(c, model_builder, location/f'{values[i]["model"]}_cycle_'))
+                    self.models.append(self.load_trained_model(c, name=location/f'{values[i]["model"]}_cycle_'))
                     weights.append((n+1)**weighting_pwr)
                     if verbose: print(f"Model {i} cycle {c} has {metric} = {cycle_losses[values[i]['model']][c]} and weight {weights[-1]}")
         
@@ -151,6 +151,7 @@ class Ensemble(AbsEnsemble):
             for i, model in enumerate(progress_bar(self.models)): model.save(f'{name}_{i}.h5')    
             with open(f'{name}_weights.pkl', 'wb')         as fout: pickle.dump(self.weights, fout)
             with open(f'{name}_results.pkl', 'wb')         as fout: pickle.dump(self.results, fout)
+            with open(f'{name}_builder.pkl', 'wb')         as fout: pickle.dump(self.model_builder, fout)
             if self.input_pipe  is not None: 
                 with open(f'{name}_input_pipe.pkl', 'wb')  as fout: pickle.dump(self.input_pipe, fout)
             if self.output_pipe is not None: 
@@ -158,11 +159,12 @@ class Ensemble(AbsEnsemble):
             if feats            is not None: 
                 with open(f'{name}_feats.pkl', 'wb')       as fout: pickle.dump(feats, fout)
                     
-    def load(self, name:str, model_builder) -> None:
+    def load(self, name:str) -> None:
+        with open(f'{name}_builder.pkl', 'rb') as fin: self.model_builder = pickle.load(fin)
         names = glob.glob(f'{name}_*.h5')
         self.models = []
         for n in progress_bar(sorted(names)):
-            m = Model(model_builder)
+            m = Model(self.model_builder)
             m.load(n)
             self.models.append(m)
         self.n_out = self.models[0].model[-1][-2].out_features

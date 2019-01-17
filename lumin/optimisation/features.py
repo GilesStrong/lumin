@@ -1,15 +1,16 @@
 import pandas as pd
+import numpy as np
 from typing import List, Optional
 from rfpimp import importances
 
 from sklearn.ensemble.forest import ForestRegressor
 
 from .hyper_param import get_opt_rf_params
-from ..plotting.interpretation import plot_fi
+from ..plotting.interpretation import plot_importance
 
 
-def get_rf_feat_importance(rf:ForestRegressor, x_val, y_val, w_val, feats:List[str]) -> pd.DataFrame:
-    return importances(rf, x_val, y_val, features=feats, sample_weights=w_val).reset_index()
+def get_rf_feat_importance(rf:ForestRegressor, x_val:pd.DataFrame, y_val:np.ndarray, w_val:Optional[np.ndarray]=None) -> pd.DataFrame:
+    return importances(rf, x_val, y_val, features=x_val.columns, sample_weights=w_val).reset_index()
 
 
 def rf_rank_features(df_trn:pd.DataFrame, df_val:pd.DataFrame, objective:str,
@@ -23,7 +24,7 @@ def rf_rank_features(df_trn:pd.DataFrame, df_val:pd.DataFrame, objective:str,
 
     fi = get_rf_feat_importance(rf, df_val[train_feats], df_val[targ_name], w_val, train_feats)
     print("Top ten most important features:\n", fi[:max(len(fi), 10)])
-    plot_fi(fi[:max(len(fi), 30)])
+    plot_importance(fi[:max(len(fi), 30)])
 
     top_feats = list(fi[fi.Importance > cut].Feature)
     print(f"\n{len(top_feats)} features found with importance greater than {cut}:\n", top_feats)

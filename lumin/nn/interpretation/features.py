@@ -7,7 +7,7 @@ from typing import Optional
 from ...utils.misc import to_tensor
 from ...utils.statistics import bootstrap_stats
 from ...utils.multiprocessing import mp_run
-from ...plotting.interpretation import plot_fi
+from ...plotting.interpretation import plot_importance
 from ..models.abs_model import AbsModel
 from ..data.fold_yielder import FoldYielder
 # from ..inference.ensemble import Ensemble
@@ -54,7 +54,7 @@ def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric
     if plot:
         tmp_fi = fi.sort_values('Importance', ascending=False).reset_index(drop=True)
         print("Top ten most important features:\n", tmp_fi[:min(len(tmp_fi), 10)])
-        plot_fi(tmp_fi)
+        plot_importance(tmp_fi)
     return fi
 
 
@@ -78,5 +78,5 @@ def get_ensemble_feat_importance(ensemble, fold_yielder:FoldYielder, eval_metric
                        'Importance':  [bs_mean[f'{i}_mean'] for i in range(len(feats))], 
                        'Uncertainty': [bs_std[f'{i}_mean']  for i in range(len(feats))]}).sort_values('Importance', ascending=False).reset_index(drop=True)
     print("Top ten most important features:\n", fi[:min(len(fi), 10)])
-    plot_fi(fi)
+    plot_importance(fi)
     return fi

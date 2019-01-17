@@ -59,7 +59,7 @@ class FoldYielder:
                 'targets':              self.get_column('targets', n_folds=n_folds, fold_id=fold_id, add_newaxis=True),
                 'weights':              self.get_column('weights', n_folds=n_folds, fold_id=fold_id, add_newaxis=True)}
 
-    def get_df(self, pred_name:str='pred', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False) -> pd.DataFrame:
+    def get_df(self, pred_name:str='pred', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False, verbose:bool=True) -> pd.DataFrame:
         if inc_inputs:
             inputs = self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)
             if deprocess: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:, :len(self.cont_feats)]), inputs[:, len(self.cont_feats):]))
@@ -69,7 +69,7 @@ class FoldYielder:
         data['gen_target'] = self.get_column('targets', n_folds=n_folds, fold_id=fold_id)
         data['gen_weight'] = self.get_column('weights', n_folds=n_folds, fold_id=fold_id)
         data['pred']       = self.get_column(pred_name, n_folds=n_folds, fold_id=fold_id)
-        print(f'{len(data)} candidates loaded')
+        if verbose: print(f'{len(data)} candidates loaded')
         return data
 
 
