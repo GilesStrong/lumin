@@ -96,7 +96,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, train_params:Dic
         for epoch in epoch_pb:
             for trn_id in trn_ids:
                 subEpoch += 1
-                batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), bs=train_params['bs'], use_weights=train_on_weights, shuffle=shuffle_fold)
+                batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), objective=model_builder.objective, bs=train_params['bs'], use_weights=train_on_weights, shuffle=shuffle_fold)
                 loss_history['trn_loss'].append(model.fit(batch_yielder, callbacks))
 
                 val_loss = model.evaluate(Tensor(val_fold['inputs']), Tensor(val_fold['targets']), weights=to_tensor(val_fold['weights']))

@@ -24,6 +24,7 @@ class Model(AbsModel):
             self.head = self.model[0][0]
             self.body = self.model[1]
             self.tail = self.model[2]
+            self.objective = self.model_builder.objective
         
     def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]) -> float:
         self.model.train()
@@ -48,8 +49,13 @@ class Model(AbsModel):
               
     def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None) -> float:
         self.model.eval()
+        if 'multiclass' in self.objective:
+            targets = targets.long().squeeze()
+            weights = weights[0]
+        else:
+            targets = targets.float()
         y_pred = self.model(inputs.float())
-        loss = self.loss(weight=weights)(y_pred, targets.float())
+        loss = self.loss(weight=weights)(y_pred, targets)
         return loss.data.item()
             
     def predict(self, inputs, as_np:bool=True) -> Union[np.ndarray, Tensor]:
@@ -57,8 +63,13 @@ class Model(AbsModel):
         if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
         pred = self.model(inputs.float())
-        if as_np: return to_np(pred)
-        else:     return pred
+        if as_np:
+            if 'multiclass' in self.objective:
+                return np.exp(to_np(pred))
+            else:
+                return to_np(pred)
+        else:
+            return pred
 
     def get_weights(self) -> OrderedDict:
         return self.model.state_dict()
@@ -87,6 +98,7 @@ class Model(AbsModel):
         state = torch.load(name)
         self.model.load_state_dict(state['model'])
         self.opt.load_state_dict(state['opt'])
+        self.objective = self.model_builder.objective if model_builder is None else model_builder.objective
 
     def export2onnx(self, name:str, bs:int=1) -> None:
         if '.onnx' not in name: name += '.onnx'

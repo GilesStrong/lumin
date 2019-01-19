@@ -11,8 +11,8 @@ Todo
 
 
 class BatchYielder:
-    def __init__(self, inputs:np.ndarray, targets:np.ndarray, bs:int, weights:Optional[np.ndarray]=None, shuffle=True, use_weights:bool=True):
-        self.inputs,self.targets,self.weights,self.bs,self.shuffle,self.use_weights = inputs,targets,weights,bs,shuffle,use_weights
+    def __init__(self, inputs:np.ndarray, targets:np.ndarray, bs:int, objective:str, weights:Optional[np.ndarray]=None, shuffle=True, use_weights:bool=True):
+        self.inputs,self.targets,self.weights,self.bs,self.objective,self.shuffle,self.use_weights = inputs,targets,weights,bs,objective,shuffle,use_weights
 
     def __iter__(self) -> List[Tensor]:
         if self.shuffle:
@@ -26,10 +26,18 @@ class BatchYielder:
                 inputs, targets = zip(*data)
 
         for i in range(0, len(inputs)-self.bs+1, self.bs):
-            if self.weights is not None and self.use_weights:
-                yield Tensor(inputs[i:i+self.bs]), Tensor(targets[i:i+self.bs]), Tensor(weights[i:i+self.bs])
+            if 'multiclass' in self.objective:
+                y = Tensor(targets[i:i+self.bs]).long().squeeze()
             else:
-                yield Tensor(inputs[i:i+self.bs]), Tensor(targets[i:i+self.bs]), None
+                y = Tensor(targets[i:i+self.bs])
+            if self.weights is not None and self.use_weights:
+                if 'multiclass' in self.objective:
+                    w = Tensor(np.mean(weights[i:i+self.bs], axis=0))
+                else:
+                    w = Tensor(weights[i:i+self.bs])
+                yield Tensor(inputs[i:i+self.bs]), y, w
+            else:
+                yield Tensor(inputs[i:i+self.bs]), y, None
 
     def __len__(self):
         return len(self.inputs)//self.bs

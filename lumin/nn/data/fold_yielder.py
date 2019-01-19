@@ -46,13 +46,6 @@ class FoldYielder:
             data['inputs'] = np.nan_to_num(inputs.values)
             return data
 
-    def get_fold_df(self, index:int, pred_name:str='preds', weight_name:str='weights') -> pd.DataFrame:
-        data = pd.DataFrame()
-        if f'fold_{index}/{weight_name}' in self.source: data['gen_weight'] = np.array(self.source[f'fold_{index}/{weight_name}'])
-        if f'fold_{index}/targets'       in self.source: data['gen_target'] = np.array(self.source[f'fold_{index}/targets'])
-        if f'fold_{index}/{pred_name}'   in self.source: data['pred']       = np.array(self.source[f'fold_{index}/{pred_name}'])
-        return data
-
     def get_column(self, column:str, n_folds:Optional[int]=None, fold_id:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
         if f'fold_0/{column}' not in self.source: return None
 
@@ -72,16 +65,33 @@ class FoldYielder:
                 'targets':              self.get_column('targets', n_folds=n_folds, fold_id=fold_id, add_newaxis=True),
                 'weights':              self.get_column('weights', n_folds=n_folds, fold_id=fold_id, add_newaxis=True)}
 
-    def get_df(self, pred_name:str='pred', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False, verbose:bool=True) -> pd.DataFrame:
+    def get_df(self, pred_name:str='pred', targ_name:str='targets', weight_name:str='weights', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False, verbose:bool=True) -> pd.DataFrame:
         if inc_inputs:
             inputs = self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)
             if deprocess: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:, :len(self.cont_feats)]), inputs[:, len(self.cont_feats):]))
             data = pd.DataFrame(np.nan_to_num(inputs), columns=self.input_feats)
         else:
             data = pd.DataFrame()
-        data['gen_target'] = self.get_column('targets', n_folds=n_folds, fold_id=fold_id)
-        data['gen_weight'] = self.get_column('weights', n_folds=n_folds, fold_id=fold_id)
-        data['pred']       = self.get_column(pred_name, n_folds=n_folds, fold_id=fold_id)
+
+        targets = self.get_column(targ_name, n_folds=n_folds, fold_id=fold_id)
+        if len(targets.shape) > 1:
+            for t in range(targets.shape[-1]):
+                data[f'gen_target_{t}'] = targets[:,t]
+        else:
+            data['gen_target'] = targets
+
+        weights = self.get_column(weight_name, n_folds=n_folds, fold_id=fold_id)
+        if len(weights.shape) > 1:
+            for w in range(weights.shape[-1]):
+                data[f'gen_weight_{w}'] = weights[:,w]
+        else:
+            data['gen_weight'] = weights
+        preds = self.get_column(pred_name, n_folds=n_folds, fold_id=fold_id)
+        if len(preds.shape) > 1:
+            for p in range(preds.shape[-1]):
+                data[f'pred_{p}'] = preds[:,p]
+        else:
+            data['pred'] = preds
         if verbose: print(f'{len(data)} candidates loaded')
         return data
 

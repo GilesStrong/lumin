@@ -49,7 +49,11 @@ class ModelBuilder(object):
     def parse_loss(self, loss:Union[Any,'auto']='auto') -> None:
         if loss is 'auto':
             if 'class' in self.objective:
-                self.loss = nn.NLLLoss if self.n_out > 1 and 'multi' in self.objective else nn.BCELoss
+                if self.n_out > 1 and 'multiclass' in self.objective:
+                    self.loss = nn.NLLLoss
+                else:
+                    self.loss = nn.BCELoss
+            
             else:
                 self.loss = nn.MSELoss
         else:   
@@ -90,7 +94,7 @@ class ModelBuilder(object):
         init, args = self.lookup_init(act, fan_in, fan_out)
         init(layers[-1].weight, **args)
         if act != 'linear': layers.append(self.lookup_act(act))
-
+            
         if self.bn and not last_layer: layers.append(nn.BatchNorm1d(fan_out))
         if self.do and not last_layer: 
             if act == 'selu':
@@ -109,7 +113,7 @@ class ModelBuilder(object):
 
     def get_tail(self, n_in) -> nn.Module:
         if 'class' in self.objective:
-            if 'multi' in self.objective: 
+            if 'multiclass' in self.objective: 
                 return self.get_dense(n_in, self.n_out, 'logsoftmax', last_layer=True)
             else:
                 return self.get_dense(n_in, self.n_out, 'sigmoid', last_layer=True)

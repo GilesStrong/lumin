@@ -37,7 +37,7 @@ class Ensemble(AbsEnsemble):
     
     @staticmethod
     def load_trained_model(model_id:int, model_builder:Optional[ModelBuilder]=None, name:str='train_weights/train_') -> Model: 
-        model = Model(self.model_builder) if model_builder is None else Model(model_builder)
+        model = Model(model_builder)
         model.load(f'{name}{model_id}.h5')
         return model
     
@@ -77,7 +77,7 @@ class Ensemble(AbsEnsemble):
     
         for i in progress_bar(range(min([size, len(results)]))):
             if not (load_cycles_only and n_cycles):
-                self.models.append(self.load_trained_model(values[i]['model'], name=location/'train_'))
+                self.models.append(self.load_trained_model(values[i]['model'], self.model_builder, name=location/'train_'))
                 weights.append(self._get_weights(values[i]['result'], metric, weighting))
                 if verbose: print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result']}")
 
@@ -85,7 +85,7 @@ class Ensemble(AbsEnsemble):
                 end_cycle = len(cycle_losses[values[i]['model']])-patience
                 if load_cycles_only: end_cycle += 1
                 for n, c in enumerate(range(end_cycle, max(0, end_cycle-n_cycles), -1)):
-                    self.models.append(self.load_trained_model(c, name=location/f'{values[i]["model"]}_cycle_'))
+                    self.models.append(self.load_trained_model(c, self.model_builder, name=location/f'{values[i]["model"]}_cycle_'))
                     weights.append((n+1)**weighting_pwr)
                     if verbose: print(f"Model {i} cycle {c} has {metric} = {cycle_losses[values[i]['model']][c]} and weight {weights[-1]}")
         

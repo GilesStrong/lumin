@@ -64,7 +64,7 @@ def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
         nb = len(trn_fold['targets'])//bs
         lr_finder = LRFinder(nb=nb, lr_bounds=lr_bounds, model=model)
         lr_finder.on_train_begin()
-        batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold)
+        batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold)
         model.fit(batch_yielder, [lr_finder])
         lr_finders.append(lr_finder)
         

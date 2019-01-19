@@ -14,7 +14,11 @@ class EvalMetric(ABC):
         df = pd.DataFrame()
         df['gen_weight'] = data.get_column(column=self.weight_name, n_folds=1, fold_id=index)
         df['gen_target'] = data.get_column(column=self.targ_name,   n_folds=1, fold_id=index)
-        df['pred']       = y_pred
+        if len(y_pred.shape) > 1:
+            for p in range(y_pred.shape[-1]):
+                df[f'pred_{p}'] = y_pred[:,p]
+        else:
+            df['pred'] = y_pred
         return df
 
     @abstractmethod

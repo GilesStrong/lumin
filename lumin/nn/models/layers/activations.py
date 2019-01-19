@@ -2,11 +2,12 @@ import torch
 import torch.nn as nn
 
 
-def lookup_act(act:str):
+def lookup_act(act:str) -> nn.Module:
         if act == 'relu':       return nn.ReLU()
         if act == 'selu':       return nn.SELU()
         if act == 'sigmoid':    return nn.Sigmoid()
-        if act == 'logsoftmax': return nn.LogSoftmax()
+        if act == 'logsoftmax': return nn.LogSoftmax(1)
+        if act == 'softmax':    return nn.Softmax(1)
         if act == 'linear':     return nn.Linear()
         if 'swish' in act:      return Swish()
         raise ValueError("Activation not implemented")
