@@ -22,6 +22,12 @@ class FoldYielder:
         self.train_time_aug = False
         self.test_time_aug = False
         self.set_source(source_file)
+        self._ignore_feats = []
+
+    def ignore(self, feats:List[str]) -> None:
+        self._ignore_feats += feats
+        self.cont_feats = [f for f in self.cont_feats if f not in self._ignore_feats]
+        self.cat_feats  = [f for f in self.cat_feats  if f not in self._ignore_feats]
 
     def set_source(self, source_file:h5py.File) -> None:
         self.source = source_file
@@ -31,7 +37,14 @@ class FoldYielder:
         self.input_pipe = input_pipe
 
     def get_fold(self, index:int) -> Dict[str,np.ndarray]:
-        return self.get_data(n_folds=1, fold_id=index)
+        data = self.get_data(n_folds=1, fold_id=index)
+        if len(self._ignore_feats) == 0:
+            return data
+        else:
+            inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
+            inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
+            data['inputs'] = np.nan_to_num(inputs.values)
+            return data
 
     def get_fold_df(self, index:int, pred_name:str='preds', weight_name:str='weights') -> pd.DataFrame:
         data = pd.DataFrame()
@@ -138,7 +151,7 @@ class HEPAugFoldYielder(FoldYielder):
                     pass
             
     def get_fold(self, index:int) -> Dict[str,np.ndarray]:
-        data = super().get_fold(index)         
+        data = self.get_data(n_folds=1, fold_id=index)
         if not self.augmented: return data
         inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
 
@@ -149,8 +162,10 @@ class HEPAugFoldYielder(FoldYielder):
         for coord in self.reflect_axes:
             inputs[f'aug{coord}'] = np.random.randint(0, 2, size=len(inputs))
         self.reflect(inputs)
-            
-        data['inputs'] = np.nan_to_num(inputs[self.input_feats].values)
+
+        inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
+        inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
+        data['inputs'] = np.nan_to_num(inputs.values)
         return data
 
     def _get_ref_index(self, aug_index:int) -> str:
@@ -162,7 +177,7 @@ class HEPAugFoldYielder(FoldYielder):
     
     def get_test_fold(self, index:int, aug_index:int) -> Dict[str, np.ndarray]:
         if aug_index >= self.aug_mult: raise ValueError(f"Invalid augmentation index passed {aug_index}")
-        data = super().get_fold(index)         
+        data = self.get_data(n_folds=1, fold_id=index)
         if not self.augmented: return data
         inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
             
@@ -186,5 +201,7 @@ class HEPAugFoldYielder(FoldYielder):
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[aug_index]
             self.rotate(inputs)
             
-        data['inputs'] = np.nan_to_num(inputs[self.input_feats].values)
+        inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
+        inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
+        data['inputs'] = np.nan_to_num(inputs.values)
         return data

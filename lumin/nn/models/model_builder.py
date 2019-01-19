@@ -32,10 +32,10 @@ class ModelBuilder(object):
     
     def parse_cat_args(self, cat_args) -> None:
         cat_args = {k.lower(): cat_args[k] for k in cat_args}
-        self.n_cat_in     = 0    if 'n_cat_in'     not in cat_args else cat_args['n_cat_in']
-        self.cat_szs      = None if 'cat_szs'      not in cat_args else cat_args['cat_szs']
-        self.emb_szs      = None if 'emb_szs'      not in cat_args else cat_args['emb_szs']
-        self.cat_names    = None if 'cat_names'    not in cat_args else cat_args['cat_names']
+        self.n_cat_in      = 0    if 'n_cat_in'      not in cat_args else cat_args['n_cat_in']
+        self.cat_szs       = None if 'cat_szs'       not in cat_args else cat_args['cat_szs']
+        self.emb_szs       = None if 'emb_szs'       not in cat_args else cat_args['emb_szs']
+        self.cat_names     = None if 'cat_names'     not in cat_args else cat_args['cat_names']
         self.emb_load_path = None if 'emb_load_path' not in cat_args else cat_args['emb_load_path']
         
         if self.cat_szs is None:
