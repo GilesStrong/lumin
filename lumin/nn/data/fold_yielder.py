@@ -87,7 +87,7 @@ class FoldYielder:
         else:
             data['gen_weight'] = weights
         preds = self.get_column(pred_name, n_folds=n_folds, fold_id=fold_id)
-        if len(preds.shape) > 1:
+        if preds is not None and len(preds.shape) > 1:
             for p in range(preds.shape[-1]):
                 data[f'pred_{p}'] = preds[:,p]
         else:

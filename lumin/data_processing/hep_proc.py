@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from typing import List
 
 '''
 Todo:
@@ -18,9 +19,9 @@ def to_cartesian(in_data:pd.DataFrame, vec:str, z:bool=True, drop:bool=False) ->
 
     if z: eta = in_data[f'{vec}_eta']  
     phi = in_data[f'{vec}_phi']
-    in_data[f'{vec}_px'] = pt * np.cos(phi)
-    in_data[f'{vec}_py'] = pt * np.sin(phi)
-    if z: in_data[f'{vec}_pz'] = pt * np.sinh(eta)
+    in_data[f'{vec}_px'] = pt*np.cos(phi)
+    in_data[f'{vec}_py'] = pt*np.sin(phi)
+    if z: in_data[f'{vec}_pz'] = pt*np.sinh(eta)
     if drop:
         in_data.drop(columns=[pt_name, f"{vec}_phi"], inplace=True)
         if z: in_data.drop(columns=[f"{vec}_eta"], inplace=True)
@@ -70,3 +71,48 @@ def add_energy(in_data:pd.DataFrame, vec:str) -> None:
 def add_mt(in_data:pd.DataFrame, vec:str, mpt_name:str='mpt'):
     try:             in_data[f'{vec}_mT'] = np.sqrt(2*in_data[f'{vec}_pT']*in_data[f'{mpt_name}_pT']*(1-np.cos(delta_phi(in_data[f'{vec}_phi'], in_data[f'{mpt_name}_phi']))))
     except KeyError: in_data[f'{vec}_mt'] = np.sqrt(2*in_data[f'{vec}_pt']*in_data[f'{mpt_name}_pt']*(1-np.cos(delta_phi(in_data[f'{vec}_phi'], in_data[f'{mpt_name}_phi']))))
+
+
+def get_vecs(feats:List[str], strict:bool=True) -> List[str]:
+    low = [f.lower() for f in feats]
+    all_vecs = [f for f in feats if f.lower().endswith('_pt') or f.lower().endswith('_phi') or f.lower().endswith('_eta') or f.lower().endswith('_px') or f.lower().endswith('_py') or f.lower().endswith('_pz')]
+    if not strict: return set([v[:v.rfind('_')] for v in all_vecs])
+    vecs = [v[:v.rfind('_')] for v in all_vecs if (f'{v[:v.rfind("_")]}_pt'.lower() in low and f'{v[:v.rfind("_")]}_phi'.lower() in low) or 
+                                                  (f'{v[:v.rfind("_")]}_px'.lower() in low and f'{v[:v.rfind("_")]}_py'.lower()  in low)]
+    return set(vecs)
+
+
+def fix_event_phi(df:pd.DataFrame, ref_vec:str) -> None:
+    '''Rotate event in phi such that ref_vec is at phi == 0'''
+    for v in get_vecs(df.columns):
+        if v != ref_vec: 
+            print(v)
+            df[f'{v}_phi'] = df.apply(lambda row: delta_phi(row[f'{ref_vec}_phi'], row[f'{v}_phi']), axis=1)
+    df[f'{ref_vec}_phi'] = 0
+
+
+def fix_event_z(df:pd.DataFrame, ref_vec:str) -> None:
+    '''Flip event in z-axis such that ref_vec is in positive z-direction'''
+    if f'{ref_vec}_eta' in df.columns:
+        cut = (df[f'{ref_vec}_eta'] < 0)
+        for v in get_vecs(df.columns):
+            try: df.loc[cut, f'{v}_eta'] = -df.loc[cut, f'{v}_eta'] 
+            except KeyError: print(f'eta component of {v} not found')
+    else:
+        cut = cut = (df[f'{ref_vec}_pz'] < 0)
+        for v in get_vecs(df.columns):
+            try: df.loc[cut, f'{v}_pz'] = -df.loc[cut, f'{v}_pz']
+            except KeyError: print(f'pz component of {v} not found')
+
+
+def fix_event_y(df:pd.DataFrame, ref_vec_0:str, ref_vec_1:str) -> None:
+    '''Flip event in y-axis such that ref_vec_1 has a higher py than ref_vec_0'''
+    if f'{ref_vec_1}_phi' in df.columns:
+        cut = (df[f'{ref_vec_1}_phi'] < 0)
+        for v in get_vecs(df.columns):
+            if v != ref_vec_0: df.loc[cut, f'{v}_phi'] = -df.loc[cut, f'{v}_phi'] 
+    else:
+        cut = (df[f'{ref_vec_1}_py'] < 0)
+        for v in get_vecs(df.columns):
+            if v != ref_vec_0: df.loc[cut, f'{v}_py'] = -df.loc[cut, f'{v}_py']
+                
