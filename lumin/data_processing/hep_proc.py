@@ -9,7 +9,8 @@ Todo:
 '''
 
 
-def to_cartesian(in_data:pd.DataFrame, vec:str, z:bool=True, drop:bool=False) -> None:
+def to_cartesian(in_data:pd.DataFrame, vec:str, drop:bool=False) -> None:
+    z = f'{vec}_eta' in in_data.columns
     try:
         pt = in_data[f'{vec}_pT']
         pt_name = f'{vec}_pT'
@@ -86,7 +87,6 @@ def fix_event_phi(df:pd.DataFrame, ref_vec:str) -> None:
     '''Rotate event in phi such that ref_vec is at phi == 0'''
     for v in get_vecs(df.columns):
         if v != ref_vec: 
-            print(v)
             df[f'{v}_phi'] = df.apply(lambda row: delta_phi(row[f'{ref_vec}_phi'], row[f'{v}_phi']), axis=1)
     df[f'{ref_vec}_phi'] = 0
 
@@ -115,4 +115,38 @@ def fix_event_y(df:pd.DataFrame, ref_vec_0:str, ref_vec_1:str) -> None:
         cut = (df[f'{ref_vec_1}_py'] < 0)
         for v in get_vecs(df.columns):
             if v != ref_vec_0: df.loc[cut, f'{v}_py'] = -df.loc[cut, f'{v}_py']
-                
+
+
+def event_to_cartesian(df:pd.DataFrame, drop:bool=False, ignore:List[str]=[]) -> None:
+    for v in get_vecs(df.columns):
+        if v not in ignore: to_cartesian(df, v, drop=drop)
+
+
+def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, cartesian=False,
+               ref_vec_0:str=None, ref_vec_1:str=None, keep_feats=[], default_values=[]) -> None:
+    '''Pass data through conversions and drop uneeded columns'''
+    df.replace([np.inf, -np.inf]+default_values, np.nan, inplace=True)
+    for f in keep_feats: df[f'{f}keep'] = df[f'{f}']
+    
+    if fix_phi:
+        print(f'Setting {ref_vec_0} to phi = 0')
+        fix_event_phi(df, ref_vec_0)
+        
+        if fix_y:
+            print(f'Setting {ref_vec_1} to positve phi')
+            fix_event_y(df, ref_vec_0, ref_vec_1)
+
+    if fix_z:
+        print(f'Setting {ref_vec_0} to positive eta')
+        fix_event_z(df, ref_vec_0)
+            
+    if cartesian:
+        print("Converting to Cartesian coordinates")
+        event_to_cartesian(df, drop=True)
+        
+    if   fix_phi and not cartesian: df.drop(columns=[f"{ref_vec_0}_phi"], inplace=True)
+    elif fix_phi and cartesian:     df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
+    
+    for f in keep_feats:
+        df[f'{f}'] = df[f'{f}keep']
+        df.drop(columns=[f'{f}keep'], inplace=True)
