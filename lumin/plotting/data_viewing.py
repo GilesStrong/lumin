@@ -13,14 +13,13 @@ import matplotlib.pyplot as plt
 
 
 def plot_feat(in_data:Union[pd.DataFrame,List[pd.DataFrame]], feat:str, weight_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
-              labels:Optional[List[str]]=None, plot_bulk:bool=True, n_samples:int=100000,
+              labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
               plot_params:List[Dict[str,Any]]={}, size='mid', moments=True, ax_labels={'y': 'Density', 'x': None},
               savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    if not isinstance(labels, list): labels = [labels]
     if not isinstance(cuts,   list): cuts   = [cuts]
-    if not isinstance(labels, list): labels = [labels]    
-    if not isinstance(cuts, list): raise ValueError(f"{len(cuts)} plots requested, but no labels passed")
-    elif len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
-       
+    if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
+    
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
         for i in range(len(cuts)):
@@ -50,7 +49,7 @@ def plot_feat(in_data:Union[pd.DataFrame,List[pd.DataFrame]], feat:str, weight_n
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
                 std = uncert_round(moms[2], moms[3])
-                label += r', $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
+                label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
 
             sns.distplot(plot_data, label=label, **tmp_plot_params)
 

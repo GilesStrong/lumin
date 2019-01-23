@@ -35,7 +35,7 @@ class Model(AbsModel):
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
             y_pred = self.model(x)
-            loss = self.loss(weight=w)(y_pred, y)
+            loss = self.loss(weight=w)(y_pred, y) if w is not None else self.loss()(y_pred, y)
             losses.append(loss.data.item())
             self.opt.zero_grad()
             loss.backward()
@@ -55,7 +55,7 @@ class Model(AbsModel):
         else:
             targets = targets.float()
         y_pred = self.model(inputs.float())
-        loss = self.loss(weight=weights)(y_pred, targets)
+        loss = self.loss(weight=weights)(y_pred, targets) if weights is not None else self.loss()(y_pred, targets)
         return loss.data.item()
             
     def predict(self, inputs, as_np:bool=True) -> Union[np.ndarray, Tensor]:

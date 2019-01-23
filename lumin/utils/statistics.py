@@ -1,9 +1,10 @@
 import numpy as np
-from typing import Tuple
+from typing import Tuple, Dict, Union, Optional, Any
 import statsmodels as sm
+import multiprocessing as mp
 
 
-def bootstrap_stats(args, out_q):
+def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[str,Any]]:
     out_dict = {}
     mean = []
     std = []
@@ -34,7 +35,8 @@ def bootstrap_stats(args, out_q):
     if args['mean']: out_dict[f'{name}_mean'] = points.mean()
     if args['std']:  out_dict[f'{name}_std']  = points.std(ddof=1)
     if args['c68']:  out_dict[f'{name}_c68']  = np.percentile(np.abs(points), 68.2)
-    out_q.put(out_dict)
+    if out_q is not None: out_q.put(out_dict)
+    else: return out_dict
 
 
 def get_moments(x:np.ndarray) -> Tuple[float,float,float,float]:
@@ -48,7 +50,7 @@ def get_moments(x:np.ndarray) -> Tuple[float,float,float,float]:
     return m, s/np.sqrt(n), s, se_s
 
 
-def uncert_round(value, uncert):
+def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
     if uncert == 0: return value, uncert
     
     factor = 1.0

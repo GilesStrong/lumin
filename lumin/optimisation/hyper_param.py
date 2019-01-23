@@ -1,4 +1,4 @@
-from typing import Tuple, Dict, List
+from typing import Tuple, Dict, List, Optional
 from fastprogress import master_bar, progress_bar
 import numpy as np
 from collections import OrderedDict
@@ -18,8 +18,8 @@ from ..plotting.plot_settings import PlotSettings
 import matplotlib.pyplot as plt
 
 
-def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, w_trn:np.ndarray,
-                      X_val:np.ndarray, y_val:np.ndarray, w_val:np.ndarray, objective:str,
+def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, X_val:np.ndarray, y_val:np.ndarray, objective:str,
+                      w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
                       params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
                       verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
     rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor

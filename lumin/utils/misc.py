@@ -31,5 +31,5 @@ def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) 
 
 def ids2unique(x: Union[List, np.ndarray]) -> np.ndarray:
     if not isinstance(x, np.ndarray): x = np.array(x)[:,None]
-    primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(2, 2 + x.shape[1])]), x.shape)
+    primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+x.shape[1])]), x.shape)
     return (primes**x).prod(axis=-1)

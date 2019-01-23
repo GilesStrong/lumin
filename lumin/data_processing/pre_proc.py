@@ -33,6 +33,14 @@ def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], save_path:Optional[Pat
     return input_pipe
 
 
+def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], save_path:Optional[Path]=None) -> Pipeline:
+    _, output_pipe = get_pre_proc_pipes(norm_out=True)
+    output_pipe.fit(df[targ_feats].values.astype('float32'))
+    if save_path is not None:
+        with open(save_path/'output_pipe.pkl', 'wb') as fout: pickle.dump(output_pipe, fout)
+    return output_pipe
+
+
 def proc_cats(train_df:pd.DataFrame, cat_feats:List[str], val_df:Optional[pd.DataFrame]=None, test_df:Optional[pd.DataFrame]=None) -> Tuple[OrderedDict,OrderedDict]:
     cat_maps = OrderedDict()
     cat_szs = OrderedDict()

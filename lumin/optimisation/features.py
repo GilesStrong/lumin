@@ -19,18 +19,18 @@ def rf_rank_features(df_trn:pd.DataFrame, df_val:pd.DataFrame, objective:str,
     w_trn = None if weight_name is None else df_trn[weight_name]
     w_val = None if weight_name is None else df_val[weight_name]
     print("Optimising RF")
-    _, rf = get_opt_rf_params(df_trn[train_feats], df_trn[targ_name], w_trn,
-                              df_val[train_feats], df_val[targ_name], w_val, objective, verbose=False)
+    _, rf = get_opt_rf_params(df_trn[train_feats], df_trn[targ_name], df_val[train_feats], df_val[targ_name],
+                              objective, w_trn=w_trn, w_val=w_val, verbose=False)
 
-    fi = get_rf_feat_importance(rf, df_val[train_feats], df_val[targ_name], w_val, train_feats)
-    print("Top ten most important features:\n", fi[:max(len(fi), 10)])
-    plot_importance(fi[:max(len(fi), 30)])
+    fi = get_rf_feat_importance(rf, df_val[train_feats], df_val[targ_name], w_val)
+    print("Top ten most important features:\n", fi[:min(len(fi), 10)])
+    plot_importance(fi[:min(len(fi), 30)])
 
     top_feats = list(fi[fi.Importance > cut].Feature)
     print(f"\n{len(top_feats)} features found with importance greater than {cut}:\n", top_feats)
     print("\nOptimising new RF")
-    _, rf_new = get_opt_rf_params(df_trn[top_feats], df_trn[targ_name], w_trn,
-                                  df_val[top_feats], df_val[targ_name], w_val, objective, verbose=False)  
+    _, rf_new = get_opt_rf_params(df_trn[top_feats], df_trn[targ_name], df_val[top_feats], df_val[targ_name],
+                                  objective, w_trn=w_trn, w_val=w_val, verbose=False)  
     print("Comparing RF scores, higher = better")                           
     print(f"All features:\t{rf.score(df_val[train_feats], df_val[targ_name], w_val):.5f}")
     print(f"Top features:\t{rf_new.score(df_val[top_feats], df_val[targ_name], w_val):.5f}")
