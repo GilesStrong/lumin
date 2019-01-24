@@ -115,12 +115,19 @@ def plot_dendrogram(df: pd.DataFrame, savename:Optional[str]=None, settings:Plot
 
 
 def plot_kdes_from_bs(x:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
-                      feat:str, units:Optional[str]=None,
+                      feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, name in enumerate(name2args):
             if 'color' not in name2args[name]: name2args[name]['color'] = palette[i]
+            if 'label' in name2args[name]:
+                name2args[name]['condition'] = name2args[name]['label']
+                name2args[name].pop('label')
+            if 'condition' in name2args[name] and moments:
+                mean, mean_unc = uncert_round(np.mean(bs_stats[f'{name}_mean']), np.std(bs_stats[f'{name}_mean'], ddof=1))
+                std, std_unc = uncert_round(np.mean(bs_stats[f'{name}_std']), np.std(bs_stats[f'{name}_std'], ddof=1))
+                name2args[name]['condition'] += r', $\overline{x}=' + r'{}\pm{}\ \sigma= {}\pm{}$'.format(mean, mean_unc, std, std_unc)
             sns.tsplot(data=bs_stats[f'{name}_kde'], time=x, **name2args[name])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
@@ -136,5 +143,4 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
-        plt.show() 
-        
+        plt.show()  
