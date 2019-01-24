@@ -112,3 +112,29 @@ def plot_dendrogram(df: pd.DataFrame, savename:Optional[str]=None, settings:Plot
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
         plt.show()
+
+
+def plot_kdes_from_bs(x:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
+                      feat:str, units:Optional[str]=None,
+                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
+        plt.figure(figsize=(settings.w_mid, settings.h_mid))
+        for i, name in enumerate(name2args):
+            if 'color' not in name2args[name]: name2args[name]['color'] = palette[i]
+            sns.tsplot(data=bs_stats[f'{name}_kde'], time=x, **name2args[name])
+
+        plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+        y_lbl = r'$\frac{1}{N}\ \frac{dN}{d' + feat.replace('$','') + r'}$'
+        if units is not None:
+            x_lbl = feat + r'$\ [' + units + r']$'
+            y_lbl += r'$\ [' + units + r'^{-1}]$'
+        else:
+            x_lbl = feat
+        plt.xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.ylabel(y_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        plt.show() 
+        

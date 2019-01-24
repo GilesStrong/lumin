@@ -22,19 +22,19 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
     for i in range(args['n']):
         points = np.random.choice(data, len_d, replace=True)
         if args['kde']:
-            kde = sm.nonparametric.KDEUnivariate(points)
+            kde = sm.nonparametric.kde.KDEUnivariate(points)
             kde.fit()
             boot.append([kde.evaluate(x) for x in args['x']])
         if args['mean']:
             mean.append(points.mean())
         if args['std']:
-            std.append(points.std())
+            std.append(points.std(ddof=1))
         if args['c68']:
             c68.append(np.percentile(np.abs(points), 68.2))
     if args['kde']:  out_dict[f'{name}_kde']  = boot
-    if args['mean']: out_dict[f'{name}_mean'] = points.mean()
-    if args['std']:  out_dict[f'{name}_std']  = points.std(ddof=1)
-    if args['c68']:  out_dict[f'{name}_c68']  = np.percentile(np.abs(points), 68.2)
+    if args['mean']: out_dict[f'{name}_mean'] = mean
+    if args['std']:  out_dict[f'{name}_std']  = std
+    if args['c68']:  out_dict[f'{name}_c68']  = c68
     if out_q is not None: out_q.put(out_dict)
     else: return out_dict
 
