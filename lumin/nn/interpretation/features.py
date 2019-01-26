@@ -10,19 +10,18 @@ from ...utils.multiprocessing import mp_run
 from ...plotting.interpretation import plot_importance
 from ..models.abs_model import AbsModel
 from ..data.fold_yielder import FoldYielder
-# from ..inference.ensemble import Ensemble
 from ..metrics.eval_metric import EvalMetric
 
 from torch import Tensor
 
 
 def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
-    feats = fold_yielder.input_feats
+    feats = fold_yielder.cont_feats + fold_yielder.cat_feats
     scores = []
     fold_bar = progress_bar(range(fold_yielder.n_folds), parent=pb_parent)
     for fold_id in fold_bar:  # Average over folds
         val_fold = fold_yielder.get_fold(fold_id)
-        val_fold['weights'] /= val_fold['weights'].sum()
+        if val_fold['weights'] is not None: val_fold['weights'] /= val_fold['weights'].sum()
         targs = Tensor(val_fold['targets'])
         weights = to_tensor(val_fold['weights'])
         if eval_metric is None:
@@ -48,8 +47,8 @@ def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric
     scores = np.array(scores)
     bs = mp_run([{'data':scores[:,i], 'mean': True, 'std': True, 'name': i, 'n':100} for i in range(len(feats))], bootstrap_stats)
     fi = pd.DataFrame({'Feature':feats, 
-                       'Importance':  [bs[f'{i}_mean'] for i in range(len(feats))], 
-                       'Uncertainty': [bs[f'{i}_std']  for i in range(len(feats))]})
+                       'Importance':  [np.mean(bs[f'{i}_mean']) for i in range(len(feats))], 
+                       'Uncertainty': [np.mean(bs[f'{i}_std'])  for i in range(len(feats))]})
 
     if plot:
         tmp_fi = fi.sort_values('Importance', ascending=False).reset_index(drop=True)
@@ -61,7 +60,7 @@ def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric
 def get_ensemble_feat_importance(ensemble, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
     mean_fi = []
     std_fi = []
-    feats = fold_yielder.input_feats
+    feats = fold_yielder.cont_feats + fold_yielder.cat_feats
     model_bar = master_bar(ensemble.models)
 
     for m, model in enumerate(model_bar):  # Average over models per fold
@@ -75,8 +74,8 @@ def get_ensemble_feat_importance(ensemble, fold_yielder:FoldYielder, eval_metric
     bs_std  = mp_run([{'data': std_fi[:,i],  'mean': True, 'name': i, 'n':100} for i in range(len(feats))], bootstrap_stats)
     
     fi = pd.DataFrame({'Feature':feats, 
-                       'Importance':  [bs_mean[f'{i}_mean'] for i in range(len(feats))], 
-                       'Uncertainty': [bs_std[f'{i}_mean']  for i in range(len(feats))]}).sort_values('Importance', ascending=False).reset_index(drop=True)
+                       'Importance':  [np.mean(bs_mean[f'{i}_mean']) for i in range(len(feats))], 
+                       'Uncertainty': [np.mean(bs_std[f'{i}_mean'])  for i in range(len(feats))]}).sort_values('Importance', ascending=False).reset_index(drop=True)
     print("Top ten most important features:\n", fi[:min(len(fi), 10)])
     plot_importance(fi)
     return fi

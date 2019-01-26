@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, Dict, Union, Optional, Any
+from typing import Tuple, Dict, Optional, Any
 import statsmodels as sm
 import multiprocessing as mp
 
@@ -16,8 +16,11 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
     if 'mean' not in args: args['mean'] = False
     if 'std' not in args: args['std'] = False  
     if 'c68' not in args: args['c68'] = False
-    data = args['data']
-    len_d = len(args['data'])
+    if args['kde'] and args['data'].dtype != 'float64': 
+        data = np.array(args['data'], dtype='float64')
+    else:
+        data = args['data']
+    len_d = len(data)
     np.random.seed()
     for i in range(args['n']):
         points = np.random.choice(data, len_d, replace=True)
@@ -26,9 +29,9 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
             kde.fit()
             boot.append([kde.evaluate(x) for x in args['x']])
         if args['mean']:
-            mean.append(points.mean())
+            mean.append(np.mean(points))
         if args['std']:
-            std.append(points.std(ddof=1))
+            std.append(np.std(points, ddof=1))
         if args['c68']:
             c68.append(np.percentile(np.abs(points), 68.2))
     if args['kde']:  out_dict[f'{name}_kde']  = boot

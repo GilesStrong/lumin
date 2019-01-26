@@ -36,7 +36,7 @@ class Ensemble(AbsEnsemble):
         self.output_pipe = pipe
     
     @staticmethod
-    def load_trained_model(model_id:int, model_builder:Optional[ModelBuilder]=None, name:str='train_weights/train_') -> Model: 
+    def load_trained_model(model_id:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model: 
         model = Model(model_builder)
         model.load(f'{name}{model_id}.h5')
         return model
@@ -92,7 +92,8 @@ class Ensemble(AbsEnsemble):
         weights = np.array(weights)
         self.weights = weights/weights.sum()
         self.size = len(self.models)
-        self.n_out = self.models[0].model[-1][-2].out_features
+        try:               self.n_out = self.models[0].model[-1][-2].out_features
+        except IndexError: self.n_out = self.models[0].model[-1][-1].out_features
         self.results = results
     
     @staticmethod
@@ -167,7 +168,8 @@ class Ensemble(AbsEnsemble):
             m = Model(self.model_builder)
             m.load(n)
             self.models.append(m)
-        self.n_out = self.models[0].model[-1][-2].out_features
+        try:               self.n_out = self.models[0].model[-1][-2].out_features
+        except IndexError: self.n_out = self.models[0].model[-1][-1].out_features
         with     open(f'{name}_weights.pkl', 'rb')     as fin: self.weights     = pickle.load(fin)
         try: 
             with open(f'{name}_input_pipe.pkl', 'rb')  as fin: self.input_pipe  = pickle.load(fin)

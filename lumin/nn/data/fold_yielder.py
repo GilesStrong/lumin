@@ -14,8 +14,10 @@ Todo:
 
 
 class FoldYielder:
-    def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str]):
-        self.cont_feats,self.cat_feats = cont_feats,cat_feats
+    def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str], ignore_feats:Optional[List[str]]=None,
+                 input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None):
+        self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
+        self.orig_cont_feats,self.orig_cat_feat = self.cont_feats,self.cat_feats
         self.input_feats = self.cont_feats + self.cat_feats
         self.augmented = False
         self.aug_mult = 0
@@ -23,6 +25,7 @@ class FoldYielder:
         self.test_time_aug = False
         self.set_source(source_file)
         self._ignore_feats = []
+        if ignore_feats is not None: self.ignore(ignore_feats)
 
     def ignore(self, feats:List[str]) -> None:
         self._ignore_feats += feats
@@ -35,6 +38,9 @@ class FoldYielder:
 
     def add_input_pipe(self, input_pipe:Pipeline) -> None:
         self.input_pipe = input_pipe
+
+    def add_output_pipe(self, output_pipe:Pipeline) -> None:
+        self.output_pipe = output_pipe
 
     def get_fold(self, index:int) -> Dict[str,np.ndarray]:
         data = self.get_data(n_folds=1, fold_id=index)
@@ -68,29 +74,37 @@ class FoldYielder:
     def get_df(self, pred_name:str='pred', targ_name:str='targets', weight_name:str='weights', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False, verbose:bool=True) -> pd.DataFrame:
         if inc_inputs:
             inputs = self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)
-            if deprocess: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:, :len(self.cont_feats)]), inputs[:, len(self.cont_feats):]))
+            if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:, :len(self.orig_cont_feats)]), inputs[:, len(self.orig_cont_feats):]))
             data = pd.DataFrame(np.nan_to_num(inputs), columns=self.input_feats)
+            if len(self._ignore_feats) > 0: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
         else:
             data = pd.DataFrame()
 
         targets = self.get_column(targ_name, n_folds=n_folds, fold_id=fold_id)
-        if len(targets.shape) > 1:
+        if deprocess and self.output_pipe is not None: targets = self.output_pipe.inverse_transform(targets)
+        if targets is not None and len(targets.shape) > 1:
             for t in range(targets.shape[-1]):
                 data[f'gen_target_{t}'] = targets[:,t]
+        elif targets is None:
+            warnings.warn(f"{targ_name} not found in file")
         else:
             data['gen_target'] = targets
 
         weights = self.get_column(weight_name, n_folds=n_folds, fold_id=fold_id)
-        if weights is not None and len(weights.shape) > 1:
+        if weights is not None and weights is not None and len(weights.shape) > 1:
             for w in range(weights.shape[-1]):
                 data[f'gen_weight_{w}'] = weights[:,w]
+        elif weights is None:
+            warnings.warn(f"{weight_name} not found in file")
         else:
             data['gen_weight'] = weights
+
         preds = self.get_column(pred_name, n_folds=n_folds, fold_id=fold_id)
+        if deprocess and self.output_pipe is not None: preds = self.output_pipe.inverse_transform(preds)
         if preds is not None and len(preds.shape) > 1:
             for p in range(preds.shape[-1]):
                 data[f'pred_{p}'] = preds[:,p]
-        else:
+        elif preds is not None:
             data['pred'] = preds
         if verbose: print(f'{len(data)} candidates loaded')
         return data
