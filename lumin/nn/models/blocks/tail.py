@@ -1,0 +1,47 @@
+import numpy as np
+from typing import Optional, Union, Tuple
+
+from ..initialisations import lookup_init
+
+from torch.tensor import Tensor
+import torch.nn as nn
+
+
+class ClassRegMulti(nn.Module):
+    def __init__(self, fan_in:int, fan_out:int, objective:str, y_range:Optional[Union[Tuple,np.ndarray]]=None):
+        super().__init__()
+        self.fan_in,self.fan_out,self.objective,self.y_range = fan_in,fan_out,objective,y_range
+        if self.y_range is not None:
+            if not isinstance(self.y_range, np.ndarray): self.y_range = np.array(self.y_range)
+            self.y_min = np.array(np.min(self.y_range, axis=-1))
+            self.y_diff = np.abs(self.y_range.take([1], axis=-1)-self.y_range.take([0], axis=-1)).ravel()
+            self.y_min, self.y_diff = Tensor(self.y_min), Tensor(self.y_diff)
+
+        self.build_layers()
+
+    def build_layers(self) -> None:
+        self.dense = nn.Linear(self.fan_in, self.fan_out)
+        if 'class' in self.objective:
+            if 'multiclass' in self.objective: 
+                self.act = nn.LogSoftmax(1)
+                init, args = lookup_init('softmax', self.fan_in, self.fan_out)
+            else:
+                self.act = nn.Sigmoid()
+                init, args = lookup_init('sigmoid', self.fan_in, self.fan_out)
+        else:
+            if self.y_range is None:
+                self.act = lambda x: x
+                init, args = lookup_init('linear', self.fan_in, self.fan_out)   
+            else:
+                self.act = nn.Sigmoid()
+                init, args = lookup_init('sigmoid', self.fan_in, self.fan_out)
+        init(self.dense.weight, **args)
+        
+    def forward(self, x:Tensor) -> Tensor:
+        x = self.dense(x)
+        x = self.act(x)
+        if self.y_range is not None: x = (self.y_diff*x)+self.y_min
+        return x
+        
+    def get_out_size(self) -> int:
+        return self.fan_out

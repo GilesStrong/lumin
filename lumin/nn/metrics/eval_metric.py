@@ -22,7 +22,7 @@ class EvalMetric(ABC):
         else:
             df['gen_target'] = targets
 
-        if len(y_pred.shape) > 2:
+        if len(y_pred.shape) > 1 and y_pred.shape[-1] > 1:
             for p in range(y_pred.shape[-1]):
                 df[f'pred_{p}'] = y_pred[:,p]
         else:

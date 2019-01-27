@@ -11,6 +11,7 @@ from .layers.activations import lookup_act
 from .initialisations import lookup_init
 from .blocks.body import FullyConnected
 from .blocks.head import CatEmbHead
+from .blocks.tail import ClassRegMulti
 
 '''
 Todo
@@ -19,12 +20,12 @@ Todo
 
 
 class ModelBuilder(object):
-    def __init__(self, objective:str, n_cont_in:int, n_out:int,
+    def __init__(self, objective:str, n_cont_in:int, n_out:int, y_range:Optional[Union[Tuple,np.ndarray]]=None,
                  model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_args:Dict[str,Any]=None,
                  loss:Union[Any,'auto']='auto', body:Callable[[int,int,float,bool,str,bool,bool],nn.Module]=FullyConnected,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
                  lookup_act:Callable[[str], nn.Module]=lookup_act):
-        self.objective,self.n_cont_in,self.n_out,self.body,self.lookup_init,self.lookup_act = objective.lower(),n_cont_in,n_out,body,lookup_init,lookup_act
+        self.objective,self.n_cont_in,self.n_out,self.y_range,self.body,self.lookup_init,self.lookup_act = objective.lower(),n_cont_in,n_out,y_range,body,lookup_init,lookup_act
         self.parse_loss(loss)
         self.parse_model_args(model_args)
         self.parse_opt_args(opt_args)
@@ -57,7 +58,7 @@ class ModelBuilder(object):
             else:
                 self.loss = nn.MSELoss
         else:   
-                self.loss = loss
+            self.loss = loss
 
     def parse_model_args(self, model_args:Dict[str,Any]) -> None:
         model_args   = {k.lower(): model_args[k] for k in model_args}
@@ -112,13 +113,7 @@ class ModelBuilder(object):
         return self.body(depth, self.width, self.do, self.bn, self.act, self.res, self.dense)
 
     def get_tail(self, n_in) -> nn.Module:
-        if 'class' in self.objective:
-            if 'multiclass' in self.objective: 
-                return self.get_dense(n_in, self.n_out, 'logsoftmax', last_layer=True)
-            else:
-                return self.get_dense(n_in, self.n_out, 'sigmoid', last_layer=True)
-        else:
-                return self.get_dense(n_in, self.n_out, 'linear', last_layer=True)
+        return ClassRegMulti(n_in, self.n_out, self.objective, self.y_range)
 
     def build_model(self) -> nn.Module:
         head = self.get_head()
@@ -135,3 +130,6 @@ class ModelBuilder(object):
         model = self.build_model()
         opt = self.build_opt(model)
         return model, opt, self.loss
+
+    def get_out_size(self) -> int:
+        return self.tail.get_out_size

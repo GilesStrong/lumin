@@ -107,3 +107,6 @@ class Model(AbsModel):
 
     def get_feat_importance(self, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         return get_nn_feat_importance(self, fold_yielder, eval_metric)
+
+    def get_out_size(self) -> int:
+        return self.tail.get_out_size()
