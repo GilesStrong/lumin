@@ -12,9 +12,9 @@ class AbsEnsemble(ABC):
         self.models = []
         self.weights = []
         self.size = 0
-    
-    @abstractmethod
-    def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]: pass
+
+    def __repr__(self) -> str:
+        return f"Ensemble of size {self.size}\nWeights:\n{self.weights}\nModels:\n{self.models}"
 
     def __len__(self) -> int:
         return self.size
@@ -38,6 +38,8 @@ class AbsEnsemble(ABC):
         m = self.models.pop(idx)
         self.size = len(self.models)
         return w, m
+    
+    @abstractmethod
+    def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]: pass
 
-    def __repr__(self):
-        return f"Ensemble of size {self.size}\nWeights:\n{self.weights}\nModels:\n{self.models}"
+    

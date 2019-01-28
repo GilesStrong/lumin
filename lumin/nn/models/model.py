@@ -5,6 +5,7 @@ from collections import OrderedDict
 
 import torch
 from torch.tensor import Tensor
+import torch.nn as nn
 
 from .abs_model import AbsModel
 from .model_builder import ModelBuilder
@@ -25,6 +26,22 @@ class Model(AbsModel):
             self.body = self.model[1]
             self.tail = self.model[2]
             self.objective = self.model_builder.objective
+
+    def __repr__(self) -> str:
+        return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
+
+    def __getitem__(self, key:Union[int,str]) -> nn.Module:
+        if isinstance(key, int):
+            if key == 0: return self.head
+            if key == 1: return self.body
+            if key == 2: return self.tail
+            raise IndexError(f'Index {key} out of range')
+        if isinstance(key, str):
+            if key == 'head': return self.head
+            if key == 'body': return self.body
+            if key == 'tail': return self.tail
+            raise KeyError(key)
+        raise ValueError(f'Expected string or int, recieved {key} of type {type(key)}')
         
     def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]) -> float:
         self.model.train()

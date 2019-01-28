@@ -14,6 +14,9 @@ class FullyConnected(nn.Module):
         self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense = depth,width,do,bn,act,res,dense
         self.layers = nn.ModuleList([self.get_layer(d) for d in range(depth)])
         if dense: self.layers += [self.get_layer(depth, self.width*(2**(self.depth)), self.width)]
+
+    def __getitem__(self, key:int) -> nn.Module:
+        return self.layers[key]
     
     def get_layer(self, idx:int, fan_in:Optional[int]=None, fan_out:Optional[int]=None) -> None:
         width = self.width if not self.dense else self.width*(2**idx)
@@ -41,9 +44,6 @@ class FullyConnected(nn.Module):
             for l in self.layers:
                 x = l(x)+x if self.res else l(x)
         return x
-    
-    def __getitem__(self, key:int) -> nn.Module:
-        return self.layers[key]
     
     def get_out_size(self) -> int:
         return self.width

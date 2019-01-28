@@ -19,6 +19,11 @@ class ClassRegMulti(nn.Module):
 
         self.build_layers()
 
+    def __getitem__(self, key:int) -> nn.Module:
+        if key == 0: return self.dense
+        if key == 1: return self.act
+        raise IndexError(f'Index {key} out of range')
+        
     def build_layers(self) -> None:
         self.dense = nn.Linear(self.fan_in, self.fan_out)
         if 'class' in self.objective:

@@ -16,13 +16,25 @@ from ....plotting.interpretation import plot_embedding
 class CatEmbHead(nn.Module):
     def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float, cat_names:Optional[List[str]], emb_load_path:Optional[Path]):
         super().__init__()
+        self.layers = []
         self.n_cont_in,self.n_cat_in,self.emb_szs,self.do_cont,self.do_cat,self.cat_names,self.emb_load_path = n_cont_in,n_cat_in,emb_szs,do_cont,do_cat,cat_names,emb_load_path
-        if self.n_cat_in > 0: self.embeds = nn.ModuleList([nn.Embedding(ni, no) for ni, no in self.emb_szs])
+        if self.n_cat_in > 0:
+            self.embeds = nn.ModuleList([nn.Embedding(ni, no) for ni, no in self.emb_szs])
+            self.layers.append(self.embeds)
         if self.emb_load_path is not None: self.load_embeds()
         self.out_size = self.n_cont_in if self.n_cat_in == 0 else self.n_cont_in+np.sum(self.emb_szs[:,1])
-        if self.do_cat   > 0: self.emd_do  = nn.Dropout(self.do_cat)
-        if self.do_cont  > 0: self.do = nn.Dropout(self.do_cont)
-        if self.n_cat_in > 0: self.bn = nn.BatchNorm1d(self.out_size)
+        if self.do_cat   > 0:
+            self.emd_do  = nn.Dropout(self.do_cat)
+            self.layers.append(self.emd_do)
+        if self.do_cont  > 0:
+            self.do = nn.Dropout(self.do_cont)
+            self.layers.append(self.do_cont)
+        if self.n_cat_in > 0:
+            self.bn = nn.BatchNorm1d(self.out_size)
+            self.layers.append(self.bn)
+    
+    def __getitem__(self, key:int) -> nn.Module:
+        return self.layers[key]
         
     def forward(self, x_in:Tensor) -> Tensor:
         if self.n_cat_in > 0:

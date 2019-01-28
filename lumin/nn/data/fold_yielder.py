@@ -7,7 +7,6 @@ import warnings
 
 '''
 Todo:
-- Add categorical features
 - Add method to FoldYielder to import other data into correct format, e.g. csv, root
 - Make HEPAugFoldYielder able to augment targets as well
 '''
@@ -26,6 +25,18 @@ class FoldYielder:
         self.set_source(source_file)
         self._ignore_feats = []
         if ignore_feats is not None: self.ignore(ignore_feats)
+
+    def __repr__(self) -> str:
+        return f'FoldYielder with {self.n_folds} folds, containing {[k for k in self.source["fold_0"].keys()]}'
+
+    def __len__(self) -> int:
+        return self.n_folds
+    
+    def __iter__(self) -> Dict[str,np.ndarray]:
+        for i in range(self.n_folds): yield self.get_fold(i)
+    
+    def __getitem__(self, idx:int) -> Dict[str,np.ndarray]:
+        return self.get_fold(idx)
 
     def ignore(self, feats:List[str]) -> None:
         self._ignore_feats += feats
