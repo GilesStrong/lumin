@@ -2,7 +2,7 @@ from __future__ import division
 import numpy as np
 import pandas as pd
 import os
-from six.moves import cPickle as pickle
+import pickle
 import glob
 import warnings
 from fastprogress import progress_bar, master_bar

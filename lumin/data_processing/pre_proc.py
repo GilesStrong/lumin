@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import List, Optional, Tuple
 from pathlib import Path
-from six.moves import cPickle as pickle
+import pickle
 from collections import OrderedDict
 
 from sklearn.preprocessing import StandardScaler

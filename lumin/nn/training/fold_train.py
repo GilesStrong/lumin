@@ -1,13 +1,14 @@
 from typing import Dict, Any, List, Tuple
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
-from six.moves import cPickle as pickle
+import pickle
 import timeit
 import numpy as np
 import os
 import sys
 from random import shuffle
 from collections import OrderedDict
+import math
 
 import torch.tensor as Tensor
 
@@ -60,7 +61,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, train_params:Dic
         print(f"Training model {model_num+1} / {n_models}")
         model_start = timeit.default_timer()
         os.system(f"rm {saveloc}/best.h5")
-        best_loss = None
+        best_loss = math.inf
         epoch_counter = 0
         subEpoch = 0
         stop = False
@@ -117,7 +118,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, train_params:Dic
                     cycle_losses[-1][cyclic_callback.cycle_count] = val_loss
                     model.save(str(saveloc/f"{model_num}_cycle_{cyclic_callback.cycle_count}.h5"))
 
-                if best_loss is None or loss <= best_loss:
+                if loss <= best_loss:
                     best_loss = loss
                     epoch_pb.comment = f'Epoch {subEpoch}, best loss: {best_loss:.4E}'
                     if verbose: print(epoch_pb.comment)

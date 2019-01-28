@@ -2,8 +2,10 @@ import numpy as np
 import pandas as pd
 import h5py
 from typing import Dict, Optional, Union, List
-from sklearn.pipeline import Pipeline
+import pickle
 import warnings
+
+from sklearn.pipeline import Pipeline
 
 '''
 Todo:
@@ -52,6 +54,12 @@ class FoldYielder:
 
     def add_output_pipe(self, output_pipe:Pipeline) -> None:
         self.output_pipe = output_pipe
+
+    def add_input_pipe_from_file(self, name:str) -> None:
+        with open(name, 'rb') as fin: self.input_pipe = pickle.load(fin)
+
+    def add_output_pipe_from_file(self, name:str) -> None:
+        with open(name, 'rb') as fin: self.output_pipe = pickle.load(fin)
 
     def get_fold(self, index:int) -> Dict[str,np.ndarray]:
         data = self.get_data(n_folds=1, fold_id=index)
