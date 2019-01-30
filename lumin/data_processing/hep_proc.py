@@ -1,8 +1,6 @@
 import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple
-import dask.dataframe as dd
-import multiprocessing
 
 '''
 Todo:
@@ -49,11 +47,12 @@ def to_pt_eta_phi(in_data:pd.DataFrame, vec:str, eta:bool=True, drop:bool=False)
         if eta: in_data.drop(columns=[f"{vec}_pz"], inplace=True)
 
 
-def delta_phi(a:float, b:float) ->float:
-    dphi = b-a
-    while dphi > np.pi:  dphi -= 2*np.pi
-    while dphi < -np.pi: dphi += 2*np.pi
-    return dphi
+def delta_phi(a:np.ndarray, b:np.ndarray) ->float:
+    tmp = pd.DataFrame()
+    tmp['dphi'] = b-a
+    while len(tmp[tmp.dphi > np.pi]) > 0: tmp.loc[tmp.dphi > np.pi, 'dphi'] -= 2*np.pi
+    while len(tmp[tmp.dphi < -np.pi]) > 0: tmp.loc[tmp.dphi < -np.pi, 'dphi'] += 2*np.pi
+    return tmp.dphi.values
 
 
 def twist(dphi:float, deta:float) -> float:
@@ -88,9 +87,7 @@ def fix_event_phi(df:pd.DataFrame, ref_vec:str) -> None:
     '''Rotate event in phi such that ref_vec is at phi == 0'''
     for v in get_vecs(df.columns):
         if v != ref_vec: 
-            df[f'{v}_phi'] = dd.from_pandas(df[[f'{v}_phi', f'{ref_vec}_phi']], npartitions=multiprocessing.cpu_count()) \
-                .map_partitions(lambda ddf: ddf.apply((lambda row: delta_phi(row[f'{ref_vec}_phi'], row[f'{v}_phi'])), axis=1)) \
-                .compute(scheduler='multiprocessing')
+            df[f'{v}_phi'] = delta_phi(df[f'{ref_vec}_phi'], df[f'{v}_phi'])
     df[f'{ref_vec}_phi'] = 0
 
 
@@ -166,5 +163,3 @@ def calc_pair_mass(df: pd.DataFrame, masses:Tuple[float,float], feat_map:Dict[st
     tmp['p_p2'] = np.square(tmp.loc[:, 'p_px'])+np.square(tmp.loc[:, 'p_py'])+np.square(tmp.loc[:, 'p_pz'])
     tmp['p_mass'] = np.sqrt(np.square(tmp.loc[:, 'p_E'])-tmp.loc[:, 'p_p2'])
     return tmp.p_mass.values
-
-
