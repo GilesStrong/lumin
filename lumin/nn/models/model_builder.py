@@ -12,6 +12,7 @@ from .initialisations import lookup_init
 from .blocks.body import FullyConnected
 from .blocks.head import CatEmbHead
 from .blocks.tail import ClassRegMulti
+from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 
 '''
 Todo
@@ -51,12 +52,12 @@ class ModelBuilder(object):
         if loss is 'auto':
             if 'class' in self.objective:
                 if self.n_out > 1 and 'multiclass' in self.objective:
-                    self.loss = nn.NLLLoss
+                    self.loss = WeightedCCE
                 else:
                     self.loss = nn.BCELoss
             
             else:
-                self.loss = nn.MSELoss
+                self.loss = WeightedMSE
         else:   
             self.loss = loss
 

@@ -7,12 +7,12 @@ import torch
 class WeightedMSE(nn.MSELoss):
     def __init__(self, weight=None):
         super().__init__(reduction='mean' if weight is None else 'none')
-        self.weight = weight
+        self.weightss = weight
         
     @weak_script_method
     def forward(self, input, target):
-        if self.weight is not None:
-            return torch.mean(self.weight*super().forward(input, target))
+        if self.weights is not None:
+            return torch.mean(self.weights*super().forward(input, target))
         else:
             return super().forward(input, target)
 
@@ -21,13 +21,25 @@ class WeightedMSE(nn.MSELoss):
 class WeightedMAE(nn.L1Loss):
     def __init__(self, weight=None):
         super().__init__(reduction='mean' if weight is None else 'none')
-        self.weight = weight
+        self.weights = weight
         
     @weak_script_method
     def forward(self, input, target):
-        if self.weight is not None:
-            return torch.mean(self.weight*super().forward(input, target))
+        if self.weights is not None:
+            return torch.mean(self.weights*super().forward(input, target))
         else:
             return super().forward(input, target)
 
 
+@weak_module
+class WeightedCCE(nn.NLLLoss):
+    def __init__(self, weight=None):
+        super().__init__(reduction='mean')
+        self.weights = weight
+        
+    @weak_script_method
+    def forward(self, input, target):
+        if self.weights is not None:
+            return torch.mean(self.weights*super().forward(input, target))
+        else:
+            return super().forward(input, target)
