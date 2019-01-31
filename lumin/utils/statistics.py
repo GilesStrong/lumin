@@ -1,39 +1,36 @@
 import numpy as np
 from typing import Tuple, Dict, Optional, Any
-import statsmodels as sm
 import multiprocessing as mp
+
+from statsmodels.nonparametric.kde import KDEUnivariate
 
 
 def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[str,Any]]:
-    out_dict = {}
-    mean = []
-    std = []
-    c68 = []
-    boot = []
-    name = '' if 'name' not in args else args['name']
-    if 'n' not in args: args['n'] = 100
-    if 'kde' not in args: args['kde'] = False
+    out_dict, mean, std, c68, boot = {}, [], [], [], []
+    name    = ''   if 'name'    not in args else args['name']
+    weights = None if 'weights' not in args else args['weights']
+    if 'n'    not in args: args['n']    = 100
+    if 'kde'  not in args: args['kde']  = False
     if 'mean' not in args: args['mean'] = False
-    if 'std' not in args: args['std'] = False  
-    if 'c68' not in args: args['c68'] = False
+    if 'std'  not in args: args['std']  = False  
+    if 'c68'  not in args: args['c68']  = False
     if args['kde'] and args['data'].dtype != 'float64': 
         data = np.array(args['data'], dtype='float64')
     else:
         data = args['data']
     len_d = len(data)
+
     np.random.seed()
     for i in range(args['n']):
-        points = np.random.choice(data, len_d, replace=True)
+        points = np.random.choice(data, len_d, replace=True, p=weights)
         if args['kde']:
-            kde = sm.nonparametric.kde.KDEUnivariate(points)
+            kde = KDEUnivariate(points)
             kde.fit()
             boot.append([kde.evaluate(x) for x in args['x']])
-        if args['mean']:
-            mean.append(np.mean(points))
-        if args['std']:
-            std.append(np.std(points, ddof=1))
-        if args['c68']:
-            c68.append(np.percentile(np.abs(points), 68.2))
+        if args['mean']: mean.append(np.mean(points))
+        if args['std']:  std.append(np.std(points, ddof=1))
+        if args['c68']:  c68.append(np.percentile(np.abs(points), 68.2))
+
     if args['kde']:  out_dict[f'{name}_kde']  = boot
     if args['mean']: out_dict[f'{name}_mean'] = mean
     if args['std']:  out_dict[f'{name}_std']  = std
@@ -64,9 +61,8 @@ def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
     while uncert * (10**i) <= 1: i += 1
     
     round_uncert = factor * round(uncert, i)
-    round_value = factor * round(value, i)
+    round_value  = factor * round(value, i)
     if int(round_uncert) == round_uncert:
         round_uncert = int(round_uncert)
-        round_value = int(round_value)
+        round_value  = int(round_value)
     return round_value, round_uncert
-    
