@@ -1,9 +1,9 @@
 import numpy as np
 from typing import Optional, Union
 import pandas as pd
+from fastprogress import progress_bar
 
 from sklearn.ensemble import RandomForestClassifier
-from fastprogress import progress_bar
 from sklearn.metrics import roc_auc_score
 
 from ..nn.data.fold_yielder import FoldYielder

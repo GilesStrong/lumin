@@ -1,4 +1,3 @@
-from __future__ import division
 import numpy as np
 from typing import Union, List, Optional, Tuple
 from abc import ABC, abstractmethod

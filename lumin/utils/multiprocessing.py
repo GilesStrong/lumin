@@ -9,9 +9,7 @@ def mp_run(args, func):
         procs.append(p)
         p.start() 
     result_dict = {}
-    for i in range(len(args)):
-        result_dict.update(out_q.get()) 
-    for p in procs:
-        p.join()  
+    for i in range(len(args)): result_dict.update(out_q.get()) 
+    for p in procs: p.join()  
     return result_dict
     
