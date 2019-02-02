@@ -130,7 +130,7 @@ class FoldYielder:
 
 
 class HEPAugFoldYielder(FoldYielder):
-    def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str],
+    def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str], targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
                  train_time_aug:bool=True, test_time_aug:bool=True):
@@ -140,11 +140,12 @@ class HEPAugFoldYielder(FoldYielder):
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')
             rot_mult += 1
 
-        self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug = rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug
+        self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug,self.targ_feats = rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug,targ_feats
         self.augmented = True
         self.reflect_axes = []
         self.aug_mult = 1
         self.vectors = [x[:-3] for x in self.cont_feats if '_px' in x]
+        if self.targ_feats is not None: self.targ_vectors = [x[:-3] for x in self.targ_feats if '_px' in x]
 
         if self.rot_mult:
             print("Augmenting via phi rotations")
@@ -178,14 +179,14 @@ class HEPAugFoldYielder(FoldYielder):
 
         print(f'Total augmentation multiplicity is {self.aug_mult}')
     
-    def rotate(self, in_data:pd.DataFrame) -> None:
-        for vector in self.vectors:
+    def rotate(self, in_data:pd.DataFrame, vectors:List[str]) -> None:
+        for vector in vectors:
             in_data.loc[:, f'{vector}_pxtmp'] = in_data.loc[:, f'{vector}_px']*np.cos(in_data.loc[:, 'aug_angle'])-in_data.loc[:, f'{vector}_py']*np.sin(in_data.loc[:, 'aug_angle'])
             in_data.loc[:, f'{vector}_py']    = in_data.loc[:, f'{vector}_py']*np.cos(in_data.loc[:, 'aug_angle'])+in_data.loc[:, f'{vector}_px']*np.sin(in_data.loc[:, 'aug_angle'])
             in_data.loc[:, f'{vector}_px']    = in_data.loc[:, f'{vector}_pxtmp']
     
-    def reflect(self, in_data:pd.DataFrame) -> None:
-        for vector in self.vectors:
+    def reflect(self, in_data:pd.DataFrame, vectors:List[str]) -> None:
+        for vector in vectors:
             for coord in self.reflect_axes:
                 try:
                     cut = (in_data[f'aug{coord}'] == 1)
@@ -197,18 +198,26 @@ class HEPAugFoldYielder(FoldYielder):
         data = self.get_data(n_folds=1, fold_id=index)
         if not self.augmented: return data
         inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
-
+        if self.targ_feats is not None: targets = pd.DataFrame(np.array(self.source[f'fold_{index}/targets']), columns=self.targ_feats)
+            
         if self.rot_mult:
             inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
-            self.rotate(inputs)
+            self.rotate(inputs, self.vectors)
+            if self.targ_feats is not None:
+                targets['aug_angle'] = inputs['aug_angle']
+                self.rotate(targets, self.targ_vectors)
             
         for coord in self.reflect_axes:
             inputs[f'aug{coord}'] = np.random.randint(0, 2, size=len(inputs))
-        self.reflect(inputs)
+            if self.targ_feats is not None: targets[f'aug{coord}'] = inputs[f'aug{coord}']
+        self.reflect(inputs, self.vectors)
+        if self.targ_feats is not None: self.reflect(targets, self.targ_vectors)
 
-        inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
         inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
         data['inputs'] = np.nan_to_num(inputs.values)
+        if self.targ_feats is not None:
+            targets = targets[self.targ_feats]
+            data['targets'] = np.nan_to_num(targets.values)
         return data
 
     def _get_ref_index(self, aug_index:int) -> str:
@@ -222,29 +231,53 @@ class HEPAugFoldYielder(FoldYielder):
         if aug_index >= self.aug_mult: raise ValueError(f"Invalid augmentation index passed {aug_index}")
         data = self.get_data(n_folds=1, fold_id=index)
         if not self.augmented: return data
+        
         inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
-            
         if len(self.reflect_axes) > 0 and self.rot_mult > 0:
             rot_index = aug_index % self.rot_mult
             ref_index = self._get_ref_index(aug_index)
             if self.random_rot: inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[rot_index]
-            self.rotate(inputs)            
+            self.rotate(inputs, self.vectors)            
 
             for i, coord in enumerate(self.reflect_axes): inputs[f'aug{coord}'] = int(ref_index[i])
-            self.reflect(inputs)
+            self.reflect(inputs, self.vectors)
             
         elif len(self.reflect_axes) > 0:
             ref_index = self._get_ref_index(aug_index)
             for i, coord in enumerate(self.reflect_axes): inputs[f'aug{coord}'] = int(ref_index[i])
-            self.reflect(inputs)
+            self.reflect(inputs, self.vectors)
             
         elif self.rot_mult:
             if self.random_rot: inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[aug_index]
-            self.rotate(inputs)
+            self.rotate(inputs, self.vectors)
             
-        inputs = pd.DataFrame(np.array(self.source[f'fold_{index}/inputs']), columns=self.input_feats)
         inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
         data['inputs'] = np.nan_to_num(inputs.values)
+        
+        if self.targ_feats is not None:
+            targets = pd.DataFrame(np.array(self.source[f'fold_{index}/targets']), columns=self.targ_feats)
+            if len(self.reflect_axes) > 0 and self.rot_mult > 0:
+                rot_index = aug_index % self.rot_mult
+                ref_index = self._get_ref_index(aug_index)
+                if self.random_rot: targets['aug_angle'] = (2*np.pi*np.random.random(size=len(targets)))-np.pi
+                else:               targets['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[rot_index]
+                self.rotate(targets, self.targ_vectors)            
+
+                for i, coord in enumerate(self.reflect_axes): targets[f'aug{coord}'] = int(ref_index[i])
+                self.reflect(targets, self.targ_vectors)
+
+            elif len(self.reflect_axes) > 0:
+                ref_index = self._get_ref_index(aug_index)
+                for i, coord in enumerate(self.reflect_axes): targets[f'aug{coord}'] = int(ref_index[i])
+                self.reflect(targets, self.targ_vectors)
+
+            elif self.rot_mult:
+                if self.random_rot: targets['aug_angle'] = (2*np.pi*np.random.random(size=len(targets)))-np.pi
+                else:               targets['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[aug_index]
+                self.rotate(targets, self.targ_vectors)
+            
+            targets = targets[self.targ_feats]
+            data['targets'] = np.nan_to_num(targets.values)
         return data

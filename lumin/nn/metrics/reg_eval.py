@@ -16,7 +16,7 @@ class RegPull(EvalMetric):
     def compute(self, df:pd.DataFrame) -> float:
         df['diff'] = (df['pred']-df['gen_target'])
         if self.use_pull: df['diff'] /= df['gen_target']
-        weights = df['gen_weight'].values.astype('float64')/df['gen_weight'].values.astype('float64').sum() if self.use_weights else None
+        weights = df['gen_weight'].values.astype('float64')/df['gen_weight'].values.astype('float64').sum() if self.use_weights and 'gen_weight' in df.columns else None
         
         if self.use_bs:
             bs_args = {'data': df['diff'], 'mean': self.ret_mean, 'std': True, 'n':100}
@@ -24,7 +24,7 @@ class RegPull(EvalMetric):
             bs = bootstrap_stats(bs_args)
             return np.mean(bs['_mean']) if self.ret_mean else np.mean(bs['_std'])
         else:
-            return np.average(df['diff'], weights=weights) if self.ret_mean else DescrStatsW(df['diff'].values, ddof=1, weights=weights*len(weights)).std
+            return np.average(df['diff'], weights=weights) if self.ret_mean else DescrStatsW(df['diff'].values, ddof=1, weights=weights*len(weights) if weights is not None else None).std
             
     def evaluate(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> float:
         df = self.get_df(data, index, y_pred)
