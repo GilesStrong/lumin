@@ -122,7 +122,7 @@ def event_to_cartesian(df:pd.DataFrame, drop:bool=False, ignore:List[str]=[]) ->
         if v not in ignore: to_cartesian(df, v, drop=drop)
 
 
-def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, cartesian=False,
+def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, use_cartesian=False,
                ref_vec_0:str=None, ref_vec_1:str=None, keep_feats=[], default_values=[]) -> None:
     '''Pass data through conversions and drop uneeded columns'''
     df.replace([np.inf, -np.inf]+default_values, np.nan, inplace=True)
@@ -140,12 +140,12 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, ca
         print(f'Setting {ref_vec_0} to positive eta')
         fix_event_z(df, ref_vec_0)
             
-    if cartesian:
-        print("Converting to Cartesian coordinates")
+    if use_cartesian:
+        print("Converting to use_cartesian coordinates")
         event_to_cartesian(df, drop=True)
         
-    if   fix_phi and not cartesian: df.drop(columns=[f"{ref_vec_0}_phi"], inplace=True)
-    elif fix_phi and cartesian:     df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
+    if   fix_phi and not use_cartesian: df.drop(columns=[f"{ref_vec_0}_phi"], inplace=True)
+    elif fix_phi and use_cartesian:     df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
     
     for f in keep_feats:
         df[f'{f}'] = df[f'{f}keep']

@@ -7,7 +7,7 @@ import torch
 class WeightedMSE(nn.MSELoss):
     def __init__(self, weight=None):
         super().__init__(reduction='mean' if weight is None else 'none')
-        self.weightss = weight
+        self.weights = weight
         
     @weak_script_method
     def forward(self, input, target):
