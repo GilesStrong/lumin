@@ -1,6 +1,10 @@
 #Dev
 lumin.code-workspace
 
+#Examples
+**/train_weights
+**/data
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

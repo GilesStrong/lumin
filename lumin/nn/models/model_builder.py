@@ -23,10 +23,10 @@ Todo
 class ModelBuilder(object):
     def __init__(self, objective:str, n_cont_in:int, n_out:int, y_range:Optional[Union[Tuple,np.ndarray]]=None,
                  model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_args:Dict[str,Any]=None,
-                 loss:Union[Any,'auto']='auto', body:Callable[[int,int,float,bool,str,bool,bool],nn.Module]=FullyConnected,
+                 loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
-                 lookup_act:Callable[[str], nn.Module]=lookup_act):
-        self.objective,self.n_cont_in,self.n_out,self.y_range,self.body,self.lookup_init,self.lookup_act = objective.lower(),n_cont_in,n_out,y_range,body,lookup_init,lookup_act
+                 lookup_act:Callable[[str],nn.Module]=lookup_act):
+        self.objective,self.n_cont_in,self.n_out,self.y_range,self.head,self.body,self.tail,self.lookup_init,self.lookup_act = objective.lower(),n_cont_in,n_out,y_range,head,body,tail,lookup_init,lookup_act
         self.parse_loss(loss)
         self.parse_model_args(model_args)
         self.parse_opt_args(opt_args)
@@ -106,7 +106,7 @@ class ModelBuilder(object):
         return nn.Sequential(*layers)
 
     def get_head(self) -> nn.Module:
-        inputs = CatEmbHead(self.n_cont_in, self.n_cat_in, self.emb_szs, self.do_cont, self.do_cat, self.cat_names, self.emb_load_path)
+        inputs = self.head(self.n_cont_in, self.n_cat_in, self.emb_szs, self.do_cont, self.do_cat, self.cat_names, self.emb_load_path)
         linear = self.get_dense(inputs.get_out_size())
         return nn.Sequential(inputs, linear)
 
@@ -114,7 +114,7 @@ class ModelBuilder(object):
         return self.body(depth, self.width, self.do, self.bn, self.act, self.res, self.dense)
 
     def get_tail(self, n_in) -> nn.Module:
-        return ClassRegMulti(n_in, self.n_out, self.objective, self.y_range)
+        return self.tail(n_in, self.n_out, self.objective, self.y_range)
 
     def build_model(self) -> nn.Module:
         head = self.get_head()

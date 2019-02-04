@@ -49,7 +49,7 @@ class AbsCyclicCallback(Callback):
             dx = (self.param_range[1]-self.param_range[0])*x/2
             return self.param_range[1]-dx if not self.decrease else dx+self.param_range[0]
         elif self.interp == 'linear':
-            x = np.abs((self.cycle_iter/self.nb)-1)
+            x = np.abs((2*self.cycle_iter/self.nb)-1)
             dx = (self.param_range[1]-self.param_range[0])*np.max([0, 1-x])
             return self.param_range[1]-dx if self.decrease else dx+self.param_range[0]
         else:
