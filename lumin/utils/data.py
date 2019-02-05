@@ -51,10 +51,14 @@ def _check_val_set_fy(train:FoldYielder, val:FoldYielder, test:Optional[FoldYiel
 
 
 def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFrame,np.ndarray], test:Optional[Union[pd.DataFrame,np.ndarray]]=None) -> None:
-    if not isinstance(train, pd.DataFrame): train = pd.DataFrame(train)
-    if not isinstance(val, pd.DataFrame): val = pd.DataFrame(val)
-    if test is not None and not isinstance(test, pd.DataFrame): test = pd.DataFrame(test)
-    train_feats = None    
+    if not isinstance(train, pd.DataFrame): 
+        train = pd.DataFrame(np.nan_to_num(train))
+        val = pd.DataFrame(np.nan_to_num(val))
+        if test is not None: test = pd.DataFrame(np.nan_to_num(test))
+    else:
+        train = pd.DataFrame(np.nan_to_num(train.values), columns=train.columns)
+        val = pd.DataFrame(np.nan_to_num(val.values), columns=val.columns)
+        if test is not None: test = pd.DataFrame(np.nan_to_num(test.values), columns=test.columns)
 
     samples = {'train': train} if test is None else {'train': train, 'test': test}
     for sample in samples:
@@ -67,7 +71,7 @@ def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFra
 
         df = df_0.append(df_1, ignore_index=True).sample(frac=1)
         df_trn, df_val = df[:len(df)//2], df[len(df)//2:]
-        if train_feats is None: train_feats = [f for f in df_trn.columns if 'gen_' not in f]
+        train_feats = [f for f in df_trn.columns if 'gen_' not in f]
 
         m = RandomForestClassifier(n_estimators=40, min_samples_leaf=25, n_jobs=-1)
         m.fit(df_trn[train_feats], df_trn['gen_target'], df_trn['gen_weight'])

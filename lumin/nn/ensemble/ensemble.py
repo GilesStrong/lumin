@@ -41,13 +41,12 @@ class Ensemble(AbsEnsemble):
     
     @staticmethod
     def _get_weights(value:float, metric:str, weighting='reciprocal') -> float:
-        if 'metric'.lower() == 'ams': value = 1/value
         if   weighting == 'reciprocal': return 1/value
         elif weighting == 'uniform':    return 1
         else: raise ValueError("No other weighting currently supported")
 
     def build_ensemble(self, results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
-                       metric:str='loss', weighting:str='reciprocal',
+                       metric:str='loss', weighting:str='reciprocal', higher_better:bool=False,
                        snapshot_args:Dict[str,Any]={},
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
         self.model_builder = model_builder
@@ -71,13 +70,13 @@ class Ensemble(AbsEnsemble):
     
         if verbose: print(f"Choosing ensemble by {metric}")
         dtype = [('model', int), ('result', float)]
-        values = np.sort(np.array([(i, result[metric]) for i, result in enumerate(results)], dtype=dtype), order=['result'])
+        values = np.sort(np.array([(i, result[metric] if not higher_better else 1/result[metric]) for i, result in enumerate(results)], dtype=dtype), order=['result'])
     
         for i in progress_bar(range(min([size, len(results)]))):
             if not (load_cycles_only and n_cycles):
                 self.models.append(self.load_trained_model(values[i]['model'], self.model_builder, name=location/'train_'))
                 weights.append(self._get_weights(values[i]['result'], metric, weighting))
-                if verbose: print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result']}")
+                if verbose: print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result'] if not higher_better else 1/values[i]['result']}")
 
             if n_cycles:
                 end_cycle = len(cycle_losses[values[i]['model']])-patience-1
