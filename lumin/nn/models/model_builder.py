@@ -133,4 +133,4 @@ class ModelBuilder(object):
         return model, opt, self.loss
 
     def get_out_size(self) -> int:
-        return self.tail.get_out_size
+        return self.tail.get_out_size()

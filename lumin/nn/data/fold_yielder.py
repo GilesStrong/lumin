@@ -128,6 +128,11 @@ class FoldYielder:
         if verbose: print(f'{len(data)} candidates loaded')
         return data
 
+    def save_fold_pred(self, pred:np.ndarray, fold_id:int, pred_name:str='pred') -> None:
+        try: self.source.create_dataset(f'fold_{fold_id}/{pred_name}', shape=pred.shape, dtype='float32')
+        except RuntimeError: pass
+        self.source[f'fold_{fold_id}/{pred_name}'][...] = pred
+
 
 class HEPAugFoldYielder(FoldYielder):
     def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str], targ_feats:Optional[List[str]]=None,

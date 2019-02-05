@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 from typing import List, Optional, Union
 from collections import OrderedDict
+from fastprogress import master_bar, progress_bar
+import timeit
 
 import torch
 from torch.tensor import Tensor
@@ -28,6 +30,7 @@ class Model(AbsModel):
             self.body = self.model[1]
             self.tail = self.model[2]
             self.objective = self.model_builder.objective
+            self.n_out = self.tail.get_out_size()
 
     def __repr__(self) -> str:
         return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
@@ -76,8 +79,8 @@ class Model(AbsModel):
         y_pred = self.model(to_device(inputs.float()))
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         return loss.data.item()
-            
-    def predict(self, inputs, as_np:bool=True) -> Union[np.ndarray, Tensor]:
+
+    def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True) -> Union[np.ndarray, Tensor]:
         self.model.eval()
         if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
@@ -89,6 +92,32 @@ class Model(AbsModel):
                 return to_np(pred)
         else:
             return pred
+
+    def predict_folds(self, fold_yielder:FoldYielder, pred_name:str='pred') -> None:
+        times = []
+        mb = master_bar(range(len(fold_yielder.source)))
+        for fold_id in mb:
+            fold_tmr = timeit.default_timer()
+            if not fold_yielder.test_time_aug:
+                fold = fold_yielder.get_fold(fold_id)['inputs']
+                pred = self.predict_array(fold)
+
+            else:
+                tmpPred = []
+                pb = progress_bar(range(fold_yielder.aug_mult), parent=mb)
+                for aug in pb:
+                    fold = fold_yielder.get_test_fold(fold_id, aug)['inputs']
+                    tmpPred.append(self.predict_array(fold))
+                pred = np.mean(tmpPred, axis=0)
+
+            times.append((timeit.default_timer()-fold_tmr)/len(fold))
+            if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_id, pred_name=pred_name)
+            else: fold_yielder.save_fold_pred(pred[:, 0], fold_id, pred_name=pred_name)
+        print(f'Mean time per event = {np.mean(times):.4E}±{np.std(times, ddof=1)/np.sqrt(len(times)):.4E}')
+
+    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred') -> Union[np.ndarray, Tensor]:
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np)
+        self.predict_folds(inputs, pred_name)
 
     def get_weights(self) -> OrderedDict:
         return self.model.state_dict()

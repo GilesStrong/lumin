@@ -9,7 +9,6 @@ from pathlib import Path
 import timeit
 from typing import Dict, Union, Any, List, Optional
 from sklearn.pipeline import Pipeline
-import h5py
 
 from torch.tensor import Tensor
 
@@ -93,12 +92,6 @@ class Ensemble(AbsEnsemble):
         self.size = len(self.models)
         self.n_out = self.models[0].get_out_size()
         self.results = results
-    
-    @staticmethod
-    def save_fold_pred(pred:np.ndarray, fold:int, datafile:h5py.File, pred_name:str='pred') -> None:
-        try: datafile.create_dataset(f'{fold}/{pred_name}', shape=pred.shape, dtype='float32')
-        except RuntimeError: pass
-        datafile[f'{fold}/{pred_name}'][...] = pred
         
     def predict_array(self, in_data:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
         pred = np.zeros((len(in_data), self.n_out))
@@ -115,7 +108,7 @@ class Ensemble(AbsEnsemble):
             pred += weights[i]*tmp_pred
         return pred
     
-    def fold_predict(self, fold_yielder:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
+    def predict_folds(self, fold_yielder:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
         n_models = len(self.models) if n_models is None else n_models
         times = []
         mb = master_bar(range(len(fold_yielder.source)))
@@ -134,13 +127,13 @@ class Ensemble(AbsEnsemble):
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
-            if self.n_out > 1: self.save_fold_pred(pred, f'fold_{fold_id}', fold_yielder.source, pred_name=pred_name)
-            else: self.save_fold_pred(pred[:, 0], f'fold_{fold_id}', fold_yielder.source, pred_name=pred_name)
+            if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_id, pred_name=pred_name)
+            else: fold_yielder.save_fold_pred(pred[:, 0], fold_id, pred_name=pred_name)
         print(f'Mean time per event = {np.mean(times):.4E}±{np.std(times, ddof=1)/np.sqrt(len(times)):.4E}')
 
     def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]:
         if not isinstance(in_data, FoldYielder): return self.predict_array(in_data, n_models)
-        self.fold_predict(in_data, n_models, pred_name)
+        self.predict_folds(in_data, n_models, pred_name)
     
     def save(self, name:str, feats:List[str]=None, overwrite:bool=False) -> None:
         if (len(glob.glob(f"{name}*.json")) or len(glob.glob(f"{name}*.h5")) or len(glob.glob(f"{name}*.pkl"))) and not overwrite:
