@@ -6,7 +6,7 @@ from sklearn.ensemble.forest import ForestRegressor
 
 from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
-from ...utils.mod_ver import check_rfpimp
+from ..utils.mod_ver import check_rfpimp
 
 
 def get_rf_feat_importance(rf:ForestRegressor, x_val:pd.DataFrame, y_val:np.ndarray, w_val:Optional[np.ndarray]=None) -> pd.DataFrame:

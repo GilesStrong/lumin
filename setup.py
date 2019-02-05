@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import pip
-
 try:  from setuptools import setup, find_packages
 except ImportError: from distutils.core import setup, find_packages
     
@@ -19,7 +17,7 @@ exec(open('lumin/version.py').read())
 
 setup(
     name="lumin",
-    version=__version__,
+    version=__version__,  # noqa
 
     author="Giles Strong",
     author_email="giles.strong@outlook.com",

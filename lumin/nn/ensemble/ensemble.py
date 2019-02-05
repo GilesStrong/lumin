@@ -81,7 +81,7 @@ class Ensemble(AbsEnsemble):
                 if verbose: print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result']}")
 
             if n_cycles:
-                end_cycle = len(cycle_losses[values[i]['model']])-patience
+                end_cycle = len(cycle_losses[values[i]['model']])-patience-1
                 if load_cycles_only: end_cycle += 1
                 for n, c in enumerate(range(end_cycle, max(0, end_cycle-n_cycles), -1)):
                     self.models.append(self.load_trained_model(c, self.model_builder, name=location/f'{values[i]["model"]}_cycle_'))
@@ -146,7 +146,7 @@ class Ensemble(AbsEnsemble):
         if (len(glob.glob(f"{name}*.json")) or len(glob.glob(f"{name}*.h5")) or len(glob.glob(f"{name}*.pkl"))) and not overwrite:
             raise FileExistsError("Ensemble already exists with that name, call with overwrite=True to force save")
         else:
-            os.makedirs(name, exist_ok=True)
+            os.makedirs(name[:name.rfind('/')], exist_ok=True)
             os.system(f"rm {name}*.json {name}*.h5 {name}*.pkl")
             for i, model in enumerate(progress_bar(self.models)): model.save(f'{name}_{i}.h5')    
             with open(f'{name}_weights.pkl', 'wb')         as fout: pickle.dump(self.weights, fout)
