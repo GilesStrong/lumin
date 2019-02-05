@@ -15,6 +15,7 @@ from ...utils.misc import to_np
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
+from ...utils.misc import to_device
 
 
 class Model(AbsModel):
@@ -22,6 +23,7 @@ class Model(AbsModel):
         self.model_builder = model_builder
         if self.model_builder is not None:
             self.model, self.opt, self.loss = self.model_builder.get_model()
+            self.model = to_device(self.model)
             self.head = self.model[0][0]
             self.body = self.model[1]
             self.tail = self.model[2]
@@ -71,15 +73,15 @@ class Model(AbsModel):
             weights = weights[0]
         else:
             targets = targets.float()
-        y_pred = self.model(inputs.float())
-        loss = self.loss(weight=weights)(y_pred, targets) if weights is not None else self.loss()(y_pred, targets)
+        y_pred = self.model(to_device(inputs.float()))
+        loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         return loss.data.item()
             
     def predict(self, inputs, as_np:bool=True) -> Union[np.ndarray, Tensor]:
         self.model.eval()
         if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
-        pred = self.model(inputs.float())
+        pred = self.model(to_device(inputs.float()))
         if as_np:
             if 'multiclass' in self.objective:
                 return np.exp(to_np(pred))

@@ -1,15 +1,16 @@
 import pandas as pd
 import numpy as np
 from typing import List, Optional
-from rfpimp import importances
 
 from sklearn.ensemble.forest import ForestRegressor
 
 from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
+from ...utils.mod_ver import check_rfpimp
 
 
 def get_rf_feat_importance(rf:ForestRegressor, x_val:pd.DataFrame, y_val:np.ndarray, w_val:Optional[np.ndarray]=None) -> pd.DataFrame:
+    check_rfpimp(); from rfpimp import importances
     return importances(rf, x_val, y_val, features=x_val.columns, sample_weights=w_val).reset_index()
 
 

@@ -2,6 +2,7 @@ import numpy as np
 from typing import Optional, Union, Tuple
 
 from ..initialisations import lookup_init
+from ....utils.misc import to_device
 
 from torch.tensor import Tensor
 import torch.nn as nn
@@ -15,7 +16,7 @@ class ClassRegMulti(nn.Module):
             if not isinstance(self.y_range, np.ndarray): self.y_range = np.array(self.y_range)
             self.y_min = np.array(np.min(self.y_range, axis=-1))
             self.y_diff = np.abs(self.y_range.take([1], axis=-1)-self.y_range.take([0], axis=-1)).ravel()
-            self.y_min, self.y_diff = Tensor(self.y_min), Tensor(self.y_diff)
+            self.y_min, self.y_diff = to_device(Tensor(self.y_min)), to_device(Tensor(self.y_diff))
 
         self.build_layers()
 

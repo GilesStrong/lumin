@@ -36,7 +36,7 @@ def get_folds(n, n_splits, shuffle_folds:bool=True,):
 def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder,
                         use_callbacks:Dict[str,Dict[str,Any]]={}, eval_metrics:Dict[str,EvalMetric]={},
                         train_on_weights:bool=True, eval_on_weights:bool=True, patience:int=10, max_epochs:int=200,
-                        plots:List[str]=['history'], shuffle_fold:bool=True, shuffle_folds:bool=True,
+                        plots:List[str]=['history'], shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
                         saveloc:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
                         plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     
@@ -97,7 +97,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_bu
         for epoch in epoch_pb:
             for trn_id in trn_ids:
                 subEpoch += 1
-                batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold)
+                batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold, bulk_move=bulk_move)
                 loss_history['trn_loss'].append(model.fit(batch_yielder, callbacks))
 
                 val_loss = model.evaluate(Tensor(val_fold['inputs']), Tensor(val_fold['targets']), weights=to_tensor(val_fold['weights']))

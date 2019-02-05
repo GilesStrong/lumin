@@ -6,6 +6,7 @@ from pdpbox import pdp
 
 from .plot_settings import PlotSettings
 from ..utils.misc import to_np
+from ..utils.mod_ver import check_pdpbox
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -59,6 +60,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, sample_sz:O
 
 def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None, n_points:Tuple[int,int]=[20,20],
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    check_pdpbox()
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
     interact = pdp.pdp_interact(model, df, df.columns, feats, num_grid_points=n_points)
 

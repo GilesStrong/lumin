@@ -12,7 +12,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_feat(in_data:Union[pd.DataFrame,List[pd.DataFrame]], feat:str, weight_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
+def plot_feat(in_data:pd.DataFrame, feat:str, weight_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
               plot_params:List[Dict[str,Any]]={}, size='mid', moments=True, ax_labels={'y': 'Density', 'x': None},
               savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:

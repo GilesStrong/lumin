@@ -4,10 +4,19 @@ import pandas as pd
 import sympy
 
 from torch.tensor import Tensor
+import torch
+
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
 def to_np(x:Tensor) -> np.ndarray:
-    return x.detach().numpy()
+    return x.cpu().detach().numpy()
+
+
+def to_device(x:Union[Tensor,List[Tensor]], device:torch.device=device):
+    if x is None: return x
+    if isinstance(x, list): return [to_device(o, device) for o in x]
+    return x.to(device)
 
 
 def to_tensor(x:np.ndarray) -> Union[Tensor, None]:

@@ -60,10 +60,10 @@ class Ensemble(AbsEnsemble):
     
         if (cycle_losses is not None and n_cycles is None) or (cycle_losses is None and n_cycles is not None):
             warnings.warn("Warning: cycle ensembles requested, but not enough information passed")
-        if cycle_losses is not None and n_cycles is not None and metric is not 'loss':
+        if cycle_losses is not None and n_cycles is not None and metric != 'loss':
             warnings.warn("Warning: Setting ensemble metric to loss")
             metric = 'loss'
-        if cycle_losses is not None and n_cycles is not None and weighting is not 'uniform':
+        if cycle_losses is not None and n_cycles is not None and weighting != 'uniform':
             warnings.warn("Warning: Setting model weighting to uniform")
             weighting = 'uniform'
     
@@ -100,7 +100,7 @@ class Ensemble(AbsEnsemble):
         except RuntimeError: pass
         datafile[f'{fold}/{pred_name}'][...] = pred
         
-    def predict_array(self, in_data:Union[List[np.ndarray], np.ndarray], n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
+    def predict_array(self, in_data:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
         pred = np.zeros((len(in_data), self.n_out))
         
         n_models = len(self.models) if n_models is None else n_models
@@ -108,8 +108,9 @@ class Ensemble(AbsEnsemble):
         weights = self.weights[:n_models]
         weights = weights/weights.sum()
         
+        in_data = Tensor(in_data)
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=bool(parent_bar))):
-            tmp_pred = m.predict(Tensor(in_data))
+            tmp_pred = m.predict(in_data)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred

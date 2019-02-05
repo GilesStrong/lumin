@@ -49,7 +49,7 @@ class ModelBuilder(object):
             self.emb_load_path = Path(self.emb_load_path)
             
     def parse_loss(self, loss:Union[Any,'auto']='auto') -> None:
-        if loss is 'auto':
+        if loss == 'auto':
             if 'class' in self.objective:
                 if self.n_out > 1 and 'multiclass' in self.objective:
                     self.loss = WeightedCCE

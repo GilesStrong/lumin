@@ -33,9 +33,6 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     python_requires='>=3.6',
-    dependency_links=[
-        'https://github.com/GilesStrong/random-forest-importances/tarball/master#egg=rfpimp-1.3.1+git.0edef31'
-    ],
     install_requires=requirements,
 
     license="Apache Software License 2.0",
