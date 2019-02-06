@@ -47,7 +47,7 @@ def to_pt_eta_phi(in_data:pd.DataFrame, vec:str, eta:bool=True, drop:bool=False)
         if eta: in_data.drop(columns=[f"{vec}_pz"], inplace=True)
 
 
-def delta_phi(a:np.ndarray, b:np.ndarray) ->float:
+def delta_phi(a:np.ndarray, b:np.ndarray) -> float:
     tmp = pd.DataFrame()
     tmp['dphi'] = b-a
     while len(tmp[tmp.dphi > np.pi]) > 0: tmp.loc[tmp.dphi > np.pi, 'dphi'] -= 2*np.pi

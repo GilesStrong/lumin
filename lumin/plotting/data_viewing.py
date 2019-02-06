@@ -26,24 +26,24 @@ def plot_feat(in_data:pd.DataFrame, feat:str, weight_name:Optional[str]=None, cu
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
 
             if plot_bulk:  # Ignore tails for indicative plotting
-                feat_range = np.percentile(in_data[feat], [1, 99])
+                feat_range = np.percentile(np.nan_to_num(in_data[feat]), [1, 99])
                 if feat_range[0] == feat_range[1]: break
                 cut = (in_data[feat] > feat_range[0]) & (in_data[feat] < feat_range[1])
                 if cuts[i] is not None: cut = cut & (cuts[i])
                 if weight_name is None:
-                    plot_data = in_data.loc[cut, feat]
+                    plot_data = np.nan_to_num(in_data.loc[cut, feat])
                 else:
                     weights = in_data.loc[cut, weight_name].values.astype('float64')
                     weights /= weights.sum()
-                    plot_data = np.random.choice(in_data.loc[cut, feat], n_samples, p=weights)
+                    plot_data = np.random.choice(np.nan_to_num(in_data.loc[cut, feat]), n_samples, p=weights)
             else:
                 tmp_data = in_data if cuts[i] is not None else in_data.loc[cuts[i]]
                 if weight_name is None:
-                    plot_data = tmp_data[feat]
+                    plot_data = np.nan_to_num(tmp_data[feat])
                 else:
                     weights = tmp_data[weight_name].values.astype('float64')
                     weights /= weights.sum()
-                    plot_data = np.random.choice(tmp_data[feat], n_samples, p=weights)
+                    plot_data = np.random.choice(np.nan_to_num(tmp_data[feat]), n_samples, p=weights)
             label = labels[i]
             if moments:
                 moms = get_moments(plot_data)
@@ -57,7 +57,7 @@ def plot_feat(in_data:pd.DataFrame, feat:str, weight_name:Optional[str]=None, cu
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.ylabel(ax_labels['y'], fontsize=settings.lbl_sz, color=settings.lbl_col)
-        x_lbl = feat if ax_labels['y'] is None else ax_labels['y']
+        x_lbl = feat if ax_labels['x'] is None else ax_labels['x']
         plt.xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
         plt.show()
