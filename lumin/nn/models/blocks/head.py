@@ -55,7 +55,7 @@ class CatEmbHead(nn.Module):
         for i in avail: self.embeds[i].load_state_dict(torch.load(avail[i]))
             
     def save_embeds(self, path:Path) -> None:
-        os.makepaths(path, exist_ok=True)
+        os.makedirs(path, exist_ok=True)
         for i, name in enumerate(self.cat_names):
             torch.save(self.embeds[i].state_dict(), path/f'{name}.h5')
             

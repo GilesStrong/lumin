@@ -1,8 +1,10 @@
 import numpy as np
-from typing import Optional, Any, Tuple
+from typing import Optional, Any, Tuple, List
 import pandas as pd
 from collections import OrderedDict
 from pdpbox import pdp
+from pdpbox.pdp import PDPIsolate, PDPInteract
+from sklearn.pipeline import Pipeline
 
 from .plot_settings import PlotSettings
 from ..utils.misc import to_np
@@ -40,13 +42,15 @@ def plot_embedding(emb:OrderedDict, feat:str, savename:Optional[str]=None, setti
         plt.show()
 
     
-def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None, n_clusters:int=10, n_points:int=20,
+def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None,
+                               input_pipe:Pipeline=None, n_clusters:int=10, n_points:int=20,
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
     iso = pdp.pdp_isolate(model, df, df.columns, feat, num_grid_points=20)
-    
+    if input_pipe is not None: _deprocess_iso(iso, input_pipe, feat, df.columns)
+
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
-        fig, ax = pdp.pdp_plot(iso, feat, center=False,  plot_lines=True, cluster=n_clusters is not None or n_clusters != 0, n_cluster_centers=n_clusters,
+        fig, ax = pdp.pdp_plot(iso, feat, center=False,  plot_lines=True, cluster=n_clusters is not None, n_cluster_centers=n_clusters,
                                plot_params={'title': None, 'subtitle': None}, figsize=(settings.w_mid, settings.h_mid))
         ax['title_ax'].remove()
         ax['pdp_ax'].set_xlabel(feat, fontsize=settings.lbl_sz, color=settings.lbl_col)
@@ -58,12 +62,14 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, sample_sz:O
         plt.show()
 
 
-def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None, n_points:Tuple[int,int]=[20,20],
+def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], input_pipe:Pipeline=None,
+                               sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None, n_points:Tuple[int,int]=[20,20],
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     check_pdpbox()
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
     interact = pdp.pdp_interact(model, df, df.columns, feats, num_grid_points=n_points)
-
+    if input_pipe is not None: _deprocess_interact(interact, input_pipe, feats, df.columns)
+            
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = pdp.pdp_interact_plot(interact, feats, figsize=(settings.h_large, settings.h_large),
                                         plot_params={'title': None, 'subtitle': None, 'cmap':settings.seq_palette})
@@ -75,3 +81,25 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
         plt.show()
+
+
+def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str]) -> None:
+    feat_id = np.argwhere(feats == feat)[0][0]
+    in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+    if feat_id > in_size: return
+    x = iso.feature_grids
+    x = np.broadcast_to(x[:,None], (x.shape[0], in_size))
+    x = input_pipe.inverse_transform(x)[:,feat_id]
+    iso.feature_grids = x
+    iso.ice_lines.columns = x
+
+
+def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tuple[str,str], feats:List[str]) -> None:
+    for i, feat in enumerate(feat_pair):
+        feat_id = np.argwhere(feats == feat)[0][0]
+        in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+        if feat_id > in_size: continue
+        x = interact.feature_grids[i]
+        x = np.broadcast_to(x[:,None], (x.shape[0], in_size))
+        x = input_pipe.inverse_transform(x)[:,feat_id]
+        interact.feature_grids[i] = x

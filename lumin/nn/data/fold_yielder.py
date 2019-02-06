@@ -138,8 +138,9 @@ class HEPAugFoldYielder(FoldYielder):
     def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str], targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
-                 train_time_aug:bool=True, test_time_aug:bool=True):
-        super().__init__(source_file=source_file, cont_feats=cont_feats, cat_feats=cat_feats)
+                 train_time_aug:bool=True, test_time_aug:bool=True,
+                 input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None):
+        super().__init__(source_file=source_file, cont_feats=cont_feats, cat_feats=cat_feats, input_pipe=input_pipe, output_pipe=output_pipe)
 
         if rot_mult > 0 and not random_rot and rot_mult % 2 != 0:
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')
