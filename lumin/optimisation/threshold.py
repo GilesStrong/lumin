@@ -29,21 +29,21 @@ def binary_class_cut(in_data:pd.DataFrame, top_perc:float=0.05, min_pred:float=0
                                                                                                                     w_factor*np.sum(in_data.loc[(in_data[pred_name] >= row[pred_name]) & bkg, weight_name]),
                                                                                                                     br=br, unc_b=syst_unc_b), axis=1)
         
-    in_data.sort_values(by='ams', ascending=False, inplace=True)
-    cuts = in_data[pred_name].values[0:int(top_perc * len(in_data))]
+    sort = in_data.sort_values(by='ams', ascending=False)
+    cuts = sort[pred_name].values[0:int(top_perc * len(sort))]
 
     cut = np.mean(cuts)
-    ams = calc_ams(w_factor*np.sum(in_data.loc[(in_data[pred_name] >= cut) & sig, 'gen_weight']),
-                   w_factor*np.sum(in_data.loc[(in_data[pred_name] >= cut) & bkg, 'gen_weight']),
+    ams = calc_ams(w_factor*np.sum(sort.loc[(sort[pred_name] >= cut) & sig, 'gen_weight']),
+                   w_factor*np.sum(sort.loc[(sort[pred_name] >= cut) & bkg, 'gen_weight']),
                    br=br, unc_b=syst_unc_b)
     
     print(f'Mean cut at {cut} corresponds to AMS of {ams}')
-    print(f'Maximum AMS for data is {in_data.iloc[0]["ams"]} at cut of {in_data.iloc[0][pred_name]}')
+    print(f'Maximum AMS for data is {sort.iloc[0]["ams"]} at cut of {sort.iloc[0][pred_name]}')
     with sns.axes_style(plot_settings.style), sns.color_palette(plot_settings.cat_palette) as palette:
         plt.figure(figsize=(plot_settings.w_small, plot_settings.h_small))
         sns.distplot(cuts, label=f'Top {top_perc}%')
         plt.axvline(x=cut, label='Mean prediction', color=palette[1])
-        plt.axvline(x=in_data.iloc[0][pred_name], label='Max. AMS', color=palette[2])
+        plt.axvline(x=sort.iloc[0][pred_name], label='Max. AMS', color=palette[2])
         plt.legend(loc=plot_settings.leg_loc, fontsize=plot_settings.leg_sz)
         plt.xticks(fontsize=plot_settings.tk_sz, color=plot_settings.tk_col)
         plt.yticks(fontsize=plot_settings.tk_sz, color=plot_settings.tk_col)

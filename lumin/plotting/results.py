@@ -123,11 +123,17 @@ def plot_sample_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_
     sig_samples = _get_samples(in_data[sig], sample_name, weight_name)
     bkg_samples = _get_samples(in_data[bkg], sample_name, weight_name)
     sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
-    width_scale = 1.6 if zoom_args is not None and 'width_scale' not in zoom_args else zoom_args['width_scale']
+    if zoom_args is not None:
+        width_scale = 1.6           if 'width_scale' not in zoom_args else zoom_args['width_scale']
+        width_zoom  = 3             if 'width_zoom'  not in zoom_args else zoom_args['width_zoom']
+        height_zoom = 5             if 'height_zoom' not in zoom_args else zoom_args['height_zoom']
+        anchor      = (0,0,0.92,1)  if 'anchor'      not in zoom_args else zoom_args['anchor']
+    else:
+        width_scale = 1
     
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid)) if zoom_args is None else plt.subplots(figsize=(width_scale*settings.w_mid, settings.h_mid))
-        if zoom_args is not None: axins = inset_axes(ax, 3, 5, loc='right', bbox_to_anchor=(0,0,0.92,1), bbox_transform=ax.figure.transFigure)
+        if zoom_args is not None: axins = inset_axes(ax, width_zoom, height_zoom, loc='right', bbox_to_anchor=anchor, bbox_transform=ax.figure.transFigure)
         ax.hist([in_data[in_data[sample_name] == sample][pred_name] for sample in bkg_samples],
                 weights=[weight_scale*in_data[in_data[sample_name] == sample][weight_name] for sample in bkg_samples],
                 label=bkg_samples, color=[sns.color_palette()[sample2col[s]] for s in bkg_samples], **hist_params)
@@ -139,7 +145,7 @@ def plot_sample_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_
         for sample in sig_samples:
             ax.hist(in_data[in_data[sample_name] == sample][pred_name],
                     weights=weight_scale*in_data[in_data[sample_name] == sample][weight_name],
-                    label='Signal', histtype='step', linewidth='3', 
+                    label=sample, histtype='step', linewidth='3', 
                     color='black', **hist_params)
             if zoom_args:
                 axins.hist(in_data[in_data[sample_name] == sample][pred_name],

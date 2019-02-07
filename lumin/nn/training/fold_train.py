@@ -100,7 +100,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_bu
                 batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold, bulk_move=bulk_move)
                 loss_history['trn_loss'].append(model.fit(batch_yielder, callbacks))
 
-                val_loss = model.evaluate(Tensor(val_fold['inputs']), Tensor(val_fold['targets']), weights=to_tensor(val_fold['weights']))
+                val_loss = model.evaluate(Tensor(val_fold['inputs']), Tensor(val_fold['targets']), weights=to_tensor(val_fold['weights']) if train_on_weights else None)
                 loss_history['val_loss'].append(val_loss)
                 loss_callback_idx = None
                 loss = val_loss

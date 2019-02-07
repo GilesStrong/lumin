@@ -73,7 +73,6 @@ class Model(AbsModel):
         self.model.eval()
         if 'multiclass' in self.objective:
             targets = targets.long().squeeze()
-            weights = weights[0]
         else:
             targets = targets.float()
         y_pred = self.model(to_device(inputs.float()))
@@ -115,7 +114,7 @@ class Model(AbsModel):
             else: fold_yielder.save_fold_pred(pred[:, 0], fold_id, pred_name=pred_name)
         print(f'Mean time per event = {np.mean(times):.4E}±{np.std(times, ddof=1)/np.sqrt(len(times)):.4E}')
 
-    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred') -> Union[np.ndarray, Tensor]:
+    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred') -> Union[np.ndarray, Tensor, None]:
         if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np)
         self.predict_folds(inputs, pred_name)
 
