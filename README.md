@@ -28,12 +28,12 @@ LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy
         - Head - Takes input features
         - Body - Contains most of the hidden layers
         - Tail - Scales down the body to the desired number of outputs
-        - Endcap - Optional layer for use post-training to provide furhter computation on model outputs; useful when training on a proxy objective
+        - Endcap - Optional layer for use post-training to provide further computation on model outputs; useful when training on a proxy objective
     - Easy loading and saving of pre-trained embedding weights
 - Easy training and inference of ensembles of models:
     - Default training method `fold_train_ensemble`, trains a specified number of models as well as just a single model
     - `Ensemble` class handles the (metric-weighted) construction of an ensemble, its inference, saving and loading, and interpretation
-- Easy exporting of models to other libraies via Onnx
+- Easy exporting of models to other libraries via Onnx
 - Use with CPU and NVidia GPU
 - Evaluation on domain-specific metrics such as Approximate Median Significance via `EvalMetric` class
 - Keras-style callbacks
@@ -93,7 +93,7 @@ With just one main developer, I'm simply focussing on the data types and applica
 ### Future
 The current priority is to get documentation written, tests added, and expand the examples.
 
-The next step will be try and increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
+The next step will be to try and increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
 
 Further improvments will be in the direction of implementing new methods and (HEP-specific) architectures, as well as providing helper functions and data exporters to statistical analysis packages like Combine and PYHF.
 
@@ -101,12 +101,12 @@ Further improvments will be in the direction of implementing new methods and (HE
 Contributions, suggestions, and feedback are most welcome! The issue tracker on this repo is probably the best place to report bugs et cetera.
 
 ### Code style
-Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. Has a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises, in particular, reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations).
+Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. As a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises, in particular, reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations).
 
 ### Why is LUMIN called LUMIN?
 Aside from being a recursive accronym (and therefore the best kind of accronym) lumin is short for 'luminosity'. In high-energy physics, the integrated luminosity of the data collected by an experiment is the main driver in the results that analyses obtain. With the paradigm shift towards multivariate analyses, however, improved methods can be seen as providing 'artificial luminosity'; e.g. the gain offered by some DNN could be measured by in terms of the amount of extra data that would have to be collected to achieve the same result with a more traditional analysis. Luminosity can also be connected to the fact that LUMIN is built around the python version of Torch.
 
 ### Who develops LUMIN
-Currently just me - Giles Strong; a British-born, Lisbon-based PhD student in particle physics at IST, researcher at LIP-Lisbon, member of Marie Curie ITN [AMVA4NewPhysics](https://amva4newphysics.wordpress.com/) and the CMS collaboration.
+Currently just me - Giles Strong; a British-born, Lisbon-based, PhD student in particle physics at IST, researcher at LIP-Lisbon, member of Marie Curie ITN [AMVA4NewPhysics](https://amva4newphysics.wordpress.com/) and the CMS collaboration.
 
 Certainly more developers and contributors are welcome to join and help out!
