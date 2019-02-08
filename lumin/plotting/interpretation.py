@@ -42,11 +42,11 @@ def plot_embedding(emb:OrderedDict, feat:str, savename:Optional[str]=None, setti
         plt.show()
 
     
-def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None,
-                               input_pipe:Pipeline=None, n_clusters:int=10, n_points:int=20,
+def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feats:List[str]=[], input_pipe:Pipeline=None, 
+                               sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None,  n_clusters:int=10, n_points:int=20,
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
-    iso = pdp.pdp_isolate(model, df, df.columns, feat, num_grid_points=20)
+    iso = pdp.pdp_isolate(model, df, [f for f in df.columns if f not in ignore_feats], feat, num_grid_points=20)
     if input_pipe is not None: _deprocess_iso(iso, input_pipe, feat, df.columns)
 
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
@@ -62,12 +62,12 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, sample_sz:O
         plt.show()
 
 
-def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], input_pipe:Pipeline=None,
+def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], ignore_feats:List[str]=[], input_pipe:Pipeline=None,
                                sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None, n_points:Tuple[int,int]=[20,20],
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     check_pdpbox()
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
-    interact = pdp.pdp_interact(model, df, df.columns, feats, num_grid_points=n_points)
+    interact = pdp.pdp_interact(model, df, [f for f in df.columns if f not in ignore_feats], feats, num_grid_points=n_points)
     if input_pipe is not None: _deprocess_interact(interact, input_pipe, feats, df.columns)
             
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
@@ -85,7 +85,10 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
 
 def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str]) -> None:
     feat_id = np.argwhere(feats == feat)[0][0]
-    in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+    try:
+        in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+    except IndexError:
+        in_size = input_pipe.steps[0][1].mean_.shape[0]
     if feat_id > in_size: return
     x = iso.feature_grids
     x = np.broadcast_to(x[:,None], (x.shape[0], in_size))
@@ -97,7 +100,10 @@ def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str
 def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tuple[str,str], feats:List[str]) -> None:
     for i, feat in enumerate(feat_pair):
         feat_id = np.argwhere(feats == feat)[0][0]
-        in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+        try:
+            in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+        except IndexError:
+            in_size = input_pipe.steps[0][1].mean_.shape[0]
         if feat_id > in_size: continue
         x = interact.feature_grids[i]
         x = np.broadcast_to(x[:,None], (x.shape[0], in_size))

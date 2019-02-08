@@ -14,16 +14,16 @@ from .statistics import uncert_round
 def _check_val_set_fy(train:FoldYielder, val:FoldYielder, test:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
     n = min(train.n_folds, val.n_folds)
     if test is not None: n = min(n, test.n_folds)
-    if n_folds is None:  n = min(n, n_folds)
+    if n_folds is not None:  n = min(n, n_folds)
     train_feats = None
         
     samples = {'train': train} if test is None else {'train': train, 'test': test}
     for sample in samples:
         aucs = []
         fi = pd.DataFrame()
-        for fold_id in progress_bar(range(n_folds)):
-            df_0 = samples[sample].get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_id=fold_id, verbose=False)
-            df_1 = val.get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_id=fold_id, verbose=False)
+        for fold_id in progress_bar(range(n)):
+            df_0 = samples[sample].get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_id=fold_id, verbose=False, suppress_warn=True)
+            df_1 = val.get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_id=fold_id, verbose=False, suppress_warn=True)
             df_0['gen_target'] = 0
             df_1['gen_target'] = 1
             df_0['gen_weight'] = 1/len(df_0)

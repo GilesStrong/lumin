@@ -16,7 +16,7 @@ Todo:
 
 class FoldYielder:
     def __init__(self, source_file:h5py.File, cont_feats:List[str], cat_feats:List[str], ignore_feats:Optional[List[str]]=None,
-                 input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None):
+                 input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
         self.orig_cont_feats,self.orig_cat_feat = self.cont_feats,self.cat_feats
         self.input_feats = self.cont_feats + self.cat_feats
@@ -26,7 +26,9 @@ class FoldYielder:
         self.test_time_aug = False
         self.set_source(source_file)
         self._ignore_feats = []
-        if ignore_feats is not None: self.ignore(ignore_feats)
+        if isinstance(self.input_pipe, str): self.add_input_pipe_from_file(self.input_pipe)
+        if isinstance(self.output_pipe, str): self.add_output_pipe_from_file(self.output_pipe)
+        if ignore_feats is not None: self.set_ignore(ignore_feats)
 
     def __repr__(self) -> str:
         return f'FoldYielder with {self.n_folds} folds, containing {[k for k in self.source["fold_0"].keys()]}'
@@ -40,10 +42,13 @@ class FoldYielder:
     def __getitem__(self, idx:int) -> Dict[str,np.ndarray]:
         return self.get_fold(idx)
 
-    def ignore(self, feats:List[str]) -> None:
+    def set_ignore(self, feats:List[str]) -> None:
         self._ignore_feats += feats
         self.cont_feats = [f for f in self.cont_feats if f not in self._ignore_feats]
         self.cat_feats  = [f for f in self.cat_feats  if f not in self._ignore_feats]
+    
+    def get_ignore(self) -> List[str]:
+        return self._ignore_feats
 
     def set_source(self, source_file:h5py.File) -> None:
         self.source = source_file
@@ -90,12 +95,13 @@ class FoldYielder:
                 'targets':              self.get_column('targets', n_folds=n_folds, fold_id=fold_id, add_newaxis=True),
                 'weights':              self.get_column('weights', n_folds=n_folds, fold_id=fold_id, add_newaxis=True)}
 
-    def get_df(self, pred_name:str='pred', targ_name:str='targets', weight_name:str='weights', n_folds:Optional[int]=None, fold_id:Optional[int]=None, inc_inputs:bool=False, deprocess:bool=False, verbose:bool=True) -> pd.DataFrame:
+    def get_df(self, pred_name:str='pred', targ_name:str='targets', weight_name:str='weights', n_folds:Optional[int]=None, fold_id:Optional[int]=None,
+               inc_inputs:bool=False, inc_ignore:bool=False, deprocess:bool=False, verbose:bool=True, suppress_warn:bool=False) -> pd.DataFrame:
         if inc_inputs:
             inputs = self.get_column('inputs',  n_folds=n_folds, fold_id=fold_id)
             if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:, :len(self.orig_cont_feats)]), inputs[:, len(self.orig_cont_feats):]))
             data = pd.DataFrame(np.nan_to_num(inputs), columns=self.input_feats)
-            if len(self._ignore_feats) > 0: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
+            if len(self._ignore_feats) > 0 and not inc_ignore: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
         else:
             data = pd.DataFrame()
 
@@ -104,7 +110,7 @@ class FoldYielder:
         if targets is not None and len(targets.shape) > 1:
             for t in range(targets.shape[-1]):
                 data[f'gen_target_{t}'] = targets[:,t]
-        elif targets is None:
+        elif targets is None and not suppress_warn:
             warnings.warn(f"{targ_name} not found in file")
         else:
             data['gen_target'] = targets
@@ -113,7 +119,7 @@ class FoldYielder:
         if weights is not None and weights is not None and len(weights.shape) > 1:
             for w in range(weights.shape[-1]):
                 data[f'gen_weight_{w}'] = weights[:,w]
-        elif weights is None:
+        elif weights is None and not suppress_warn:
             warnings.warn(f"{weight_name} not found in file")
         else:
             data['gen_weight'] = weights
@@ -125,6 +131,8 @@ class FoldYielder:
                 data[f'pred_{p}'] = preds[:,p]
         elif preds is not None:
             data['pred'] = preds
+        elif not suppress_warn:
+            warnings.warn(f'{pred_name} not found in source file')
         if verbose: print(f'{len(data)} candidates loaded')
         return data
 
