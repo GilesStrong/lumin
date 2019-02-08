@@ -1,5 +1,5 @@
 # LUMIN: Lumin Unifies Many Improvements for Networks
-LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-speciifc requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
+LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-specific requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
 
 ## Distinguishing Characteristics
 ### Data objects
@@ -74,10 +74,10 @@ pip install .
 ```
 Optionally, run pip install with `-e` flag for development installation.
 
-### Aditional modules
+### Additional modules
 Full use of LUMIN requires the latest versions of rfpimp and PDPbox, but these are not released yet on PyPI, so you'll need to install them from source, too:
 - `git clone https://github.com/parrt/random-forest-importances.git && cd random-forest-importances/src && pip install .`
-- `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install . -e` note the `-e` flag to make sure the verion number gets set properly.
+- `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install . -e` note the `-e` flag to make sure the version number gets set properly.
 
 ## Notes
 ### Why use LUMIN
@@ -86,24 +86,24 @@ The fastai framework provides access to these recent methods, however doesn't ye
 LUMIN aims to provides the best of both, Keras-style sample weighting and fastai training methods, while focussing on columnar data and providing domain-specific metrics, plotting, and statistical treatment of results and uncertainties.
 
 ### Data types
-LUMIN is primarily designed for use on columnar data. With some extra work it can be used on other data formats, but at the moment it has nothing special to offer. Whilst recent work in HEP has made use of jet images and GANs, these normally hijack existing ideas and models. Perhaps once we get established, domain specific approaches which necessitate the use of a specialised framwork, then LUMIN could grow to meet those demands, but for now I'd recommend checking out the fastai library, especially for image data.
+LUMIN is primarily designed for use on columnar data. With some extra work it can be used on other data formats, but at the moment it has nothing special to offer. Whilst recent work in HEP has made use of jet images and GANs, these normally hijack existing ideas and models. Perhaps once we get established, domain specific approaches which necessitate the use of a specialised framework, then LUMIN could grow to meet those demands, but for now I'd recommend checking out the fastai library, especially for image data.
 
 With just one main developer, I'm simply focussing on the data types and applications I need for my own research and common use cases in HEP. If, however you would like to use LUMIN's other methods for your own work on other data formats, then you are most welcome to contribute and help to grow LUMIN to better meet the needs of the scientific community.
 
 ### Future
 The current priority is to get documentation written, tests added, and expand the examples.
 
-The next step will be try and increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutroials, blog posts, and papers.
+The next step will be try and increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
 
-Further improvents will be in the direction of impplementing new methods and (HEP-specific) architectures, as well as providing helper functions and data exporters to statistical analysis packages like Combine and PYHF.
+Further improvments will be in the direction of implementing new methods and (HEP-specific) architectures, as well as providing helper functions and data exporters to statistical analysis packages like Combine and PYHF.
 
 ### Contributing & feedback
 Contributions, suggestions, and feedback are most welcome! The issue tracker on this repo is probably the best place to report bugs et cetera.
 
 ### Code style
-Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily wirtten for developers and maintainers of software whose useers never need to read the source code. Has a maths-heavy research framework which users are expected to interact with, PEP8 isn't eh best style. Instead I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises in particular reducing vertical space (useful for reading source code in a notebook) naming and abbreviating vaiables accordning to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations).
+Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. Has a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises in particular reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations).
 
-### Who developes LUMIN
-Currently just me - Giles Strong; a British-born, Lisbon-based PhD student in particle physics at IST, researcher at LIP-Lisbon, member of Marie Curie ITN AMVA4NewPhysics and the CMS collaboration.
+### Who develops LUMIN
+Currently just me - Giles Strong; a British-born, Lisbon-based PhD student in particle physics at IST, researcher at LIP-Lisbon, member of Marie Curie ITN [AMVA4NewPhysics](https://amva4newphysics.wordpress.com/) and the CMS collaboration.
 
 Certainly more developers and contributors are welcome to join and help out!
