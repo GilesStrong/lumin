@@ -93,7 +93,8 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_bu
             c.on_train_begin()
 
         model_bar.update_graph([[0, 0] for i in range(len(model_bar.names))])
-        epoch_pb = progress_bar(range(max_epochs))
+        epoch_pb = progress_bar(range(max_epochs), leave=True)
+        model_bar.show()
         for epoch in epoch_pb:
             for trn_id in trn_ids:
                 subEpoch += 1
@@ -153,7 +154,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_bu
         print(f"Scores are: {results[-1]}")
         with open(saveloc/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)
         with open(saveloc/'cycle_file.pkl', 'wb') as fout: pickle.dump(cycle_losses, fout)
-
+        
         delattr(model_bar, 'fig')
         plt.clf()
         if 'cycle' in plots and cyclic_callback is not None: cyclic_callback.plot()
