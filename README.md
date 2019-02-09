@@ -1,3 +1,5 @@
+**N.B.: LUMIN is not yet officially released and is currently undergoing beta testing. Feel free to check it out and provide feedback if you want, but there's no guarantee it will work at the moment. If by some chance you think it's pretty neat, I would ask that you avoid advertising it to others until testing is finished and this message goes away. Cheers, Giles**
+
 # LUMIN: Lumin Unifies Many Improvements for Networks
 LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-specific requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
 
