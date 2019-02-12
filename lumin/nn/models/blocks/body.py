@@ -37,12 +37,10 @@ class FullyConnected(nn.Module):
     
     def forward(self, x:Tensor) -> Tensor:
         if self.dense:
-            for l in self.layers[:-1]:
-                x = torch.cat((l(x), x), 1)
+            for l in self.layers[:-1]: x = torch.cat((l(x), x), 1)
             x = self.layers[-1](x)
         else:
-            for l in self.layers:
-                x = l(x)+x if self.res else l(x)
+            for l in self.layers: x = l(x)+x if self.res else l(x)
         return x
     
     def get_out_size(self) -> int:

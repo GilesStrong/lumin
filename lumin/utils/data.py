@@ -34,7 +34,6 @@ def _check_val_set_fy(train:FoldYielder, val:FoldYielder, test:Optional[FoldYiel
             if train_feats is None: train_feats = [f for f in df_trn.columns if 'gen_' not in f]
 
             m = RandomForestClassifier(n_estimators=40, min_samples_leaf=25, n_jobs=-1)
-            df_trn.replace([np.inf, -np.inf], np.nan, inplace=True)
             m.fit(df_trn[train_feats], df_trn['gen_target'], df_trn['gen_weight'])
             aucs.append(roc_auc_score(df_val['gen_target'], m.predict(df_val[train_feats]), sample_weight=df_val['gen_weight']))
             fi = fi.append(get_rf_feat_importance(m, df_val[train_feats], df_val['gen_target'], df_val['gen_weight']), ignore_index=True)
