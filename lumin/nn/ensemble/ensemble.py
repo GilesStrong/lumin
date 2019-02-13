@@ -18,6 +18,7 @@ from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
+from ...utils.statistics import uncert_round
 
 
 class Ensemble(AbsEnsemble):
@@ -128,7 +129,8 @@ class Ensemble(AbsEnsemble):
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
             if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_id, pred_name=pred_name)
             else: fold_yielder.save_fold_pred(pred[:, 0], fold_id, pred_name=pred_name)
-        print(f'Mean time per event = {np.mean(times):.4E}±{np.std(times, ddof=1)/np.sqrt(len(times)):.4E}')
+        times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
+        print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]:
         if not isinstance(in_data, FoldYielder): return self.predict_array(in_data, n_models)

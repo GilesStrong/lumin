@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 from pathlib import Path
 import pickle
 from collections import OrderedDict
@@ -25,7 +25,8 @@ def get_pre_proc_pipes(norm_in=False, norm_out=False, pca=False, whiten=False, w
     return input_pipe, output_pipe
 
 
-def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], save_path:Optional[Path]=None) -> Pipeline:
+def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], save_path:Optional[Union[Path, str]]=None) -> Pipeline:
+    if isinstance(save_path, str): save_path = Path(save_path)
     input_pipe, _ = get_pre_proc_pipes(norm_in=True)
     input_pipe.fit(df[cont_feats].values.astype('float32'))
     if save_path is not None:
@@ -33,7 +34,8 @@ def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], save_path:Optional[Pat
     return input_pipe
 
 
-def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], save_path:Optional[Path]=None) -> Pipeline:
+def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], save_path:Optional[Union[Path, str]]=None) -> Pipeline:
+    if isinstance(save_path, str): save_path = Path(save_path)
     _, output_pipe = get_pre_proc_pipes(norm_out=True)
     output_pipe.fit(df[targ_feats].values.astype('float32'))
     if save_path is not None:

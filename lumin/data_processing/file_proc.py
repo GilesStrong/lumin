@@ -9,8 +9,8 @@ from sklearn.model_selection import StratifiedKFold, KFold
 
 
 def save_to_grp(data:np.ndarray, grp:Group, name:str) -> None:
-    d = grp.create_dataset(name, shape=data.shape, dtype=data.dtype.name)
-    d[...] = data
+    d = grp.create_dataset(name, shape=data.shape, dtype=data.dtype.name if data.dtype.name != 'object' else 'S16')
+    d[...] = data if data.dtype.name != 'object' else data.astype('S16')
 
 
 def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_id:int,
@@ -23,14 +23,14 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_id:int,
     save_to_grp(x, grp, 'inputs')
     save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
     if weight_feat is not None: save_to_grp(df[weight_feat].values.astype('float32'), grp, 'weights')
-    for m in misc_feats: save_to_grp(df[m], grp, m)  
+    for m in misc_feats: save_to_grp(df[m].values, grp, m)  
 
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
                 targ_feats:Union[str,List[str]], savename:str, targ_type:Any,
                 strat_key:str=None, misc_feats:List[str]=[], weight_feat:Optional[str]=None):
     os.system(f'rm {savename}.hdf5')
-    os.makedirs(savename, exist_ok=True)
+    os.makedirs(savename[:savename.rfind('/')], exist_ok=True)
     out_file = h5py.File(f'{savename}.hdf5', "w")
 
     if strat_key is None:

@@ -18,6 +18,7 @@ from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.misc import to_device
+from ...utils.statistics import uncert_round
 
 
 class Model(AbsModel):
@@ -112,7 +113,8 @@ class Model(AbsModel):
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
             if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_id, pred_name=pred_name)
             else: fold_yielder.save_fold_pred(pred[:, 0], fold_id, pred_name=pred_name)
-        print(f'Mean time per event = {np.mean(times):.4E}±{np.std(times, ddof=1)/np.sqrt(len(times)):.4E}')
+        times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
+        print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred') -> Union[np.ndarray, Tensor, None]:
         if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np)
