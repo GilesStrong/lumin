@@ -13,44 +13,33 @@ from ...plotting.plot_settings import PlotSettings
 
 
 class AbsModelCallback(Callback):
-    def __init__(self, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None, cyclic_callback:Optional[AbsCyclicCallback]=None, plot_settings:PlotSettings=PlotSettings()):
+    def __init__(self, model:Optional[AbsModel]=None, val_fld:Optional[np.ndarray]=None,
+                 cyclic_callback:Optional[AbsCyclicCallback]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
-        self.val_fold = val_fold
-        self.cyclic_callback = cyclic_callback
-        self.active = False
+        self.val_fld,self.cyclic_callback,self.active = val_fld,cyclic_callback,False
 
-    def set_val_fold(self, val_fold:np.ndarray) -> None:
-        self.val_fold = val_fold
-
-    def set_cyclic_callback(self, cyclic_callback:AbsCyclicCallback) -> None:
-        self.cyclic_callback = cyclic_callback
+    def set_val_fold(self, val_fld:np.ndarray) -> None: self.val_fld = val_fld
+    def set_cyclic_callback(self, cyclic_callback:AbsCyclicCallback) -> None: self.cyclic_callback = cyclic_callback
 
     @abstractmethod
     def get_loss(self) -> float: pass
 
 
 class SWA(AbsModelCallback):
-    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
+    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fld:Optional[np.ndarray]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, verbose=False, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback, plot_settings=plot_settings)
+        super().__init__(model=model, val_fld=val_fld, cyclic_callback=cyclic_callback, plot_settings=plot_settings)
         self.start_epoch,self.renewal_period,self.cyclic_callback,self.verbose = start_epoch,renewal_period,cyclic_callback,verbose
-        self.weights = None
-        self.loss = None
+        self.weights,self.loss = None,None
         
     def on_train_begin(self, logs={}) -> None:
         if self.weights is None:
             self.weights = copy.deepcopy(self.model.get_weights())
             self.weights_new = copy.deepcopy(self.model.get_weights())
             self.test_model = copy.deepcopy(self.model)
-            self.epoch = 0
-            self.swa_n = 0
-            self.n_since_renewal = 0
-            self.first_completed = False
-            self.cycle_since_replacement = 1
-            self.active = False
+            self.epoch,self.swa_n,self.n_since_renewal,self.first_completed,self.cycle_since_replacement,self.active = 0,0,0,False,1,False
             
-    def on_epoch_begin(self, logs={}) -> None:
-        self.loss = None
+    def on_epoch_begin(self, logs={}) -> None: self.loss = None
 
     def on_epoch_end(self, logs={}) -> None:
         if self.epoch >= self.start_epoch and (self.cyclic_callback is None or self.cyclic_callback.cycle_end):
@@ -89,9 +78,9 @@ class SWA(AbsModelCallback):
     def compare_averages(self) -> None:
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            self.loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+            self.loss = self.test_model.evaluate(Tensor(self.val_fld['inputs']), Tensor(self.val_fld['targets']), to_tensor(self.val_fld['weights']))
         self.test_model.set_weights(self.weights_new)
-        new_loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+        new_loss = self.test_model.evaluate(Tensor(self.val_fld['inputs']), Tensor(self.val_fld['targets']), to_tensor(self.val_fld['weights']))
         
         if self.verbose: print(f"Checking renewal of swa model, current model: {self.loss}, new model: {new_loss}")
         if new_loss < self.loss:
@@ -113,5 +102,5 @@ class SWA(AbsModelCallback):
     def get_loss(self) -> float:
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            self.loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+            self.loss = self.test_model.evaluate(Tensor(self.val_fld['inputs']), Tensor(self.val_fld['targets']), to_tensor(self.val_fld['weights']))
         return self.loss

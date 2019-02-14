@@ -47,5 +47,6 @@
 |Increment|incr|incr_cycle|
 |Number of minibatches|nb||
 |Learning rate|lr||
+|Iteration|iter||
 
 

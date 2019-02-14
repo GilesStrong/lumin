@@ -15,12 +15,8 @@ class AbsCyclicCallback(Callback):
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.param_range,self.cycle_mult,self.decrease_param,self.scale = param_range,cycle_mult,decrease_param,scale
-        self.interp = interp.lower()
+        self.interp,self.cycle_iter,self.cycle_count,self.cycle_end,self.hist = interp.lower(),0,0,False,[]
         if nb is not None: self.nb = self.scale*nb
-        self.cycle_iter = 0
-        self.cycle_count = 0
-        self.cycle_end = False
-        self.hist = []
 
     def set_nb(self, nb:int) -> None: self.nb = self.scale*nb
 
@@ -93,8 +89,7 @@ class OneCycle(AbsCyclicCallback):
     def __init__(self, lengths:Tuple[int,int], lr_range:Tuple[float,float], mom_range:Tuple[float,float], interp:str='cosine',
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
-        self.lengths,self.lr_range,self.mom_range = lengths,lr_range,mom_range
-        self.hist = {'lr': [], 'mom': []}
+        self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
 
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
         self.decrease_param = self.cycle_count % 1 != 0
