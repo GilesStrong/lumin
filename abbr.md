@@ -48,5 +48,6 @@
 |Number of minibatches|nb||
 |Learning rate|lr||
 |Iteration|iter||
+|Limit|lim|lim_y|
 
 

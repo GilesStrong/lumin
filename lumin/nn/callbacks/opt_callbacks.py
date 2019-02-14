@@ -17,15 +17,11 @@ class LRFinder(Callback):
         self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/nb)
         
     def on_train_begin(self, logs:Dict[str,Any]={}):
-        self.best = math.inf
-        self.iter = 0
+        self.best,self.iter = math.inf,0
         self.model.set_lr(self.lr_bounds[0])
-        self.history = {}
-        self.history['loss'] = []
-        self.history['lr'] = []
+        self.history = {'loss': [], 'lr': []}
         
-    def calc_lr(self):
-        return self.lr_bounds[0]*(self.lr_mult**self.iter)
+    def calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
     def plot(self, n_skip=0, n_max:Optional[int]=None, lim_y=None):
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
