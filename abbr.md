@@ -28,4 +28,5 @@
 |On/off, Boolean option|use_*|use_cartesian|
 |value|val|default_vals|
 |Calculation|calc|calc_pair_mass|
+|Normalisation|norm||
 
