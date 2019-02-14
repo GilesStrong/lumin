@@ -9,6 +9,7 @@ import torch.nn as nn
 
 
 class ClassRegMulti(nn.Module):
+    '''Output block for (multi(class/label)) classification or regression tasks'''
     def __init__(self, n_in:int, n_out:int, objective:str, y_range:Optional[Union[Tuple,np.ndarray]]=None):
         super().__init__()
         self.n_in,self.n_out,self.objective,self.y_range = n_in,n_out,objective,y_range

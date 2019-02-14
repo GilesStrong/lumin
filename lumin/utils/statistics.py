@@ -6,6 +6,7 @@ from statsmodels.nonparametric.kde import KDEUnivariate
 
 
 def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[str,Any]]:
+    '''Compute statistics and KDEs of data via sampling with replacement'''
     out_dict, mean, std, c68, boot = {}, [], [], [], []
     name    = ''   if 'name'    not in args else args['name']
     weights = None if 'weights' not in args else args['weights']
@@ -37,11 +38,12 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
     else: return out_dict
 
 
-def get_moments(array:np.ndarray) -> Tuple[float,float,float,float]:
-    n = len(array)
-    m = np.mean(array)
-    m_4 = np.mean((array-m)**4)
-    s = np.std(array, ddof=1)
+def get_moments(arr:np.ndarray) -> Tuple[float,float,float,float]:
+    '''Compute mean and std of data, and their associated uncertainties'''
+    n = len(arr)
+    m = np.mean(arr)
+    m_4 = np.mean((arr-m)**4)
+    s = np.std(arr, ddof=1)
     s4 = s**4
     se_s2 = ((m_4-(s4*(n-3)/(n-1)))/n)**0.25
     se_s = se_s2/(2*s)
@@ -49,6 +51,7 @@ def get_moments(array:np.ndarray) -> Tuple[float,float,float,float]:
 
 
 def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
+    '''Round value according tp given uncertainty'''
     if uncert == 0: return value, uncert
     
     factor = 1.0

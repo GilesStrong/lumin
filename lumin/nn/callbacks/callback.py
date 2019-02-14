@@ -6,6 +6,7 @@ from ...plotting.plot_settings import PlotSettings
 
 
 class Callback(AbsCallback):
+    '''Base callback class'''
     def __init__(self, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         if model is not None: self.set_model(model)
         self.set_plot_settings(plot_settings)

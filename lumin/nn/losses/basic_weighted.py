@@ -5,6 +5,7 @@ import torch
 
 @weak_module
 class WeightedMSE(nn.MSELoss):
+    '''Loss class for weighted mean squared error'''
     def __init__(self, weight=None):
         super().__init__(reduction='mean' if weight is None else 'none')
         self.weights = weight
@@ -17,6 +18,7 @@ class WeightedMSE(nn.MSELoss):
 
 @weak_module
 class WeightedMAE(nn.L1Loss):
+    '''Loss class for weighted mean absolute error'''
     def __init__(self, weight=None):
         super().__init__(reduction='mean' if weight is None else 'none')
         self.weights = weight
@@ -29,6 +31,7 @@ class WeightedMAE(nn.L1Loss):
 
 @weak_module
 class WeightedCCE(nn.NLLLoss):
+    '''Loss class for negative log likelihood loss with more flexible weightings'''
     def __init__(self, weight=None):
         super().__init__(reduction='mean')
         self.weights = weight

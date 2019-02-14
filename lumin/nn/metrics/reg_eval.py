@@ -9,6 +9,8 @@ from ..data.fold_yielder import FoldYielder
 
 
 class RegPull(EvalMetric):
+    '''Compute mean or std of delta or pull of some feature which is being directly regressed to.
+    Optionally, use bootstrap resampling on validation data.'''
     def __init__(self, use_bootstrap:bool=False, use_weights:bool=True, return_mean=False, use_pull=True, targ_name:str='targets', wgt_name:Optional[str]=None):
         super().__init__(targ_name=targ_name, wgt_name=wgt_name)
         self.use_bootstrap,self.use_weights,self.return_mean,self.use_pull = use_bootstrap,use_weights,return_mean,use_pull
@@ -30,6 +32,8 @@ class RegPull(EvalMetric):
 
 
 class RegAsProxyPull(RegPull):
+    '''Compute mean or std of delta or pull of some feature which is being indirectly regressed to via a proxy function.
+    Optionally, use bootstrap resampling on validation data.'''
     def __init__(self, proxy_func, use_bootstrap:bool=False, use_weights:bool=True, return_mean=False, 
                  use_pull=True, targ_name:str='targets', wgt_name:Optional[str]=None):
         super().__init__(use_bootstrap=use_bootstrap, use_weights=use_weights, return_mean=return_mean, use_pull=use_pull, targ_name=targ_name, wgt_name=wgt_name)

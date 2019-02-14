@@ -20,8 +20,7 @@ def binary_class_cut(df:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
     '''Find a fluctaution resiliant cut which should generalise better by 
     taking the mean class prediction of the top top_perc percentage of points
     as ranked by AMS'''
-    sig = (df.gen_target == 1)
-    bkg = (df.gen_target == 0)
+    sig, bkg = (df.gen_target == 1), (df.gen_target == 0)
     if 'ams' not in df.columns:
         df['ams'] = -1
         df.loc[df[pred_name] >= min_pred, 'ams'] = df[df[pred_name] >= min_pred].apply(

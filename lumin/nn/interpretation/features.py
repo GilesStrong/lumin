@@ -16,6 +16,9 @@ from torch import Tensor
 
 
 def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
+    '''Compute permutation importance of features used by a NN.
+    Returns bootstrapped mean importance from sample constructed by computing importance for each fold in fy.
+    Default importance computed using loss, but can optionally compute it using eval_metric''' 
     feats = fy.cont_feats + fy.cat_feats
     scores = []
     fold_bar = progress_bar(range(fy.n_folds), parent=pb_parent)
@@ -52,6 +55,9 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
 
 
 def get_ensemble_feat_importance(ensemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+    '''Compute permutation importance of features used by an ensemble of NNs.
+    Returns bootstrapped mean importance from sample constructed by computing importance for each model in ensemble.
+    Default importance computed using loss, but can optionally compute it using eval_metric'''
     mean_fi = []
     std_fi = []
     feats = fy.cont_feats + fy.cat_feats

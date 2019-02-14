@@ -9,6 +9,9 @@ from ..initialisations import lookup_init
 
 
 class FullyConnected(nn.Module):
+    '''Fully connected set of hidden layers.
+    Can optionaly have skip connections between each layer (res=true).
+    Alternatively can concatinate layers (dense=true)'''
     def __init__(self, n_in:int, depth:int, width:int, do:float, bn:bool, act:str, res:bool, dense:bool, freeze:bool=False):
         super().__init__()
         self.n_in,self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.freeze = n_in,depth,width,do,bn,act,res,dense,freeze

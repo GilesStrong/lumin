@@ -27,6 +27,7 @@ def str2bool(string:str) -> bool:
 
 
 def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) -> None:
+    '''Map class precitions back to a binary prediction'''
     zero = df[zero_preds].max(axis=1)[:, None]
     one = df[one_preds].max(axis=1)[:, None]
     tup = np.hstack((zero, one))
@@ -37,6 +38,7 @@ def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) 
 
 
 def ids2unique(ids: Union[List, np.ndarray]) -> np.ndarray:
-    if not isinstance(ids, np.ndarray): x = np.array(ids)[:,None]
-    primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+ids.shape[1])]), x.shape)
+    '''Map list of inetegrs to a unique number'''
+    if not isinstance(ids, np.ndarray): ids = np.array(ids)[:,None]
+    primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+ids.shape[1])]), ids.shape)
     return (primes**ids).prod(axis=-1)

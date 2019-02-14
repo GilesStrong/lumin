@@ -13,6 +13,7 @@ from ...plotting.plot_settings import PlotSettings
 
 
 class AbsModelCallback(Callback):
+    '''Abstract class for callbacks which provide alternative models during training'''
     def __init__(self, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
@@ -27,6 +28,7 @@ class AbsModelCallback(Callback):
 
 
 class SWA(AbsModelCallback):
+    '''Track weight-avergaed model during training using Stochastic Weight Averaging https://arxiv.org/abs/1803.05407'''
     def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, verbose=False, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback, plot_settings=plot_settings)

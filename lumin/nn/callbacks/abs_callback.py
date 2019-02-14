@@ -3,6 +3,7 @@ from abc import ABC
 
 
 class AbsCallback(ABC):
+    '''Abstract callback class for typing'''
     def __init__(self): pass
     def set_model(self): pass
     def set_plot_settings(self): pass

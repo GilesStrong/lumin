@@ -10,6 +10,7 @@ from sklearn.decomposition import PCA
 
 
 def get_pre_proc_pipes(norm_in=False, norm_out=False, pca=False, whiten=False, with_mean=True, with_std=True):
+    '''Returns a tuple of sklearn pipelines containing requested transformations'''
     steps_in = []
     if not norm_in and not pca:
         steps_in.append(('ident', StandardScaler(with_mean=False, with_std=False)))  # For compatability
@@ -26,6 +27,7 @@ def get_pre_proc_pipes(norm_in=False, norm_out=False, pca=False, whiten=False, w
 
 
 def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], savepath:Optional[Union[Path, str]]=None) -> Pipeline:
+    '''Fit pipeline to continuous features and optionally save to savepath'''
     if isinstance(savepath, str): savepath = Path(savepath)
     input_pipe, _ = get_pre_proc_pipes(norm_in=True)
     input_pipe.fit(df[cont_feats].values.astype('float32'))
@@ -35,6 +37,7 @@ def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], savepath:Optional[Unio
 
 
 def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], savepath:Optional[Union[Path, str]]=None) -> Pipeline:
+    '''Fit pipeline to targets and optionally save to savepath. Have you thought about using a y_range for regression instead?'''
     if isinstance(savepath, str): savepath = Path(savepath)
     _, output_pipe = get_pre_proc_pipes(norm_out=True)
     output_pipe.fit(df[targ_feats].values.astype('float32'))
@@ -45,6 +48,9 @@ def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], savepath:Optional[Uni
 
 def proc_cats(train_df:pd.DataFrame, cat_feats:List[str], 
               val_df:Optional[pd.DataFrame]=None, test_df:Optional[pd.DataFrame]=None) -> Tuple[OrderedDict,OrderedDict]:
+    '''Process categorical features in train_df to be valued 0->cardinality-1.
+    Applies same transformation to validation adn testing data.
+    Returns transformation maps and cardinalities'''
     cat_maps = OrderedDict()
     cat_szs = OrderedDict()
     for feat in cat_feats:

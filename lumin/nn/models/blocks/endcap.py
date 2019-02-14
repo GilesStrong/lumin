@@ -10,6 +10,8 @@ from ....utils.misc import to_np
 
 
 class AbsEndcap(nn.Module):
+    '''Abstract class for constructing post training layer which performs furtehr calculation on NN outputs.
+    Used when NN was trained to some proxy objective'''
     def __init__(self, model:nn.Module):
         super().__init__()
         self.model = model

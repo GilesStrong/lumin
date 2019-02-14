@@ -2,6 +2,7 @@ from pathlib import Path
 
 
 class PlotSettings:
+    '''Class to provide control over plot appearances'''
     def __init__(self, **kargs):
         self.style       = 'whitegrid'  if 'style'       not in kargs else kargs['style']
         self.cat_palette = 'colorblind' if 'cat_palette' not in kargs else kargs['cat_palette']

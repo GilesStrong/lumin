@@ -9,6 +9,7 @@ from sklearn.pipeline import Pipeline
 
 
 class FoldYielder:
+    '''Base class for accessing data from foldfile'''
     def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
@@ -122,6 +123,7 @@ class FoldYielder:
 
 
 class HEPAugFoldYielder(FoldYielder):
+    '''Accessing data from foldfile and apply HEP specific data augmentation during training and testing'''
     def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,

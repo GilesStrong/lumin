@@ -22,6 +22,7 @@ from ...utils.statistics import uncert_round
 
 
 class Ensemble(AbsEnsemble):
+    '''Standard class for building an ensemble object'''
     def __init__(self, input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None, model_builder:Optional[ModelBuilder]=None):
         super().__init__()
         self.input_pipe,self.output_pipe,self.model_builder = input_pipe,output_pipe,model_builder
@@ -87,17 +88,17 @@ class Ensemble(AbsEnsemble):
         self.n_out = self.models[0].get_out_size()
         self.results = results
         
-    def predict_array(self, array:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
-        pred = np.zeros((len(array), self.n_out))
+    def predict_array(self, arr:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
+        pred = np.zeros((len(arr), self.n_out))
         
         n_models = len(self.models) if n_models is None else n_models
         models = self.models[:n_models]
         weights = self.weights[:n_models]
         weights = weights/weights.sum()
         
-        array = Tensor(array)
+        arr = Tensor(arr)
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=bool(parent_bar))):
-            tmp_pred = m.predict(array)
+            tmp_pred = m.predict(arr)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred

@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 
 
 class LRFinder(Callback):
+    '''Callback class for Smith lr range test https://arxiv.org/abs/1803.09820'''
     def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.lr_bounds = lr_bounds

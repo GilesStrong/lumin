@@ -1,8 +1,9 @@
 import multiprocessing as mp
-from typing import Callable, Any,Dict
+from typing import Callable, Any, List, Dict
 
 
-def mp_run(args:Dict[Any,Any], func:Callable[[Any],Any]):
+def mp_run(args:List[Dict[Any,Any]], func:Callable[[Any],Any]):
+    '''Run multiple instances of function sumultaneously with using a list of argument dictionaries'''
     procs = []
     out_q = mp.Queue()
     for i in range(len(args)):

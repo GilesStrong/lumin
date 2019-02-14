@@ -12,7 +12,7 @@ import math
 
 import torch.tensor as Tensor
 
-from ..data.fy import FoldYielder
+from ..data.fold_yielder import FoldYielder
 from ..data.batch_yielder import BatchYielder
 from ..models.model_builder import ModelBuilder
 from ..models.model import Model
@@ -28,8 +28,10 @@ import matplotlib.pyplot as plt
 
 
 def get_folds(val_idx, n_folds, shuffle_folds:bool=True):
+    '''Return (shuffled) list of fold indeces which does not include the validation index'''
     folds = [x for x in range(n_folds) if x != val_idx]
-    return shuffle(folds) if shuffle_folds else folds
+    if shuffle_folds: shuffle(folds)
+    return folds
 
 
 def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder,
@@ -38,7 +40,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         plots:List[str]=['history'], shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
                         plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
-    
+    '''Train a specified numer of models created by ModelBuilder on data provided by FoldYielder, and save them to savepath'''
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")
     
@@ -49,7 +51,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
     train_tmr = timeit.default_timer()
     results,histories,cycle_losses = [],[],[]
-    nb = len(fy.source['fold_0/targets'])//bs
+    nb = len(fy.foldfile['fold_0/targets'])//bs
 
     model_bar = master_bar(np.random.choice(range(fy.n_folds), size=n_models, replace=False))
     model_bar.names = ['Best', 'Train', 'Validation']

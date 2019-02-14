@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 
 def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty',
                     savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Plot feature importances as computted via `get_nn_feat_importance`, `get_ensemble_feat_importance`, or `rf_rank_features`'''
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = plt.subplots(figsize=(settings.w_large, (0.75)*settings.lbl_sz))
         xerr = None if unc_name not in df else 'Uncertainty'
@@ -29,6 +30,7 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
 
 
 def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Visualise weights in provided embedding matrix'''
     with sns.axes_style(settings.style):
         plt.figure(figsize=(settings.w_small, settings.h_small))
         sns.heatmap(to_np(embed['weight']), annot=True, linewidths=.5, cmap=settings.div_palette, annot_kws={'fontsize':settings.leg_sz})
@@ -44,6 +46,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
 def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feats:List[str]=[], input_pipe:Pipeline=None, 
                                sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None,  n_clusters:int=10, n_points:int=20,
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Wrapper for PDPbox to plot 1D dependence of specified feature using provided NN of RF'''
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
     iso = pdp.pdp_isolate(model, df, [f for f in df.columns if f not in ignore_feats], feat, num_grid_points=20)
     if input_pipe is not None: _deprocess_iso(iso, input_pipe, feat, df.columns)
@@ -64,6 +67,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feat
 def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], ignore_feats:List[str]=[], input_pipe:Pipeline=None,
                                sample_sz:Optional[int]=None, weights:Optional[np.ndarray]=None, n_points:Tuple[int,int]=[20,20],
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Wrapper for PDPbox to plot 2D dependence of specified pair of features using provided NN of RF'''    
     check_pdpbox()
     if sample_sz is not None: df = df.sample(sample_sz, weights=weights)
     interact = pdp.pdp_interact(model, df, [f for f in df.columns if f not in ignore_feats], feats, num_grid_points=n_points)

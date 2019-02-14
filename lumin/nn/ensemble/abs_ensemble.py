@@ -7,6 +7,7 @@ from ..data.fold_yielder import FoldYielder
 
 
 class AbsEnsemble(ABC):
+    '''Abstract classs for ensembles'''
     def __init__(self): self.models,self.weights,self.size = [],[],0
 
     def __repr__(self) -> str: return f"Ensemble of size {self.size}\nWeights:\n{self.weights}\nModels:\n{self.models}"

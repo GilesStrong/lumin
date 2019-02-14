@@ -3,10 +3,11 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from ..fy.fold_yielder import FoldYielder
+from ..data.fold_yielder import FoldYielder
 
 
 class EvalMetric(ABC):
+    '''Abstract class for evaluating performance of a model using some metric'''
     def __init__(self, targ_name:str='targets', wgt_name:Optional[str]=None): self.targ_name,self.wgt_name,self.lower_metric_better = targ_name,wgt_name,True
 
     def get_df(self, fy:FoldYielder, idx:int, y_pred:np.ndarray) -> pd.DataFrame:

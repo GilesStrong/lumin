@@ -5,6 +5,8 @@ from fastprogress import progress_bar
 
 
 def calc_ams(s:float, b:float, br:float=0, unc_b:float=0) -> float:
+    '''Compute Approximate Median Significance for signal (background) weight s (b),
+    fractional systemtatic uncertainty unc_b, and offset br'''
     if b == 0: return -1
     if not unc_b:
         radicand = 2*((s+b+br)*np.log(1.0+s/(b+br))-s)

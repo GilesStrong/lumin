@@ -16,6 +16,12 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
               plot_params:List[Dict[str,Any]]={}, size='mid', show_moments=True, ax_labels={'y': 'Density', 'x': None},
               savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''A flexible function to provide indicative information about the 1D distribution of a feature.
+    By default it will produce a weighted KDE+histogram for the [1,99] percentile of the data,
+    as wellas compute the mean and standard deviation of the data in this region.
+    By passing a list of cuts and labels, it will plot multiple distributions of the same feature for different cuts.
+    Since it is designed to provide quick, indicative information, more specific functions (such as `plot_kdes_from_bs`)
+    should be used to provide final results.'''
     if not isinstance(labels, list): labels = [labels]
     if not isinstance(cuts,   list): cuts   = [cuts]
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
@@ -64,6 +70,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
 
 
 def compare_events(events: list) -> None:
+    '''Compare at least two events side by side in their transverse and longitudinal projections'''
     with sns.axes_style('whitegrid'), sns.color_palette('tab10'):
         fig, axs = plt.subplots(3, len(events), figsize=(9*len(events), 18), gridspec_kw={'height_ratios': [1, 0.5, 0.5]})
         for vector in [x[:-3] for x in events[0].columns if '_px' in x.lower()]:
@@ -101,6 +108,7 @@ def compare_events(events: list) -> None:
 
 
 def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient'''
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
         corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
         corr_condensed = hc.distance.squareform(1-corr)
@@ -114,9 +122,10 @@ def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotS
         plt.show()
 
 
-def plot_kdes_from_bs(array:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
+def plot_kdes_from_bs(arr:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
                       feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Plot KDEs computed via bootstrap_stats'''
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, name in enumerate(name2args):
@@ -128,7 +137,7 @@ def plot_kdes_from_bs(array:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:
                 mean, mean_unc = uncert_round(np.mean(bs_stats[f'{name}_mean']), np.std(bs_stats[f'{name}_mean'], ddof=1))
                 std, std_unc = uncert_round(np.mean(bs_stats[f'{name}_std']), np.std(bs_stats[f'{name}_std'], ddof=1))
                 name2args[name]['condition'] += r', $\overline{x}=' + r'{}\pm{}\ \sigma= {}\pm{}$'.format(mean, mean_unc, std, std_unc)
-            sns.tsplot(data=bs_stats[f'{name}_kde'], time=array, **name2args[name])
+            sns.tsplot(data=bs_stats[f'{name}_kde'], time=arr, **name2args[name])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         y_lbl = r'$\frac{1}{N}\ \frac{dN}{d' + feat.replace('$','') + r'}$'

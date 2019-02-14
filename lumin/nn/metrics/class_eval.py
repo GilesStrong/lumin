@@ -8,6 +8,7 @@ from ...utils.misc import to_binary_class
 
 
 class AMS(EvalMetric):
+    '''Compute optimal AMS of classifier which directly predicts the class of data in a binary classifiaction problem'''
     def __init__(self, n_total:int, br:float=0, syst_unc_b:float=0, use_quick_scan:bool=True,
                  targ_name:str='targets', wgt_name:str='orig_weights'):
         super().__init__(targ_name, wgt_name)
@@ -21,6 +22,8 @@ class AMS(EvalMetric):
 
 
 class MultiAMS(AMS):
+    '''Compute optimal AMS of classifier which predicts the class of data
+     in a multiclass classifiaction problem which can be reduced to a binary classification problem'''
     def __init__(self, n_total:int, zero_preds:List[str], one_preds:List[str], br:float=0, syst_unc_b:float=0, use_quick_scan:bool=True,
                  targ_name:str='orig_targets', wgt_name:str='orig_weights', ):
         super().__init__(n_total, br, syst_unc_b, use_quick_scan, targ_name, wgt_name)

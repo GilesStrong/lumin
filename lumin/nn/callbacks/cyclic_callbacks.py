@@ -11,6 +11,7 @@ sns.set_style("whitegrid")
 
 
 class AbsCyclicCallback(Callback):
+    '''Abstract class for callbacks affecting lr or mom'''
     def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
@@ -61,6 +62,9 @@ class AbsCyclicCallback(Callback):
 
 
 class CycleLR(AbsCyclicCallback):
+    '''Cycle lr during training, either:
+    cosine interpolation for SGDR https://arxiv.org/abs/1608.03983
+    or linear interpolation for Smith cycling https://arxiv.org/abs/1506.01186'''
     def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = True if interp == 'cosine' else False
@@ -74,6 +78,9 @@ class CycleLR(AbsCyclicCallback):
 
 
 class CycleMom(AbsCyclicCallback):
+    '''Cycle momentum (beta_1) during training, either:
+    cosine interpolation for SGDR https://arxiv.org/abs/1608.03983
+    or linear interpolation for Smith cycling https://arxiv.org/abs/1506.01186'''
     def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = False if interp == 'cosine' else True
@@ -87,6 +94,8 @@ class CycleMom(AbsCyclicCallback):
 
 
 class OneCycle(AbsCyclicCallback):
+    '''Smith 1-cycle evolution for lr and momentum (beta_1) https://arxiv.org/abs/1803.09820
+    Default interpolation uses fastai-style cosine function'''
     def __init__(self, lengths:Tuple[int,int], lr_range:Tuple[float,float], mom_range:Tuple[float,float], interp:str='cosine',
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)

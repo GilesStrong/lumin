@@ -14,6 +14,7 @@ from ....plotting.interpretation import plot_embedding
 
 
 class CatEmbHead(nn.Module):
+    '''Standard model head for columnar data. Provides inputs for continuous features, and embeddign matrices for categorical inputs'''
     def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float,
                  cat_names:Optional[List[str]], emb_load_path:Optional[Path], freeze:bool=False):
         super().__init__()
@@ -59,7 +60,7 @@ class CatEmbHead(nn.Module):
         path = self.emb_load_path if path is None else path
         avail = {x.index(x[:-3]): x for x in glob(f'{path}/*.h5') if x[x.rfind('/')+1:-3] in self.cat_names}
         print(f'Loading embedings: {avail}')
-        for i in avail: self.embeds[i].load_state_dict(torch.load(avail[i]))
+        for i in avail: self.embeds[i].load_state_dict(torch.load(avail[i], map_location='cpu'))
             
     def save_embeds(self, path:Path) -> None:
         os.makedirs(path, exist_ok=True)

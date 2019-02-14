@@ -9,6 +9,7 @@ from ..callbacks.abs_callback import AbsCallback
 
 
 class AbsModel(ABC):
+    '''Abstract model class for typing'''
     def __init__(self): pass
     
     @abstractmethod

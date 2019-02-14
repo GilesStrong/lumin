@@ -9,6 +9,7 @@ Todo:
 
 
 def to_cartesian(df:pd.DataFrame, vec:str, drop:bool=False) -> None:
+    '''Convert vector to Cartesian coordinates inplace, optionally dropping old pT,eta,phi features'''
     z = f'{vec}_eta' in df.columns
     try:
         pt = df[f'{vec}_pT']
@@ -28,6 +29,7 @@ def to_cartesian(df:pd.DataFrame, vec:str, drop:bool=False) -> None:
 
 
 def to_pt_eta_phi(df:pd.DataFrame, vec:str, eta:bool=True, drop:bool=False) -> None:
+    '''Convert vector to pT,eta,phi coordinates inplace, optionally dropping old px,py,pz features'''
     px = df[f"{vec}_px"]
     py = df[f"{vec}_py"]
     if eta: pz = df[f"{vec}_pz"]  
@@ -72,6 +74,8 @@ def add_mt(df:pd.DataFrame, vec:str, mpt_name:str='mpt'):
 
 
 def get_vecs(feats:List[str], strict:bool=True) -> List[str]:
+    '''Get list of vector from list of features.
+    if strict, return only vectors with all coordinates present in feature list'''
     low = [f.lower() for f in feats]
     all_vecs = [f for f in feats if (f.lower().endswith('_pt') or f.lower().endswith('_phi') or f.lower().endswith('_eta')) or 
                                     (f.lower().endswith('_px') or f.lower().endswith('_py')  or f.lower().endswith('_pz'))]
@@ -115,6 +119,8 @@ def fix_event_y(df:pd.DataFrame, ref_vec_0:str, ref_vec_1:str) -> None:
 
 
 def event_to_cartesian(df:pd.DataFrame, drop:bool=False, ignore:List[str]=[]) -> None:
+    '''Convert entire event to Cartesian coordinates, except vectors in ignore.
+    Optionally, drop old pT,eta,phi features'''
     for v in get_vecs(df.columns):
         if v not in ignore: to_cartesian(df, v, drop=drop)
 
@@ -145,7 +151,9 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
         df.drop(columns=[f'{f}keep'], inplace=True)
 
 
-def calc_pair_mass(df: pd.DataFrame, masses:Tuple[float,float], feat_map:Dict[str,str]) -> np.ndarray:
+def calc_pair_mass(df:pd.DataFrame, masses:Tuple[float,float], feat_map:Dict[str,str]) -> np.ndarray:
+    '''Compute invarient mass of pair of particles with given masses, using 3-momenta.
+    feat_map maps requested momentum components to the features in df'''
     tmp = pd.DataFrame()
     tmp['0_E'] = np.sqrt((masses[0]**2)+np.square(df.loc[:, feat_map['0_px']])+np.square(df.loc[:, feat_map['0_py']])+np.square(df.loc[:, feat_map['0_pz']]))
     tmp['1_E'] = np.sqrt((masses[1]**2)+np.square(df.loc[:, feat_map['1_px']])+np.square(df.loc[:, feat_map['1_py']])+np.square(df.loc[:, feat_map['1_pz']]))

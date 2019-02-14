@@ -7,7 +7,7 @@ import timeit
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
-from ..nn.data.fy import FoldYielder
+from ..nn.data.fold_yielder import FoldYielder
 from ..nn.data.batch_yielder import BatchYielder
 from ..nn.models.model_builder import ModelBuilder
 from ..nn.models.model import Model
@@ -22,6 +22,7 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
                       params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
                       verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
+    '''Uses a guided grid search to roughly optimise random forest parameters'''
     rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
     
     best_params = {'n_estimators': 40, 'n_jobs': -1, 'max_features':'sqrt'}
@@ -55,6 +56,7 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
                  plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
+    '''Wrapper function for running Smith LR range tests (https://arxiv.org/abs/1803.09820) using folds in FoldYielder'''
     tmr = timeit.default_timer()
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
     lr_finders = []

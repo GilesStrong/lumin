@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 
 def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
+    '''Compute bootstrap statistics for a list of datasets simultaneously using multiprocessing'''
     out_dict,scores = {},[]
     if 'name' not in args: args['name'] = ''
     if 'n'    not in args: args['n']    = 100
@@ -33,6 +34,7 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
 def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', wgt_name:Optional[str]=None, 
              labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
              n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Plot receiver operating characteristic curve, optionally using booststrap resampling'''
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         if isinstance(data, pd.DataFrame): data,plot_params = [data],[plot_params]
         if labels      is None: labels      = ['' for i in range(len(data))]
@@ -80,6 +82,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
 
 
 def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
+    '''Returns set of samples present in df ordered by sum of weights''' 
     samples = set(df[sample_name])
     weights = [np.sum(df[df[sample_name] == sample][wgt_name]) for sample in samples]
     return [x[0] for x in np.array(sorted(zip(samples, weights), key=lambda x: x[1]))]
@@ -88,6 +91,7 @@ def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
 def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name=None, wgt_scale:float=1,
                            log_y:bool=False, lim_x:Tuple[float,float]=(0,1), density=True, 
                            savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    '''Basic plotter for prediction distirbution in a binary class problem'''
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for targ in sorted(set(data[targ_name])):
@@ -114,7 +118,9 @@ def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_targe
                      wgt_scale:float=1, bins:Union[int,List[int]]=35, log_y:bool=True, lim_x:Tuple[float,float]=(0,1),
                      density=False, zoom_args:Optional[Dict[str,Any]]=None,
                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''Example zoom_args: {'x':(0.95,1.0), 'y':(1, 1000), 'width_scale'=1.6}'''
+    '''More advanceed plotter for prediction distirbution in a binary class problem with stacked distributions for backgrounds
+    Can also zoom in to specified parts of plot, e.g.:
+   zoom_args={'x':(0.4,0.45), 'y':(0.2, 1500), 'anchor':(0,0.25,0.95,1), 'width_scale':1, 'width_zoom':4, 'height_zoom':3}'''
     hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)

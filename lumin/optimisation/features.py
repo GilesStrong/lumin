@@ -10,6 +10,7 @@ from ..utils.mod_ver import check_rfpimp
 
 
 def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
+    '''Wrapper function for rfpimp which checks correct version is installed'''
     check_rfpimp(); from rfpimp import importances
     return importances(rf, inputs, targets, features=inputs.columns, sample_weights=weights).reset_index()
 
@@ -17,6 +18,7 @@ def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.n
 def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
                      train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None,
                      importance_cut:float=0.0) -> List[str]:
+    '''Rank train_feats via permutation importance using random forests'''
     w_trn = None if wgt_name is None else train_df[wgt_name]
     w_val = None if wgt_name is None else val_df[wgt_name]
     print("Optimising RF")

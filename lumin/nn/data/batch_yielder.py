@@ -13,6 +13,8 @@ Todo
 
 
 class BatchYielder:
+    '''Yields minibatches to model during training. Default mode is to dump all data on GPU.
+    Switch off `bulk_move` if memory capacity is an issue or split data into more folds'''
     def __init__(self, inputs:np.ndarray, targets:np.ndarray, bs:int, objective:str,
                  weights:Optional[np.ndarray]=None, shuffle=True, use_weights:bool=True, bulk_move=True):
         self.inputs,self.targets,self.weights,self.bs,self.objective,self.shuffle,self.use_weights,self.bulk_move = \

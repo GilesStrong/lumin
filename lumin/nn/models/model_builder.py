@@ -23,6 +23,7 @@ Todo
 
 
 class ModelBuilder(object):
+    '''Class to build models to specified architecture on demand along with an optimiser'''
     def __init__(self, objective:str, n_cont_in:int, n_out:int, y_range:Optional[Union[Tuple,np.ndarray]]=None,
                  model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_args:Dict[str,Any]=None,
                  loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
@@ -133,7 +134,7 @@ class ModelBuilder(object):
         return nn.Sequential(head, body, tail)
 
     def load_pretrained(self, model:nn.Module):
-        state = torch.load(self.pretrain_file)
+        state = torch.load(self.pretrain_file, map_location='cpu')
         print('Loading pretrained model')
         return model.load_state_dict(state['model'])
 

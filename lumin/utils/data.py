@@ -12,6 +12,8 @@ from .statistics import uncert_round
 
 
 def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
+    '''Method to check validation set suitability by seeing whether random forests can predict whether events belong to one dataset or the other.
+    Trainings are run once per fold and averaged.'''
     n = min(train_fy.n_folds, val_fy.n_folds)
     if test_fy is not None: n = min(n, test_fy.n_folds)
     if n_folds is not None:  n = min(n, n_folds)
@@ -50,6 +52,7 @@ def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional
 
 
 def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFrame,np.ndarray], test:Optional[Union[pd.DataFrame,np.ndarray]]=None) -> None:
+    '''Method to check validation set suitability by seeing whether random forests can predict whether events belong to one dataset or the other.'''
     if not isinstance(train, pd.DataFrame): 
         train = pd.DataFrame(np.nan_to_num(train))
         val = pd.DataFrame(np.nan_to_num(val))
@@ -84,6 +87,8 @@ def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFra
 
 def check_val_set(train:Union[pd.DataFrame,np.ndarray,FoldYielder], val:Union[pd.DataFrame,np.ndarray,FoldYielder],
                   test:Optional[Union[pd.DataFrame,np.ndarray,FoldYielder]]=None, n_folds:Optional[int]=None) -> None:
+    '''Method to check validation set suitability by seeing whether random forests can predict whether events belong to one dataset or the other.
+    If FoldYielders are passed, then trainings are run once per fold and averaged.'''
     if isinstance(train, FoldYielder): _check_val_set_fy(train, val, test, n_folds)
     if isinstance(train, pd.DataFrame) or isinstance(train, np.ndarray): _check_val_set_np(train, val, test)
 

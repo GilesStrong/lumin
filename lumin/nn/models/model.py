@@ -14,7 +14,7 @@ from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
 from ...utils.misc import to_np
-from ..data.fy import FoldYielder
+from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.misc import to_device
@@ -22,6 +22,7 @@ from ...utils.statistics import uncert_round
 
 
 class Model(AbsModel):
+    '''Class to handle training and inference of NNs created via a ModelBuilder'''
     def __init__(self, model_builder:ModelBuilder=None):
         self.model_builder = model_builder
         if self.model_builder is not None:
@@ -88,7 +89,7 @@ class Model(AbsModel):
 
     def predict_folds(self, fy:FoldYielder, pred_name:str='pred') -> None:
         times = []
-        mb = master_bar(range(len(fy.source)))
+        mb = master_bar(range(len(fy.foldfile)))
         for fold_idx in mb:
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
