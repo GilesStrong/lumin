@@ -39,4 +39,5 @@
 |Maximum|max|max_ams|
 |Approximate Medean Significance|ams||
 |Progress|prog|show_prog|
+|Size|sz|step_sz|
 
