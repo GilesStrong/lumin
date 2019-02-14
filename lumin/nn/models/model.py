@@ -96,23 +96,23 @@ class Model(AbsModel):
     def predict_folds(self, fold_yielder:FoldYielder, pred_name:str='pred') -> None:
         times = []
         mb = master_bar(range(len(fold_yielder.source)))
-        for fold_id in mb:
+        for fold_idx in mb:
             fold_tmr = timeit.default_timer()
             if not fold_yielder.test_time_aug:
-                fold = fold_yielder.get_fold(fold_id)['inputs']
+                fold = fold_yielder.get_fold(fold_idx)['inputs']
                 pred = self.predict_array(fold)
 
             else:
                 tmpPred = []
                 pb = progress_bar(range(fold_yielder.aug_mult), parent=mb)
                 for aug in pb:
-                    fold = fold_yielder.get_test_fold(fold_id, aug)['inputs']
+                    fold = fold_yielder.get_test_fold(fold_idx, aug)['inputs']
                     tmpPred.append(self.predict_array(fold))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
-            if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_id, pred_name=pred_name)
-            else: fold_yielder.save_fold_pred(pred[:, 0], fold_id, pred_name=pred_name)
+            if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_idx, pred_name=pred_name)
+            else: fold_yielder.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
         times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
         print(f'Mean time per event = {times[0]}±{times[1]}')
 

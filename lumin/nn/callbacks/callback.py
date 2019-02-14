@@ -11,5 +11,6 @@ class Callback(AbsCallback):
         self.set_plot_settings(plot_settings)
 
     def set_model(self, model:AbsModel) -> None: self.model = model
+    
     def set_plot_settings(self, plot_settings:PlotSettings) -> None: self.plot_settings = plot_settings
         

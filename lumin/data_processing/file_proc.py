@@ -14,17 +14,17 @@ def save_to_grp(arr:np.ndarray, grp:Group, name:str) -> None:
     ds[...] = arr if arr.dtype.name != 'object' else arr.astype('S16')
 
 
-def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fld_idx:int,
+def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
                   cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:str,
                   misc_feats:List[str]=[], wgt_feat:Optional[str]=None) -> None:
-    grp = out_file.create_group(f'fold_{fld_idx}')
+    grp = out_file.create_group(f'fold_{fold_idx}')
     save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
     save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
     if wgt_feat is not None: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
     for f in misc_feats: save_to_grp(df[f].values, grp, f)  
 
 
-def df2foldfile(df:pd.DataFrame, n_flds:int, cont_feats:List[str], cat_feats:List[str],
+def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
                 strat_key:str=None, misc_feats:List[str]=[], wgt_feat:Optional[str]=None):
     savename = str(savename)
@@ -33,13 +33,13 @@ def df2foldfile(df:pd.DataFrame, n_flds:int, cont_feats:List[str], cat_feats:Lis
     out_file = h5py.File(f'{savename}.hdf5', "w")
 
     if strat_key is None:
-        kf = KFold(n_splits=n_flds, shuffle=True)
+        kf = KFold(n_splits=n_folds, shuffle=True)
         folds = kf.split(df)
     else:
-        kf = StratifiedKFold(n_splits=n_flds, shuffle=True)
+        kf = StratifiedKFold(n_splits=n_folds, shuffle=True)
         folds = kf.split(df, df[strat_key])
-    for fld_idx, (_, fold) in enumerate(folds):
-        print(f"Saving fold {fld_idx} with {len(fold)} events")
-        fold2foldfile(df.iloc[fold].copy(), out_file, fld_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
+    for fold_idx, (_, fold) in enumerate(folds):
+        print(f"Saving fold {fold_idx} with {len(fold)} events")
+        fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
                       targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat)
                       

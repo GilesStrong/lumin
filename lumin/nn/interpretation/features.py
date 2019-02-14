@@ -18,16 +18,16 @@ from torch import Tensor
 def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
     feats = fold_yielder.cont_feats + fold_yielder.cat_feats
     scores = []
-    fold_bar = progress_bar(range(fold_yielder.n_flds), parent=pb_parent)
-    for fold_id in fold_bar:  # Average over folds
-        val_fold = fold_yielder.get_fold(fold_id)
+    fold_bar = progress_bar(range(fold_yielder.n_folds), parent=pb_parent)
+    for fold_idx in fold_bar:  # Average over folds
+        val_fold = fold_yielder.get_fold(fold_idx)
         if val_fold['weights'] is not None: val_fold['weights'] /= val_fold['weights'].sum()
         targs = Tensor(val_fold['targets'])
         weights = to_tensor(val_fold['weights'])
         if eval_metric is None:
             nom = model.evaluate(Tensor(val_fold['inputs']), targs, weights=weights)
         else:
-            nom = eval_metric.evaluate(fold_yielder, fold_id, model.predict(Tensor(val_fold['inputs'])))
+            nom = eval_metric.evaluate(fold_yielder, fold_idx, model.predict(Tensor(val_fold['inputs'])))
         tmp = []
         for i in range(len(feats)):
             x = val_fold['inputs'].copy()
@@ -35,7 +35,7 @@ def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric
             if eval_metric is None:
                 tmp.append(model.evaluate(Tensor(x), targs, weights=weights))
             else:
-                tmp.append(eval_metric.evaluate(fold_yielder, fold_id, model.predict(Tensor(x))))
+                tmp.append(eval_metric.evaluate(fold_yielder, fold_idx, model.predict(Tensor(x))))
 
         if eval_metric is None:
             tmp = (np.array(tmp)-nom)/nom

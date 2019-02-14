@@ -51,6 +51,7 @@ class AbsCyclicCallback(Callback):
             raise ValueError(f"Interpolation mode {self.interp} not implemented")
 
     def on_epoch_begin(self, logs:Dict[str,Any]={}) -> None: self.cycle_end = False
+    
     def on_batch_end(self,   logs:Dict[str,Any]={}) -> None: self.incr_cycle()
 
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> float:

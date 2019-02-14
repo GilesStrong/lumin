@@ -3,16 +3,15 @@
 |Group|grp||
 |Dataset|ds||
 |DataFrame|df||
-|Fold|fld|fld_idx|
 |Continuous|cont|cont_feats|
 |Categorical|cat|cat_feats|
 |Feature|feat, f|feats|
 |Target|targ, y|targ_feat|
-|Index|idx|fld_idx|
+|Index|idx|fold_idx|
 |Weight|wgt, w| wgt_feat|
 |Stratification|strat|strat_feat|
 |Number|num, n|n_in|
-|Plural|*s|flds|
+|Plural|*s|folds|
 |k-fold|kf||
 |Processing|proc|prco_event|
 |Converting to something|to_*|to_cartesian|
@@ -50,4 +49,8 @@
 |Iteration|iter||
 |Limit|lim|lim_y|
 |Input|x, in||
+|Original|orig|orig_weights|
+|Include|inc_*|inc_inputs|
+|Coordinate|coord||
+|Augment|aug||
 
