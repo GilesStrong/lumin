@@ -131,7 +131,7 @@ def plot_sample_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_
     else:
         width_scale = 1
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette, len(bkg_samples)):
         fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid)) if zoom_args is None else plt.subplots(figsize=(width_scale*settings.w_mid, settings.h_mid))
         if zoom_args is not None: axins = inset_axes(ax, width_zoom, height_zoom, loc='right', bbox_to_anchor=anchor, bbox_transform=ax.figure.transFigure)
         ax.hist([in_data[in_data[sample_name] == sample][pred_name] for sample in bkg_samples],

@@ -14,10 +14,10 @@ from ....plotting.interpretation import plot_embedding
 
 
 class CatEmbHead(nn.Module):
-    def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float, cat_names:Optional[List[str]], emb_load_path:Optional[Path]):
+    def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float, cat_names:Optional[List[str]], emb_load_path:Optional[Path], freeze:bool=False):
         super().__init__()
         self.layers = []
-        self.n_cont_in,self.n_cat_in,self.emb_szs,self.do_cont,self.do_cat,self.cat_names,self.emb_load_path = n_cont_in,n_cat_in,emb_szs,do_cont,do_cat,cat_names,emb_load_path
+        self.n_cont_in,self.n_cat_in,self.emb_szs,self.do_cont,self.do_cat,self.cat_names,self.emb_load_path,self.freeze = n_cont_in,n_cat_in,emb_szs,do_cont,do_cat,cat_names,emb_load_path,freeze
         if self.n_cat_in > 0:
             self.embeds = nn.ModuleList([nn.Embedding(ni, no) for ni, no in self.emb_szs])
             self.layers.append(self.embeds)
@@ -32,9 +32,16 @@ class CatEmbHead(nn.Module):
         if self.n_cat_in > 0:
             self.bn = nn.BatchNorm1d(self.out_size)
             self.layers.append(self.bn)
+        if self.freeze: self.freeze_layers()
     
     def __getitem__(self, key:int) -> nn.Module:
         return self.layers[key]
+
+    def freeze_layers(self):
+        for p in self.parameters(): p.requires_grad = False
+    
+    def unfreeze_layers(self):
+        for p in self.parameters(): p.requires_grad = True
         
     def forward(self, x_in:Tensor) -> Tensor:
         if self.n_cat_in > 0:

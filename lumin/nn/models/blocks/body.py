@@ -9,14 +9,21 @@ from ..initialisations import lookup_init
 
 
 class FullyConnected(nn.Module):
-    def __init__(self, depth:int, width:int, do:float, bn:bool, act:str, res:bool, dense:bool):
+    def __init__(self, n_in:int, depth:int, width:int, do:float, bn:bool, act:str, res:bool, dense:bool, freeze:bool=False):
         super().__init__()
-        self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense = depth,width,do,bn,act,res,dense
-        self.layers = nn.ModuleList([self.get_layer(d) for d in range(depth)])
+        self.n_in,self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.freeze = n_in,depth,width,do,bn,act,res,dense,freeze
+        self.layers = nn.ModuleList([self.get_layer(d, self.n_in if d == 0 else None) for d in range(depth)])
         if dense: self.layers += [self.get_layer(depth, self.width*(2**(self.depth)), self.width)]
+        if self.freeze: self.freeze_layers
 
     def __getitem__(self, key:int) -> nn.Module:
         return self.layers[key]
+
+    def freeze_layers(self):
+        for p in self.parameters(): p.requires_grad = False
+    
+    def unfreeze_layers(self):
+        for p in self.parameters(): p.requires_grad = True
     
     def get_layer(self, idx:int, fan_in:Optional[int]=None, fan_out:Optional[int]=None) -> None:
         width = self.width if not self.dense else self.width*(2**idx)

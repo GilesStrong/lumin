@@ -2,10 +2,12 @@
 import numpy as np
 from typing import Dict, Union, Any, Callable, Tuple, Optional
 from pathlib import Path
+import pickle
 
 import torch.nn as nn
 import torch.optim as optim
 from torch.tensor import Tensor
+import torch
 
 from .layers.activations import lookup_act
 from .initialisations import lookup_init
@@ -25,13 +27,23 @@ class ModelBuilder(object):
                  model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_args:Dict[str,Any]=None,
                  loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
-                 lookup_act:Callable[[str],nn.Module]=lookup_act):
-        self.objective,self.n_cont_in,self.n_out,self.y_range,self.head,self.body,self.tail,self.lookup_init,self.lookup_act = objective.lower(),n_cont_in,n_out,y_range,head,body,tail,lookup_init,lookup_act
+                 lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False):
+        self.objective,self.n_cont_in,self.n_out,self.y_range,self.head,self.body,self.tail,self.lookup_init,self.lookup_act,self.pretrain_file,self.freeze_head,self.freeze_body = objective.lower(),n_cont_in,n_out,y_range,head,body,tail,lookup_init,lookup_act,pretrain_file,freeze_head,freeze_body
         self.parse_loss(loss)
         self.parse_model_args(model_args)
         self.parse_opt_args(opt_args)
         self.parse_cat_args(cat_args)
-    
+
+    @classmethod
+    def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, loss:Optional[Any]=None, opt_args:Optional[Dict[str,Any]]=None):
+        if isinstance(model_builder, str):
+            with open(model_builder, 'rb') as fin: model_builder = pickle.load(fin)
+        cat_args = {'n_cat_in': model_builder.n_cat_in, 'cat_szs': model_builder.cat_szs, 'emb_szs': model_builder.emb_szs, 'cat_names': model_builder.cat_names}
+        model_args = {'width': model_builder.width, 'depth': model_builder.depth, 'do': model_builder.do, 'do_cat': model_builder.do_cat, 'do_cont': model_builder.do_cont, 'bn': model_builder.bn, 'act': model_builder.act, 'res': model_builder.res, 'dense': model_builder.dense}
+        return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out, y_range=model_builder.y_range,
+                   cat_args=cat_args, model_args=model_args, opt_args=opt_args if opt_args is not None else {}, loss=model_builder.loss if loss is None else loss,
+                   head=model_builder.head, body=model_builder.body, tail=model_builder.tail, pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body)
+
     def parse_cat_args(self, cat_args) -> None:
         cat_args = {k.lower(): cat_args[k] for k in cat_args}
         self.n_cat_in      = 0    if 'n_cat_in'      not in cat_args else cat_args['n_cat_in']
@@ -106,19 +118,17 @@ class ModelBuilder(object):
         return nn.Sequential(*layers)
 
     def get_head(self) -> nn.Module:
-        inputs = self.head(self.n_cont_in, self.n_cat_in, self.emb_szs, self.do_cont, self.do_cat, self.cat_names, self.emb_load_path)
-        linear = self.get_dense(inputs.get_out_size())
-        return nn.Sequential(inputs, linear)
+        return self.head(self.n_cont_in, self.n_cat_in, self.emb_szs, self.do_cont, self.do_cat, self.cat_names, self.emb_load_path, freeze=self.freeze_head)
 
-    def get_body(self, depth:int) -> nn.Module:
-        return self.body(depth, self.width, self.do, self.bn, self.act, self.res, self.dense)
+    def get_body(self, n_in:int, depth:int) -> nn.Module:
+        return self.body(n_in, depth, self.width, self.do, self.bn, self.act, self.res, self.dense, freeze=self.freeze_head)
 
     def get_tail(self, n_in) -> nn.Module:
         return self.tail(n_in, self.n_out, self.objective, self.y_range)
 
     def build_model(self) -> nn.Module:
         head = self.get_head()
-        body = self.get_body(self.depth-1)
+        body = self.get_body(head.get_out_size(), self.depth)
         if hasattr(body, 'get_out_size'):
             out_size = body.get_out_size()
         else:
@@ -127,8 +137,14 @@ class ModelBuilder(object):
         tail = self.get_tail(out_size)
         return nn.Sequential(head, body, tail)
 
+    def load_pretrained(self, model:nn.Module):
+        state = torch.load(self.pretrain_file)
+        print('Loading pretrained model')
+        return model.load_state_dict(state['model'])
+
     def get_model(self) -> Tuple[nn.Module, optim.Optimizer, Any]:
         model = self.build_model()
+        if self.pretrain_file is not None: self.load_pretrained(model)
         opt = self.build_opt(model)
         return model, opt, self.loss
 

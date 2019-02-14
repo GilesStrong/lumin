@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from typing import List, Union, Any, Optional
 import os
+from pathlib import Path
 
 from sklearn.model_selection import StratifiedKFold, KFold
 
@@ -27,8 +28,9 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_id:int,
 
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
-                targ_feats:Union[str,List[str]], savename:str, targ_type:Any,
+                targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:Any,
                 strat_key:str=None, misc_feats:List[str]=[], weight_feat:Optional[str]=None):
+    savename = str(savename)
     os.system(f'rm {savename}.hdf5')
     os.makedirs(savename[:savename.rfind('/')], exist_ok=True)
     out_file = h5py.File(f'{savename}.hdf5', "w")
