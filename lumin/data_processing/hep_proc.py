@@ -8,75 +8,73 @@ Todo:
 '''
 
 
-def to_cartesian(in_data:pd.DataFrame, vec:str, drop:bool=False) -> None:
-    z = f'{vec}_eta' in in_data.columns
+def to_cartesian(df:pd.DataFrame, vec:str, drop:bool=False) -> None:
+    z = f'{vec}_eta' in df.columns
     try:
-        pt = in_data[f'{vec}_pT']
+        pt = df[f'{vec}_pT']
         pt_name = f'{vec}_pT'
     except KeyError:
-        pt = in_data[f'{vec}_pt']
+        pt = df[f'{vec}_pt']
         pt_name = f'{vec}_pt'
 
-    if z: eta = in_data[f'{vec}_eta']  
-    phi = in_data[f'{vec}_phi']
-    in_data[f'{vec}_px'] = pt*np.cos(phi)
-    in_data[f'{vec}_py'] = pt*np.sin(phi)
-    if z: in_data[f'{vec}_pz'] = pt*np.sinh(eta)
+    if z: eta = df[f'{vec}_eta']  
+    phi = df[f'{vec}_phi']
+    df[f'{vec}_px'] = pt*np.cos(phi)
+    df[f'{vec}_py'] = pt*np.sin(phi)
+    if z: df[f'{vec}_pz'] = pt*np.sinh(eta)
     if drop:
-        in_data.drop(columns=[pt_name, f"{vec}_phi"], inplace=True)
-        if z: in_data.drop(columns=[f"{vec}_eta"], inplace=True)
+        df.drop(columns=[pt_name, f"{vec}_phi"], inplace=True)
+        if z: df.drop(columns=[f"{vec}_eta"], inplace=True)
 
 
-def to_pt_eta_phi(in_data:pd.DataFrame, vec:str, eta:bool=True, drop:bool=False) -> None:
-    px = in_data[f"{vec}_px"]
-    py = in_data[f"{vec}_py"]
-    if eta: pz = in_data[f"{vec}_pz"]  
-    in_data[f'{vec}_pT'] = np.sqrt(np.square(px) + np.square(py))
-    if eta: in_data[f'{vec}_eta'] = np.arcsinh(pz/in_data[f'{vec}_pT'])
+def to_pt_eta_phi(df:pd.DataFrame, vec:str, eta:bool=True, drop:bool=False) -> None:
+    px = df[f"{vec}_px"]
+    py = df[f"{vec}_py"]
+    if eta: pz = df[f"{vec}_pz"]  
+    df[f'{vec}_pT'] = np.sqrt(np.square(px) + np.square(py))
+    if eta: df[f'{vec}_eta'] = np.arcsinh(pz/df[f'{vec}_pT'])
 
-    in_data[f'{vec}_phi'] = np.arcsin(py/in_data[f'{vec}_pT'])
-    in_data.loc[(in_data[f"{vec}_px"] < 0) & (in_data[f"{vec}_py"] > 0), f'{vec}_phi'] = \
-        np.pi-in_data.loc[(in_data[f"{vec}_px"] < 0) & (in_data[f"{vec}_py"] > 0), f'{vec}_phi']
-    in_data.loc[(in_data[f"{vec}_px"] < 0) & (in_data[f"{vec}_py"] < 0), f'{vec}_phi'] = \
-        -(np.pi + in_data.loc[(in_data[f"{vec}_px"] < 0) & (in_data[f"{vec}_py"] < 0), f'{vec}_phi'])         
-    in_data.loc[(in_data[f"{vec}_px"] < 0) & (in_data[f"{vec}_py"] == 0), f'{vec}_phi'] = \
-        np.random.choice([-np.pi, np.pi], in_data[(in_data[f"{vec}_px"] < 0) & (in_data[f"{vec}_py"] == 0)].shape[0])
+    df[f'{vec}_phi'] = np.arcsin(py/df[f'{vec}_pT'])
+    df.loc[(df[f"{vec}_px"] < 0) & (df[f"{vec}_py"] > 0), f'{vec}_phi'] =   np.pi-df.loc[(df[f"{vec}_px"] < 0) & (df[f"{vec}_py"] > 0), f'{vec}_phi']
+    df.loc[(df[f"{vec}_px"] < 0) & (df[f"{vec}_py"] < 0), f'{vec}_phi'] = -(np.pi+df.loc[(df[f"{vec}_px"] < 0) & (df[f"{vec}_py"] < 0), f'{vec}_phi'])         
+    df.loc[(df[f"{vec}_px"] < 0) & (df[f"{vec}_py"] == 0), f'{vec}_phi'] = \
+        np.random.choice((-np.pi, np.pi), df[(df[f"{vec}_px"] < 0) & (df[f"{vec}_py"] == 0)].shape[0])
 
     if drop:
-        in_data.drop(columns=[f"{vec}_px", f"{vec}_py"], inplace=True)
-        if eta: in_data.drop(columns=[f"{vec}_pz"], inplace=True)
+        df.drop(columns=[f"{vec}_px", f"{vec}_py"], inplace=True)
+        if eta: df.drop(columns=[f"{vec}_pz"], inplace=True)
 
 
-def delta_phi(a:np.ndarray, b:np.ndarray) -> float:
-    tmp = pd.DataFrame()
-    tmp['dphi'] = b-a
-    while len(tmp[tmp.dphi > np.pi]) > 0: tmp.loc[tmp.dphi > np.pi, 'dphi'] -= 2*np.pi
-    while len(tmp[tmp.dphi < -np.pi]) > 0: tmp.loc[tmp.dphi < -np.pi, 'dphi'] += 2*np.pi
-    return tmp.dphi.values
+def delta_phi(arr_a:np.ndarray, arr_b:np.ndarray) -> float:
+    df = pd.DataFrame()
+    df['dphi'] = arr_b-arr_a
+    while len(df[df.dphi > np.pi]) > 0:  df.loc[df.dphi > np.pi, 'dphi']  -= 2*np.pi
+    while len(df[df.dphi < -np.pi]) > 0: df.loc[df.dphi < -np.pi, 'dphi'] += 2*np.pi
+    return df.dphi.values
 
 
-def twist(dphi:float, deta:float) -> float:
-    return np.arctan(np.abs(dphi/deta))
+def twist(dphi:float, deta:float) -> float: return np.arctan(np.abs(dphi/deta))
 
 
-def add_abs_mom(in_data:pd.DataFrame, vec:str, z:bool=True) -> None:
-    if z: in_data[f'{vec}_|p|'] = np.sqrt(np.square(in_data[f'{vec}_px'])+np.square(in_data[f'{vec}_py'])+np.square(in_data[f'{vec}_pz']))
-    else: in_data[f'{vec}_|p|'] = np.sqrt(np.square(in_data[f'{vec}_px'])+np.square(in_data[f'{vec}_py']))
+def add_abs_mom(df:pd.DataFrame, vec:str, z:bool=True) -> None:
+    if z: df[f'{vec}_absp'] = np.sqrt(np.square(df[f'{vec}_px'])+np.square(df[f'{vec}_py'])+np.square(df[f'{vec}_pz']))
+    else: df[f'{vec}_absp'] = np.sqrt(np.square(df[f'{vec}_px'])+np.square(df[f'{vec}_py']))
 
 
-def add_energy(in_data:pd.DataFrame, vec:str) -> None:
-    if f'{vec}_|p|' not in in_data.columns: add_abs_mom(in_data, vec)
-    in_data[f'{vec}_E'] = np.sqrt(np.square(in_data[f'{vec}_mass'])+np.square(in_data[f'{vec}_|p|']))
+def add_energy(df:pd.DataFrame, vec:str) -> None:
+    if f'{vec}_absp' not in df.columns: add_abs_mom(df, vec)
+    df[f'{vec}_E'] = np.sqrt(np.square(df[f'{vec}_mass'])+np.square(df[f'{vec}_absp']))
 
 
-def add_mt(in_data:pd.DataFrame, vec:str, mpt_name:str='mpt'):
-    try:             in_data[f'{vec}_mT'] = np.sqrt(2*in_data[f'{vec}_pT']*in_data[f'{mpt_name}_pT']*(1-np.cos(delta_phi(in_data[f'{vec}_phi'], in_data[f'{mpt_name}_phi']))))
-    except KeyError: in_data[f'{vec}_mt'] = np.sqrt(2*in_data[f'{vec}_pt']*in_data[f'{mpt_name}_pt']*(1-np.cos(delta_phi(in_data[f'{vec}_phi'], in_data[f'{mpt_name}_phi']))))
+def add_mt(df:pd.DataFrame, vec:str, mpt_name:str='mpt'):
+    try:             df[f'{vec}_mT'] = np.sqrt(2*df[f'{vec}_pT']*df[f'{mpt_name}_pT']*(1-np.cos(delta_phi(df[f'{vec}_phi'], df[f'{mpt_name}_phi']))))
+    except KeyError: df[f'{vec}_mt'] = np.sqrt(2*df[f'{vec}_pt']*df[f'{mpt_name}_pt']*(1-np.cos(delta_phi(df[f'{vec}_phi'], df[f'{mpt_name}_phi']))))
 
 
 def get_vecs(feats:List[str], strict:bool=True) -> List[str]:
     low = [f.lower() for f in feats]
-    all_vecs = [f for f in feats if f.lower().endswith('_pt') or f.lower().endswith('_phi') or f.lower().endswith('_eta') or f.lower().endswith('_px') or f.lower().endswith('_py') or f.lower().endswith('_pz')]
+    all_vecs = [f for f in feats if (f.lower().endswith('_pt') or f.lower().endswith('_phi') or f.lower().endswith('_eta')) or 
+                                    (f.lower().endswith('_px') or f.lower().endswith('_py')  or f.lower().endswith('_pz'))]
     if not strict: return set([v[:v.rfind('_')] for v in all_vecs])
     vecs = [v[:v.rfind('_')] for v in all_vecs if (f'{v[:v.rfind("_")]}_pt'.lower() in low and f'{v[:v.rfind("_")]}_phi'.lower() in low) or 
                                                   (f'{v[:v.rfind("_")]}_px'.lower() in low and f'{v[:v.rfind("_")]}_py'.lower()  in low)]
@@ -86,8 +84,7 @@ def get_vecs(feats:List[str], strict:bool=True) -> List[str]:
 def fix_event_phi(df:pd.DataFrame, ref_vec:str) -> None:
     '''Rotate event in phi such that ref_vec is at phi == 0'''
     for v in get_vecs(df.columns):
-        if v != ref_vec: 
-            df[f'{v}_phi'] = delta_phi(df[f'{ref_vec}_phi'], df[f'{v}_phi'])
+        if v != ref_vec: df[f'{v}_phi'] = delta_phi(df[f'{ref_vec}_phi'], df[f'{v}_phi'])
     df[f'{ref_vec}_phi'] = 0
 
 
@@ -123,29 +120,25 @@ def event_to_cartesian(df:pd.DataFrame, drop:bool=False, ignore:List[str]=[]) ->
 
 
 def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, use_cartesian=False,
-               ref_vec_0:str=None, ref_vec_1:str=None, keep_feats=[], default_values=[]) -> None:
+               ref_vec_0:str=None, ref_vec_1:str=None, keep_feats=[], default_vals=[]) -> None:
     '''Pass data through conversions and drop uneeded columns'''
-    df.replace([np.inf, -np.inf]+default_values, np.nan, inplace=True)
+    df.replace([np.inf, -np.inf]+default_vals, np.nan, inplace=True)
     for f in keep_feats: df[f'{f}keep'] = df[f'{f}']
     
     if fix_phi:
         print(f'Setting {ref_vec_0} to phi = 0')
         fix_event_phi(df, ref_vec_0)
-        
         if fix_y:
             print(f'Setting {ref_vec_1} to positve phi')
             fix_event_y(df, ref_vec_0, ref_vec_1)
-
     if fix_z:
         print(f'Setting {ref_vec_0} to positive eta')
-        fix_event_z(df, ref_vec_0)
-            
+        fix_event_z(df, ref_vec_0) 
     if use_cartesian:
         print("Converting to use_cartesian coordinates")
         event_to_cartesian(df, drop=True)
-        
     if   fix_phi and not use_cartesian: df.drop(columns=[f"{ref_vec_0}_phi"], inplace=True)
-    elif fix_phi and use_cartesian:     df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
+    elif fix_phi and     use_cartesian: df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
     
     for f in keep_feats:
         df[f'{f}'] = df[f'{f}keep']
