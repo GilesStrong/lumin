@@ -57,5 +57,12 @@
 |FoldYielder|fy||
 |Batch size|bs||
 |Evaluation|eval||
+|Progress bar|pb||
+|Multiprocessing|mp|mp_run|
+|Feature importance|fi||
+|Temporary|tmp||
+|Bootstrap|bs||
+|Standard deviation|std||
+
 
 

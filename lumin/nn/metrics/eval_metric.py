@@ -9,7 +9,7 @@ from ..data.fold_yielder import FoldYielder
 class EvalMetric(ABC):
     def __init__(self, targ_name:str='targets', wgt_name:Optional[str]=None):
         self.targ_name,self.wgt_name = targ_name,wgt_name
-        self.lower_better = True
+        self.lower_metric_better = True
 
     def get_df(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> pd.DataFrame:
         df = pd.DataFrame()

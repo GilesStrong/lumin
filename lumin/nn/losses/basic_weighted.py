@@ -11,10 +11,8 @@ class WeightedMSE(nn.MSELoss):
         
     @weak_script_method
     def forward(self, input, target):
-        if self.weights is not None:
-            return torch.mean(self.weights*super().forward(input, target))
-        else:
-            return super().forward(input, target)
+        if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
+        else:                        return super().forward(input, target)
 
 
 @weak_module
@@ -25,10 +23,8 @@ class WeightedMAE(nn.L1Loss):
         
     @weak_script_method
     def forward(self, input, target):
-        if self.weights is not None:
-            return torch.mean(self.weights*super().forward(input, target))
-        else:
-            return super().forward(input, target)
+        if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
+        else:                        return super().forward(input, target)
 
 
 @weak_module
@@ -39,7 +35,5 @@ class WeightedCCE(nn.NLLLoss):
         
     @weak_script_method
     def forward(self, input, target):
-        if self.weights is not None:
-            return torch.mean(self.weights*super().forward(input, target))
-        else:
-            return super().forward(input, target)
+        if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
+        else:                        return super().forward(input, target)

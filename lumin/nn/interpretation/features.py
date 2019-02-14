@@ -15,32 +15,26 @@ from ..metrics.eval_metric import EvalMetric
 from torch import Tensor
 
 
-def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
-    feats = fold_yielder.cont_feats + fold_yielder.cat_feats
+def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
+    feats = fy.cont_feats + fy.cat_feats
     scores = []
-    fold_bar = progress_bar(range(fold_yielder.n_folds), parent=pb_parent)
+    fold_bar = progress_bar(range(fy.n_folds), parent=pb_parent)
     for fold_idx in fold_bar:  # Average over folds
-        val_fold = fold_yielder.get_fold(fold_idx)
+        val_fold = fy.get_fold(fold_idx)
         if val_fold['weights'] is not None: val_fold['weights'] /= val_fold['weights'].sum()
         targs = Tensor(val_fold['targets'])
         weights = to_tensor(val_fold['weights'])
-        if eval_metric is None:
-            nom = model.evaluate(Tensor(val_fold['inputs']), targs, weights=weights)
-        else:
-            nom = eval_metric.evaluate(fold_yielder, fold_idx, model.predict(Tensor(val_fold['inputs'])))
+        if eval_metric is None: nom = model.evaluate(Tensor(val_fold['inputs']), targs, weights=weights)
+        else:                   nom = eval_metric.evaluate(fy, fold_idx, model.predict(Tensor(val_fold['inputs'])))
         tmp = []
         for i in range(len(feats)):
             x = val_fold['inputs'].copy()
             x[:,i] = sklearn.utils.shuffle(x[:,i])
-            if eval_metric is None:
-                tmp.append(model.evaluate(Tensor(x), targs, weights=weights))
-            else:
-                tmp.append(eval_metric.evaluate(fold_yielder, fold_idx, model.predict(Tensor(x))))
+            if eval_metric is None: tmp.append(model.evaluate(Tensor(x), targs, weights=weights))
+            else:                   tmp.append(eval_metric.evaluate(fy, fold_idx, model.predict(Tensor(x))))
 
-        if eval_metric is None:
-            tmp = (np.array(tmp)-nom)/nom
-        else:
-            tmp = (np.array(tmp)-nom)/nom if eval_metric.lower_better else (nom-np.array(tmp))/nom
+        if eval_metric is None: tmp = (np.array(tmp)-nom)/nom
+        else:                   tmp = (np.array(tmp)-nom)/nom if eval_metric.lower_metric_better else (nom-np.array(tmp))/nom
         scores.append(tmp)
 
     # Bootstrap over folds
@@ -57,14 +51,14 @@ def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric
     return fi
 
 
-def get_ensemble_feat_importance(ensemble, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+def get_ensemble_feat_importance(ensemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
     mean_fi = []
     std_fi = []
-    feats = fold_yielder.cont_feats + fold_yielder.cat_feats
+    feats = fy.cont_feats + fy.cat_feats
     model_bar = master_bar(ensemble.models)
 
     for m, model in enumerate(model_bar):  # Average over models per fold
-        fi = get_nn_feat_importance(model, fold_yielder, eval_metric=eval_metric, plot=False, pb_parent=model_bar)
+        fi = get_nn_feat_importance(model, fy, eval_metric=eval_metric, plot=False, pb_parent=model_bar)
         mean_fi.append(fi.Importance.values)
         std_fi.append(fi.Uncertainty.values)
     

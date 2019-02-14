@@ -15,7 +15,7 @@ from torch.tensor import Tensor
 from .abs_ensemble import AbsEnsemble
 from ..models.model import Model
 from ..models.model_builder import ModelBuilder
-from ..data.fy import FoldYielder
+from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.statistics import uncert_round
