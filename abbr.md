@@ -63,6 +63,7 @@
 |Temporary|tmp||
 |Bootstrap|bs||
 |Standard deviation|std||
+|Function|func||
 
 
 
