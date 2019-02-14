@@ -13,9 +13,9 @@ class EvalMetric(ABC):
 
     def get_df(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> pd.DataFrame:
         df = pd.DataFrame()
-        if self.weight_name is not None: df['gen_weight'] = data.get_column(column=self.weight_name, n_folds=1, fold_id=index)
+        if self.weight_name is not None: df['gen_weight'] = data.get_column(column=self.weight_name, n_flds=1, fold_id=index)
         
-        targets = data.get_column(column=self.targ_name, n_folds=1, fold_id=index)
+        targets = data.get_column(column=self.targ_name, n_flds=1, fold_id=index)
         if len(targets.shape) > 1:
             for t in range(targets.shape[-1]):
                 df[f'gen_target_{t}'] = targets[:,t]

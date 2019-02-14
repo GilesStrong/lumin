@@ -53,10 +53,10 @@ def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, X_val:np.ndarray, y_va
 
 
 def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
-                 train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
+                 train_on_weights:bool=True, shuffle_fold:bool=True, n_flds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
                  plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
     start = timeit.default_timer()
-    indeces = range(fold_yielder.n_folds) if n_folds < 1 else range(min(n_folds, fold_yielder.n_folds))
+    indeces = range(fold_yielder.n_flds) if n_flds < 1 else range(min(n_flds, fold_yielder.n_flds))
     lr_finders = []
     for trn_id in progress_bar(indeces):
         model = Model(model_builder)
@@ -69,7 +69,7 @@ def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
         lr_finders.append(lr_finder)
         
     print("LR finder took {:.3f}s ".format(timeit.default_timer()-start))
-    if n_folds != 1:
+    if n_flds != 1:
         plot_lr_finders(lr_finders, loss='loss', cut=-2, settings=plot_settings)
     else:
         lr_finders[0].plot_lr()    

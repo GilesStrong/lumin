@@ -18,7 +18,7 @@ from torch import Tensor
 def get_nn_feat_importance(model:AbsModel, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
     feats = fold_yielder.cont_feats + fold_yielder.cat_feats
     scores = []
-    fold_bar = progress_bar(range(fold_yielder.n_folds), parent=pb_parent)
+    fold_bar = progress_bar(range(fold_yielder.n_flds), parent=pb_parent)
     for fold_id in fold_bar:  # Average over folds
         val_fold = fold_yielder.get_fold(fold_id)
         if val_fold['weights'] is not None: val_fold['weights'] /= val_fold['weights'].sum()

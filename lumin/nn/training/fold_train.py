@@ -52,10 +52,10 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_bu
     results = []
     histories = []
     cycle_losses = []
-    n_folds = fold_yielder.n_folds
+    n_flds = fold_yielder.n_flds
     nb = len(fold_yielder.source['fold_0/targets'])//bs
 
-    model_bar = master_bar(np.random.choice(range(n_folds), size=n_models, replace=False))
+    model_bar = master_bar(np.random.choice(range(n_flds), size=n_models, replace=False))
     model_bar.names = ['Best', 'Train', 'Validation']
     for model_num, val_id in enumerate(model_bar):
         print(f"Training model {model_num+1} / {n_models}")
@@ -67,7 +67,7 @@ def fold_train_ensemble(fold_yielder:FoldYielder, n_models:int, bs:int, model_bu
         stop = False
         loss_history = OrderedDict({'trn_loss': [], 'val_loss': []})
         cycle_losses.append({})
-        trn_ids = get_folds(val_id, n_folds, shuffle_folds)
+        trn_ids = get_folds(val_id, n_flds, shuffle_folds)
         model = Model(model_builder)
         val_fold = fold_yielder.get_fold(val_id)
         if not eval_on_weights: val_fold['weights'] = None

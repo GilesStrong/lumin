@@ -11,10 +11,10 @@ from ..optimisation.features import get_rf_feat_importance
 from .statistics import uncert_round
 
 
-def _check_val_set_fy(train:FoldYielder, val:FoldYielder, test:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
-    n = min(train.n_folds, val.n_folds)
-    if test is not None: n = min(n, test.n_folds)
-    if n_folds is not None:  n = min(n, n_folds)
+def _check_val_set_fy(train:FoldYielder, val:FoldYielder, test:Optional[FoldYielder]=None, n_flds:Optional[int]=None) -> None:
+    n = min(train.n_flds, val.n_flds)
+    if test is not None: n = min(n, test.n_flds)
+    if n_flds is not None:  n = min(n, n_flds)
     train_feats = None
         
     samples = {'train': train} if test is None else {'train': train, 'test': test}
@@ -82,7 +82,7 @@ def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFra
 
 
 def check_val_set(train:Union[pd.DataFrame,np.ndarray,FoldYielder], val:Union[pd.DataFrame,np.ndarray,FoldYielder], test:Optional[Union[pd.DataFrame,np.ndarray,FoldYielder]]=None,
-                  n_folds:Optional[int]=None) -> None:
-    if isinstance(train, FoldYielder): _check_val_set_fy(train, val, test, n_folds)
+                  n_flds:Optional[int]=None) -> None:
+    if isinstance(train, FoldYielder): _check_val_set_fy(train, val, test, n_flds)
     if isinstance(train, pd.DataFrame) or isinstance(train, np.ndarray): _check_val_set_np(train, val, test)
 
