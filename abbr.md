@@ -64,6 +64,17 @@
 |Bootstrap|bs||
 |Standard deviation|std||
 |Function|func||
+|Dropout|do||
+|Batch normalisation|bn||
+|Activation|act||
+|Residual|res||
+|Return as type|as_*|as_np|
+|Numpy|np||
+|Pandas|pd||
+|Seaborn|sns||
+|Matplotlib.pyplot|plt||
+|Tensor|x||
+|Embedding|embed||
 
 
 

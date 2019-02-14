@@ -17,8 +17,7 @@ class AbsEndcap(nn.Module):
     @abstractmethod
     def func(self, x:Tensor) -> Tensor: pass
         
-    def forward(self, x:Tensor) -> Tensor:
-        return self.func(x)
+    def forward(self, x:Tensor) -> Tensor: return self.func(x)
     
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], as_np:bool=True) -> Union[np.ndarray, Tensor]:
         x = self.model.predict(inputs, as_np=False)

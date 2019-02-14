@@ -16,8 +16,7 @@ class FullyConnected(nn.Module):
         if dense: self.layers += [self.get_layer(depth, self.width*(2**(self.depth)), self.width)]
         if self.freeze: self.freeze_layers
 
-    def __getitem__(self, key:int) -> nn.Module:
-        return self.layers[key]
+    def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
 
     def freeze_layers(self):
         for p in self.parameters(): p.requires_grad = False
@@ -50,5 +49,4 @@ class FullyConnected(nn.Module):
             for l in self.layers: x = l(x)+x if self.res else l(x)
         return x
     
-    def get_out_size(self) -> int:
-        return self.width
+    def get_out_size(self) -> int: return self.width

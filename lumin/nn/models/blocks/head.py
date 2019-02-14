@@ -14,7 +14,8 @@ from ....plotting.interpretation import plot_embedding
 
 
 class CatEmbHead(nn.Module):
-    def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float, cat_names:Optional[List[str]], emb_load_path:Optional[Path], freeze:bool=False):
+    def __init__(self, n_cont_in:int, n_cat_in:int, emb_szs:Optional[List[int]], do_cont:float, do_cat:float,
+                 cat_names:Optional[List[str]], emb_load_path:Optional[Path], freeze:bool=False):
         super().__init__()
         self.layers = []
         self.n_cont_in,self.n_cat_in,self.emb_szs,self.do_cont,self.do_cat,self.cat_names,self.emb_load_path,self.freeze = n_cont_in,n_cat_in,emb_szs,do_cont,do_cat,cat_names,emb_load_path,freeze
@@ -34,8 +35,7 @@ class CatEmbHead(nn.Module):
             self.layers.append(self.bn)
         if self.freeze: self.freeze_layers()
     
-    def __getitem__(self, key:int) -> nn.Module:
-        return self.layers[key]
+    def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
 
     def freeze_layers(self):
         for p in self.parameters(): p.requires_grad = False
@@ -63,14 +63,11 @@ class CatEmbHead(nn.Module):
             
     def save_embeds(self, path:Path) -> None:
         os.makedirs(path, exist_ok=True)
-        for i, name in enumerate(self.cat_names):
-            torch.save(self.embeds[i].state_dict(), path/f'{name}.h5')
+        for i, name in enumerate(self.cat_names): torch.save(self.embeds[i].state_dict(), path/f'{name}.h5')
             
-    def get_embeds(self) -> Dict[str,OrderedDict]:
-        return {n: self.embeds[i].state_dict() for i, n in enumerate(self.cat_names)}
+    def get_embeds(self) -> Dict[str,OrderedDict]: return {n: self.embeds[i].state_dict() for i, n in enumerate(self.cat_names)}
     
-    def get_out_size(self) -> int:
-        return self.out_size
+    def get_out_size(self) -> int: return self.out_size
 
     def plot_embeds(self, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
         for i, n in enumerate(self.cat_names): plot_embedding(self.embeds[i].state_dict(), n, savename=savename, settings=settings)
