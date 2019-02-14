@@ -7,7 +7,7 @@
 |Continuous|cont|cont_feats|
 |Categorical|cat|cat_feats|
 |Feature|feat, f|feats|
-|Target|targ|targ_feat|
+|Target|targ, y|targ_feat|
 |Index|idx|fld_idx|
 |Weight|wgt, w| wgt_feat|
 |Stratification|strat|strat_feat|
@@ -49,5 +49,5 @@
 |Learning rate|lr||
 |Iteration|iter||
 |Limit|lim|lim_y|
-
+|Input|x, in||
 
