@@ -11,10 +11,10 @@ sns.set_style("whitegrid")
 
 
 class AbsCyclicCallback(Callback):
-    def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease:bool=False, scale:int=1,
+    def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
-        self.param_range,self.cycle_mult,self.decrease,self.scale = param_range,cycle_mult,decrease,scale
+        self.param_range,self.cycle_mult,self.decrease_param,self.scale = param_range,cycle_mult,decrease_param,scale
         self.interp = interp.lower()
         if nb is not None: self.nb = self.scale*nb
         self.cycle_iter = 0
@@ -22,8 +22,7 @@ class AbsCyclicCallback(Callback):
         self.cycle_end = False
         self.hist = []
 
-    def set_nb(self, nb:int) -> None:
-        self.nb = self.scale*nb
+    def set_nb(self, nb:int) -> None: self.nb = self.scale*nb
 
     def incr_cycle(self) -> None:
         self.cycle_iter += 1
@@ -47,19 +46,16 @@ class AbsCyclicCallback(Callback):
         if self.interp == 'cosine':
             x = np.cos(np.pi*(self.cycle_iter)/self.nb)+1
             dx = (self.param_range[1]-self.param_range[0])*x/2
-            return self.param_range[1]-dx if not self.decrease else dx+self.param_range[0]
+            return self.param_range[1]-dx if not self.decrease_param else dx+self.param_range[0]
         elif self.interp == 'linear':
             x = np.abs((2*self.cycle_iter/self.nb)-1)
             dx = (self.param_range[1]-self.param_range[0])*np.max([0, 1-x])
-            return self.param_range[1]-dx if self.decrease else dx+self.param_range[0]
+            return self.param_range[1]-dx if self.decrease_param else dx+self.param_range[0]
         else:
             raise ValueError(f"Interpolation mode {self.interp} not implemented")
 
-    def on_epoch_begin(self, logs:Dict[str,Any]={}) -> None:
-        self.cycle_end = False
-
-    def on_batch_end(self, logs:Dict[str,Any]={}) -> None:
-        self.incr_cycle()
+    def on_epoch_begin(self, logs:Dict[str,Any]={}) -> None: self.cycle_end = False
+    def on_batch_end(self,   logs:Dict[str,Any]={}) -> None: self.incr_cycle()
 
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> float:
         param = self.calc_param()
@@ -68,10 +64,11 @@ class AbsCyclicCallback(Callback):
 
 
 class CycleLR(AbsCyclicCallback):
-    def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease:Union[str,bool]='auto', scale:int=1,
+    def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
-        if decrease == 'auto': decrease = True if interp == 'cosine' else False
-        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult, decrease=decrease, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
+        if decrease_param == 'auto': decrease_param = True if interp == 'cosine' else False
+        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult,
+                         decrease_param=decrease_param, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
         self.param_name = 'Learning Rate'
         
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
@@ -80,10 +77,11 @@ class CycleLR(AbsCyclicCallback):
 
 
 class CycleMom(AbsCyclicCallback):
-    def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease:Union[str,bool]='auto', scale:int=1,
+    def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
-        if decrease == 'auto': decrease = False if interp == 'cosine' else True
-        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult, decrease=decrease, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
+        if decrease_param == 'auto': decrease_param = False if interp == 'cosine' else True
+        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult,
+                         decrease_param=decrease_param, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
         self.param_name = 'Momentum'
         
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
@@ -99,13 +97,13 @@ class OneCycle(AbsCyclicCallback):
         self.hist = {'lr': [], 'mom': []}
 
     def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
-        self.decrease = self.cycle_count % 1 != 0
+        self.decrease_param = self.cycle_count % 1 != 0
         self.param_range = self.lr_range
         lr = self.calc_param()
         self.hist['lr'].append(lr)
         self.model.set_lr(lr)
 
-        self.decrease = self.cycle_count % 1 == 0
+        self.decrease_param = self.cycle_count % 1 == 0
         self.param_range = self.mom_range
         mom = self.calc_param()
         self.hist['mom'].append(mom)
@@ -119,8 +117,7 @@ class OneCycle(AbsCyclicCallback):
             self.cycle_count += 0.5
             self.cycle_end = self.cycle_count % 1 == 0
             self.lr_range[0] = 0
-        if self.cycle_count == 1:
-            self.model.stop_train = True
+        if self.cycle_count == 1: self.model.stop_train = True
 
     def plot(self):
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):

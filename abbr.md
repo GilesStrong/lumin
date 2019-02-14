@@ -41,4 +41,11 @@
 |Approximate Medean Significance|ams||
 |Progress|prog|show_prog|
 |Size|sz|step_sz|
+|Interpolation|interp||
+|Parameter|param||
+|Multiplicity|mult|cycle_mult|
+|Increment|incr|incr_cycle|
+|Number of minibatches|nb||
+|Learning rate|lr||
+
 
