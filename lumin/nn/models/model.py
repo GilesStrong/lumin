@@ -14,7 +14,7 @@ from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
 from ...utils.misc import to_np
-from ..data.fold_yielder import FoldYielder
+from ..data.fy import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.misc import to_device
@@ -27,14 +27,11 @@ class Model(AbsModel):
         if self.model_builder is not None:
             self.model, self.opt, self.loss = self.model_builder.get_model()
             self.model = to_device(self.model)
-            self.head = self.model[0][0]
-            self.body = self.model[1]
-            self.tail = self.model[2]
+            self.head, self.body, self.tail = self.model[0], self.model[1], self.model[2]
             self.objective = self.model_builder.objective
             self.n_out = self.tail.get_out_size()
 
-    def __repr__(self) -> str:
-        return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
+    def __repr__(self) -> str: return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
 
     def __getitem__(self, key:Union[int,str]) -> nn.Module:
         if isinstance(key, int):
@@ -72,10 +69,8 @@ class Model(AbsModel):
               
     def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None) -> float:
         self.model.eval()
-        if 'multiclass' in self.objective:
-            targets = targets.long().squeeze()
-        else:
-            targets = targets.float()
+        if 'multiclass' in self.objective: targets = targets.long().squeeze()
+        else:                              targets = targets.float()
         y_pred = self.model(to_device(inputs.float()))
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         return loss.data.item()
@@ -86,33 +81,30 @@ class Model(AbsModel):
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
         pred = self.model(to_device(inputs.float()))
         if as_np:
-            if 'multiclass' in self.objective:
-                return np.exp(to_np(pred))
-            else:
-                return to_np(pred)
+            if 'multiclass' in self.objective: return np.exp(to_np(pred))
+            else:                              return to_np(pred)
         else:
             return pred
 
-    def predict_folds(self, fold_yielder:FoldYielder, pred_name:str='pred') -> None:
+    def predict_folds(self, fy:FoldYielder, pred_name:str='pred') -> None:
         times = []
-        mb = master_bar(range(len(fold_yielder.source)))
+        mb = master_bar(range(len(fy.source)))
         for fold_idx in mb:
             fold_tmr = timeit.default_timer()
-            if not fold_yielder.test_time_aug:
-                fold = fold_yielder.get_fold(fold_idx)['inputs']
+            if not fy.test_time_aug:
+                fold = fy.get_fold(fold_idx)['inputs']
                 pred = self.predict_array(fold)
-
             else:
                 tmpPred = []
-                pb = progress_bar(range(fold_yielder.aug_mult), parent=mb)
+                pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
-                    fold = fold_yielder.get_test_fold(fold_idx, aug)['inputs']
+                    fold = fy.get_test_fold(fold_idx, aug)['inputs']
                     tmpPred.append(self.predict_array(fold))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
-            if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_idx, pred_name=pred_name)
-            else: fold_yielder.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
+            if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
+            else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
         times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
         print(f'Mean time per event = {times[0]}±{times[1]}')
 
@@ -120,27 +112,21 @@ class Model(AbsModel):
         if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np)
         self.predict_folds(inputs, pred_name)
 
-    def get_weights(self) -> OrderedDict:
-        return self.model.state_dict()
+    def get_weights(self) -> OrderedDict: return self.model.state_dict()
 
-    def set_weights(self, weights:OrderedDict) -> None:
-        self.model.load_state_dict(weights)
+    def set_weights(self, weights:OrderedDict) -> None: self.model.load_state_dict(weights)
 
-    def get_lr(self) -> float:
-        return self.opt.param_groups[0]['lr']
+    def get_lr(self) -> float: return self.opt.param_groups[0]['lr']
 
-    def set_lr(self, lr:float) -> None:
-        self.opt.param_groups[0]['lr'] = lr
+    def set_lr(self, lr:float) -> None: self.opt.param_groups[0]['lr'] = lr
 
-    def get_mom(self) -> float:
-        return self.opt.param_groups[0]['lr']
+    def get_mom(self) -> float: return self.opt.param_groups[0]['lr']
 
     def set_mom(self, mom:float) -> None:
         if   'betas'    in self.opt.param_groups: self.opt.param_groups[0]['betas'][0] = mom
         elif 'momentum' in self.opt.param_groups: self.opt.param_groups[0]['lr']       = mom
     
-    def save(self, name:str) -> None:
-        torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict()}, name)
+    def save(self, name:str) -> None: torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict()}, name)
         
     def load(self, name:str, model_builder:ModelBuilder=None) -> None:
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
@@ -154,8 +140,7 @@ class Model(AbsModel):
         dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.n_cat_in)
         torch.onnx.export(self.model, dummy_input, name)     
 
-    def get_feat_importance(self, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
-        return get_nn_feat_importance(self, fold_yielder, eval_metric)
+    def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+        return get_nn_feat_importance(self, fy, eval_metric)
 
-    def get_out_size(self) -> int:
-        return self.tail.get_out_size()
+    def get_out_size(self) -> int: return self.tail.get_out_size()

@@ -75,6 +75,8 @@
 |Matplotlib.pyplot|plt||
 |Tensor|x||
 |Embedding|embed||
+|Class|cls||
+|Timer|tmr|fol_tmr|
 
 
 
