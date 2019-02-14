@@ -7,11 +7,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def _name_lookup(name:str) -> str:
+def _lookup_name(name:str) -> str:
     if name == 'trn_loss': return 'Training'
     if name == 'val_loss': return 'Validation'
-    if '_trn' in name: return name[:name.find('_trn')] + 'Training'
-    if '_val' in name: return name[:name.find('_val')] + 'Validation'
+    if '_trn' in name:     return name[:name.find('_trn')] + 'Training'
+    if '_val' in name:     return name[:name.find('_val')] + 'Validation'
 
 
 def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn=True, settings:PlotSettings=PlotSettings()):
@@ -20,7 +20,7 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         for i, history in enumerate(histories):
             if i == 0:
                 for j, l in enumerate(history):
-                    if not('trn' in l and ignore_trn): plt.plot(history[l], color=palette[j], label=_name_lookup(l))
+                    if not('trn' in l and ignore_trn): plt.plot(history[l], color=palette[j], label=_lookup_name(l))
             else:
                 for j, l in enumerate(history):
                     if not('trn' in l and ignore_trn): plt.plot(history[l], color=palette[j])

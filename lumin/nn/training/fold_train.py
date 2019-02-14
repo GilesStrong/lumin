@@ -47,7 +47,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         log_file = open(savepath/'training_log.log', 'w')
         sys.stdout = log_file
 
-    start = timeit.default_timer()
+    train_tmr = timeit.default_timer()
     results,histories,cycle_losses = [],[],[]
     nb = len(fy.source['fold_0/targets'])//bs
 
@@ -55,7 +55,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     model_bar.names = ['Best', 'Train', 'Validation']
     for model_num, val_id in enumerate(model_bar):
         print(f"Training model {model_num+1} / {n_models}")
-        model_start = timeit.default_timer()
+        model_tmr = timeit.default_timer()
         os.system(f"rm {savepath}/best.h5")
         best_loss,epoch_counter,subEpoch,stop = math.inf,0,0,False
         loss_history = OrderedDict({'trn_loss': [], 'val_loss': []})
@@ -147,11 +147,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         delattr(model_bar, 'fig')
         plt.clf()
         if 'cycle' in plots and cyclic_callback is not None: cyclic_callback.plot()
-        print(f"Fold took {timeit.default_timer()-model_start:.3f}s\n")
+        print(f"Fold took {timeit.default_timer()-model_tmr:.3f}s\n")
 
     print("\n______________________________________")
     print("Training finished")
-    print(f"Cross-validation took {timeit.default_timer()-start:.3f}s ")
+    print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
     if 'history' in plots: plot_train_history(histories, savepath/'loss_history.png', settings=plot_settings)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))

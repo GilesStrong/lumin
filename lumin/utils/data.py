@@ -11,19 +11,19 @@ from ..optimisation.features import get_rf_feat_importance
 from .statistics import uncert_round
 
 
-def _check_val_set_fy(train:FoldYielder, val:FoldYielder, test:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
-    n = min(train.n_folds, val.n_folds)
-    if test is not None: n = min(n, test.n_folds)
+def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
+    n = min(train_fy.n_folds, val_fy.n_folds)
+    if test_fy is not None: n = min(n, test_fy.n_folds)
     if n_folds is not None:  n = min(n, n_folds)
     train_feats = None
         
-    samples = {'train': train} if test is None else {'train': train, 'test': test}
+    samples = {'train': train_fy} if test_fy is None else {'train': train_fy, 'test': test_fy}
     for sample in samples:
         aucs = []
         fi = pd.DataFrame()
         for fold_idx in progress_bar(range(n)):
             df_0 = samples[sample].get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_idx=fold_idx, verbose=False, suppress_warn=True)
-            df_1 = val.get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_idx=fold_idx, verbose=False, suppress_warn=True)
+            df_1 = val_fy.get_df(pred_name='None', inc_inputs=True, deprocess=True, fold_idx=fold_idx, verbose=False, suppress_warn=True)
             df_0['gen_target'] = 0
             df_1['gen_target'] = 1
             df_0['gen_weight'] = 1/len(df_0)
@@ -75,14 +75,15 @@ def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFra
         m = RandomForestClassifier(n_estimators=40, min_samples_leaf=25, n_jobs=-1)
         m.fit(df_trn[train_feats], df_trn['gen_target'], df_trn['gen_weight'])
         auc = roc_auc_score(df_val['gen_target'], m.predict(df_val[train_feats]), sample_weight=df_val['gen_weight'])
-        fi = get_rf_feat_importance(m, df_val[train_feats], df_val['gen_target'], df_val['gen_weight']).sort_values(['Importance'], ascending=False).reset_index()
+        fi = get_rf_feat_importance(m, df_val[train_feats], df_val['gen_target'],
+                                    df_val['gen_weight']).sort_values(['Importance'], ascending=False).reset_index()
         print(f"\nAUC for {sample}-validation discrimination = {auc}")
         print("Top 10 most important features are:")
         print(fi[:min(10, len(fi))])
 
 
-def check_val_set(train:Union[pd.DataFrame,np.ndarray,FoldYielder], val:Union[pd.DataFrame,np.ndarray,FoldYielder], test:Optional[Union[pd.DataFrame,np.ndarray,FoldYielder]]=None,
-                  n_folds:Optional[int]=None) -> None:
+def check_val_set(train:Union[pd.DataFrame,np.ndarray,FoldYielder], val:Union[pd.DataFrame,np.ndarray,FoldYielder],
+                  test:Optional[Union[pd.DataFrame,np.ndarray,FoldYielder]]=None, n_folds:Optional[int]=None) -> None:
     if isinstance(train, FoldYielder): _check_val_set_fy(train, val, test, n_folds)
     if isinstance(train, pd.DataFrame) or isinstance(train, np.ndarray): _check_val_set_np(train, val, test)
 

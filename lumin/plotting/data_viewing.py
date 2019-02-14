@@ -12,9 +12,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_feat(in_data:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
+def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
-              plot_params:List[Dict[str,Any]]={}, size='mid', moments=True, ax_labels={'y': 'Density', 'x': None},
+              plot_params:List[Dict[str,Any]]={}, size='mid', show_moments=True, ax_labels={'y': 'Density', 'x': None},
               savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     if not isinstance(labels, list): labels = [labels]
     if not isinstance(cuts,   list): cuts   = [cuts]
@@ -26,18 +26,18 @@ def plot_feat(in_data:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
 
             if plot_bulk:  # Ignore tails for indicative plotting
-                feat_range = np.percentile(np.nan_to_num(in_data[feat]), [1, 99])
+                feat_range = np.percentile(np.nan_to_num(df[feat]), [1, 99])
                 if feat_range[0] == feat_range[1]: break
-                cut = (in_data[feat] > feat_range[0]) & (in_data[feat] < feat_range[1])
+                cut = (df[feat] > feat_range[0]) & (df[feat] < feat_range[1])
                 if cuts[i] is not None: cut = cut & (cuts[i])
                 if wgt_name is None:
-                    plot_data = np.nan_to_num(in_data.loc[cut, feat])
+                    plot_data = np.nan_to_num(df.loc[cut, feat])
                 else:
-                    weights = in_data.loc[cut, wgt_name].values.astype('float64')
+                    weights = df.loc[cut, wgt_name].values.astype('float64')
                     weights /= weights.sum()
-                    plot_data = np.random.choice(np.nan_to_num(in_data.loc[cut, feat]), n_samples, p=weights)
+                    plot_data = np.random.choice(np.nan_to_num(df.loc[cut, feat]), n_samples, p=weights)
             else:
-                tmp_data = in_data if cuts[i] is not None else in_data.loc[cuts[i]]
+                tmp_data = df if cuts[i] is not None else df.loc[cuts[i]]
                 if wgt_name is None:
                     plot_data = np.nan_to_num(tmp_data[feat])
                 else:
@@ -45,7 +45,7 @@ def plot_feat(in_data:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:
                     weights /= weights.sum()
                     plot_data = np.random.choice(np.nan_to_num(tmp_data[feat]), n_samples, p=weights)
             label = labels[i]
-            if moments:
+            if show_moments:
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
                 std = uncert_round(moms[2], moms[3])
@@ -53,7 +53,7 @@ def plot_feat(in_data:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:
 
             sns.distplot(plot_data, label=label, **tmp_plot_params)
 
-        if len(cuts) > 1 or moments: plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+        if len(cuts) > 1 or show_moments: plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.ylabel(ax_labels['y'], fontsize=settings.lbl_sz, color=settings.lbl_col)
@@ -100,7 +100,7 @@ def compare_events(events: list) -> None:
         fig.show()
 
 
-def plot_dendrogram(df: pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
         corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
         corr_condensed = hc.distance.squareform(1-corr)
@@ -114,7 +114,7 @@ def plot_dendrogram(df: pd.DataFrame, savename:Optional[str]=None, settings:Plot
         plt.show()
 
 
-def plot_kdes_from_bs(x:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
+def plot_kdes_from_bs(array:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
                       feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
@@ -128,7 +128,7 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict
                 mean, mean_unc = uncert_round(np.mean(bs_stats[f'{name}_mean']), np.std(bs_stats[f'{name}_mean'], ddof=1))
                 std, std_unc = uncert_round(np.mean(bs_stats[f'{name}_std']), np.std(bs_stats[f'{name}_std'], ddof=1))
                 name2args[name]['condition'] += r', $\overline{x}=' + r'{}\pm{}\ \sigma= {}\pm{}$'.format(mean, mean_unc, std, std_unc)
-            sns.tsplot(data=bs_stats[f'{name}_kde'], time=x, **name2args[name])
+            sns.tsplot(data=bs_stats[f'{name}_kde'], time=array, **name2args[name])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         y_lbl = r'$\frac{1}{N}\ \frac{dN}{d' + feat.replace('$','') + r'}$'

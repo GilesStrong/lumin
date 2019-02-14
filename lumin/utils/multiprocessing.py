@@ -1,7 +1,8 @@
 import multiprocessing as mp
+from typing import Callable, Any,Dict
 
 
-def mp_run(args, func):
+def mp_run(args:Dict[Any,Any], func:Callable[[Any],Any]):
     procs = []
     out_q = mp.Queue()
     for i in range(len(args)):

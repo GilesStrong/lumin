@@ -28,11 +28,10 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
         plt.show()
 
 
-def plot_embedding(emb:OrderedDict, feat:str, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     with sns.axes_style(settings.style):
         plt.figure(figsize=(settings.w_small, settings.h_small))
-        sns.heatmap(to_np(emb['weight']), annot=True, linewidths=.5, cmap=settings.div_palette, annot_kws={'fontsize':settings.leg_sz})
-        
+        sns.heatmap(to_np(embed['weight']), annot=True, linewidths=.5, cmap=settings.div_palette, annot_kws={'fontsize':settings.leg_sz})
         plt.xlabel("Embedding", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel(feat, fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
@@ -85,13 +84,11 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
 
 def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str]) -> None:
     feat_id = np.argwhere(feats == feat)[0][0]
-    try:
-        in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
-    except IndexError:
-        in_size = input_pipe.steps[0][1].mean_.shape[0]
-    if feat_id > in_size: return
+    try:               in_sz = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+    except IndexError: in_sz = input_pipe.steps[0][1].mean_.shape[0]
+    if feat_id > in_sz: return
     x = iso.feature_grids
-    x = np.broadcast_to(x[:,None], (x.shape[0], in_size))
+    x = np.broadcast_to(x[:,None], (x.shape[0], in_sz))
     x = input_pipe.inverse_transform(x)[:,feat_id]
     iso.feature_grids = x
     iso.ice_lines.columns = x
@@ -100,12 +97,10 @@ def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str
 def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tuple[str,str], feats:List[str]) -> None:
     for i, feat in enumerate(feat_pair):
         feat_id = np.argwhere(feats == feat)[0][0]
-        try:
-            in_size = input_pipe.steps[0][1].n_samples_seen_.shape[0]
-        except IndexError:
-            in_size = input_pipe.steps[0][1].mean_.shape[0]
-        if feat_id > in_size: continue
+        try:               in_sz = input_pipe.steps[0][1].n_samples_seen_.shape[0]
+        except IndexError: in_sz = input_pipe.steps[0][1].mean_.shape[0]
+        if feat_id > in_sz: continue
         x = interact.feature_grids[i]
-        x = np.broadcast_to(x[:,None], (x.shape[0], in_size))
+        x = np.broadcast_to(x[:,None], (x.shape[0], in_sz))
         x = input_pipe.inverse_transform(x)[:,feat_id]
         interact.feature_grids[i] = x

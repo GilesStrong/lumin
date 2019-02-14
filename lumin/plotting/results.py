@@ -30,37 +30,35 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     out_q.put(out_dict)
 
 
-def plot_roc(in_data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', wgt_name:Optional[str]=None, 
+def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', wgt_name:Optional[str]=None, 
              labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
-             bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+             n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
-        if isinstance(in_data, pd.DataFrame):
-            in_data = [in_data]
-            plot_params = [plot_params]
-        if labels      is None: labels      = ['' for i in range(len(in_data))]
-        if plot_params is None: plot_params = [{} for i in range(len(in_data))]
+        if isinstance(data, pd.DataFrame): data,plot_params = [data],[plot_params]
+        if labels      is None: labels      = ['' for i in range(len(data))]
+        if plot_params is None: plot_params = [{} for i in range(len(data))]
 
         curves,mean_scores = [],[]
-        if bootstrap > 1:
+        if n_bootstrap > 1:
             auc_args = []
-            for i in range(len(in_data)):
-                auc_args.append({'n': bootstrap, 'labels': in_data[i][targ_name], 'preds': in_data[i][pred_name], 'name': i, 'indeces': in_data[i].index.tolist()})
-                if wgt_name is not None:  auc_args[-1]['weights'] = in_data[i][wgt_name]
+            for i in range(len(data)):
+                auc_args.append({'n': n_bootstrap, 'labels': data[i][targ_name], 'preds': data[i][pred_name], 'name': i, 'indeces': data[i].index.tolist()})
+                if wgt_name is not None:  auc_args[-1]['weights'] = data[i][wgt_name]
             res = mp_run(auc_args, _bs_roc_auc)
-            for i in range(len(in_data)): mean_scores.append((np.mean(res[f'{i}_score']), np.std(res[f'{i}_score'], ddof=1)))
+            for i in range(len(data)): mean_scores.append((np.mean(res[f'{i}_score']), np.std(res[f'{i}_score'], ddof=1)))
 
         else:
-            for i in range(len(in_data)):
-                if wgt_name is None: mean_scores.append(roc_auc_score(in_data[i][targ_name].values, in_data[i][pred_name]))
-                else:                   mean_scores.append(roc_auc_score(in_data[i][targ_name].values, in_data[i][pred_name], sample_weight=in_data[i][wgt_name]))
+            for i in range(len(data)):
+                if wgt_name is None: mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name]))
+                else:                   mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name], sample_weight=data[i][wgt_name]))
         
-        for i in range(len(in_data)):
-            if wgt_name is None: curves.append(roc_curve(in_data[i][targ_name].values, in_data[i][pred_name].values)[:2])
-            else:                   curves.append(roc_curve(in_data[i][targ_name].values, in_data[i][pred_name].values, sample_weight=in_data[i][wgt_name].values)[:2])
+        for i in range(len(data)):
+            if wgt_name is None: curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values)[:2])
+            else:                   curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values, sample_weight=data[i][wgt_name].values)[:2])
 
         plt.figure(figsize=(settings.h_mid, settings.h_mid))
-        for i in range(len(in_data)):
-            if bootstrap:
+        for i in range(len(data)):
+            if n_bootstrap > 0:
                 mean_score = uncert_round(*mean_scores[i])
                 plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_score[0]}±{mean_score[1]}')
             else:
@@ -81,26 +79,26 @@ def plot_roc(in_data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred
         plt.show()
 
 
-def _get_samples(in_data, sample_name, wgt_name):
-    samples = set(in_data[sample_name])
-    weights = [np.sum(in_data[in_data[sample_name] == sample][wgt_name]) for sample in samples]
+def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
+    samples = set(df[sample_name])
+    weights = [np.sum(df[df[sample_name] == sample][wgt_name]) for sample in samples]
     return [x[0] for x in np.array(sorted(zip(samples, weights), key=lambda x: x[1]))]
 
 
-def plot_binary_class_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name=None, weight_scale:float=1,
+def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name=None, wgt_scale:float=1,
                            log_y:bool=False, lim_x:Tuple[float,float]=(0,1), density=True, 
                            savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
-        for targ in sorted(set(in_data[targ_name])):
-            cut = in_data[targ_name] == targ
-            hist_kws = {} if wgt_name is None else {'weights': weight_scale*in_data.loc[cut, wgt_name]}
-            sns.distplot(in_data.loc[cut, pred_name], label=settings.targ2class[targ], hist_kws=hist_kws, norm_hist=density, kde=False)
+        for targ in sorted(set(data[targ_name])):
+            cut = data[targ_name] == targ
+            hist_kws = {} if wgt_name is None else {'weights': wgt_scale*data.loc[cut, wgt_name]}
+            sns.distplot(data.loc[cut, pred_name], label=settings.targ2class[targ], hist_kws=hist_kws, norm_hist=density, kde=False)
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xlabel("Class prediction", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xlim(lim_x)
         if density:             plt.ylabel(r"$\frac{1}{N}\ \frac{dN}{dp}$", fontsize=settings.lbl_sz, color=settings.lbl_col)
-        elif weight_scale != 1: plt.ylabel(str(weight_scale) + r"$\times\frac{dN}{dp}$", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        elif wgt_scale != 1:    plt.ylabel(str(wgt_scale) + r"$\times\frac{dN}{dp}$", fontsize=settings.lbl_sz, color=settings.lbl_col)
         else:                   plt.ylabel(r"$\frac{dN}{dp}$", fontsize=settings.lbl_sz, color=settings.lbl_col)
         if log_y:
             plt.yscale('log', nonposy='clip')
@@ -112,16 +110,15 @@ def plot_binary_class_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str
         plt.show() 
 
 
-def plot_sample_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name='gen_weight', sample_name='gen_sample',
-                     weight_scale:float=1, bins:Union[int,List[int]]=35, log_y:bool=True, lim_x:Tuple[float,float]=(0,1),
+def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name='gen_weight', sample_name='gen_sample',
+                     wgt_scale:float=1, bins:Union[int,List[int]]=35, log_y:bool=True, lim_x:Tuple[float,float]=(0,1),
                      density=False, zoom_args:Optional[Dict[str,Any]]=None,
                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     '''Example zoom_args: {'x':(0.95,1.0), 'y':(1, 1000), 'width_scale'=1.6}'''
     hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
-    sig = (in_data[targ_name] == 1)
-    bkg = (in_data[targ_name] == 0)
-    sig_samples = _get_samples(in_data[sig], sample_name, wgt_name)
-    bkg_samples = _get_samples(in_data[bkg], sample_name, wgt_name)
+    sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
+    sig_samples = _get_samples(df[sig], sample_name, wgt_name)
+    bkg_samples = _get_samples(df[bkg], sample_name, wgt_name)
     sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
     if zoom_args is not None:
         width_scale = 1.6           if 'width_scale' not in zoom_args else zoom_args['width_scale']
@@ -134,22 +131,22 @@ def plot_sample_pred(in_data:pd.DataFrame, pred_name='pred', targ_name:str='gen_
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette, len(bkg_samples)):
         fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid)) if zoom_args is None else plt.subplots(figsize=(width_scale*settings.w_mid, settings.h_mid))
         if zoom_args is not None: axins = inset_axes(ax, width_zoom, height_zoom, loc='right', bbox_to_anchor=anchor, bbox_transform=ax.figure.transFigure)
-        ax.hist([in_data[in_data[sample_name] == sample][pred_name] for sample in bkg_samples],
-                weights=[weight_scale*in_data[in_data[sample_name] == sample][wgt_name] for sample in bkg_samples],
+        ax.hist([df[df[sample_name] == sample][pred_name] for sample in bkg_samples],
+                weights=[wgt_scale*df[df[sample_name] == sample][wgt_name] for sample in bkg_samples],
                 label=bkg_samples, color=[sns.color_palette()[sample2col[s]] for s in bkg_samples], **hist_params)
         if zoom_args:
-            axins.hist([in_data[in_data[sample_name] == sample][pred_name] for sample in bkg_samples],
-                       weights=[weight_scale*in_data[in_data[sample_name] == sample][wgt_name] for sample in bkg_samples],
+            axins.hist([df[df[sample_name] == sample][pred_name] for sample in bkg_samples],
+                       weights=[wgt_scale*df[df[sample_name] == sample][wgt_name] for sample in bkg_samples],
                        label=None, color=[sns.color_palette()[sample2col[s]] for s in bkg_samples], **hist_params)
         
         for sample in sig_samples:
-            ax.hist(in_data[in_data[sample_name] == sample][pred_name],
-                    weights=weight_scale*in_data[in_data[sample_name] == sample][wgt_name],
+            ax.hist(df[df[sample_name] == sample][pred_name],
+                    weights=wgt_scale*df[df[sample_name] == sample][wgt_name],
                     label=sample, histtype='step', linewidth='3', 
                     color='black', **hist_params)
             if zoom_args:
-                axins.hist(in_data[in_data[sample_name] == sample][pred_name],
-                           weights=weight_scale*in_data[in_data[sample_name] == sample][wgt_name],
+                axins.hist(df[df[sample_name] == sample][pred_name],
+                           weights=wgt_scale*df[df[sample_name] == sample][wgt_name],
                            label=None, histtype='step', linewidth='3', 
                            color='black', **hist_params)
         

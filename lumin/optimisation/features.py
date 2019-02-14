@@ -9,30 +9,30 @@ from ..plotting.interpretation import plot_importance
 from ..utils.mod_ver import check_rfpimp
 
 
-def get_rf_feat_importance(rf:ForestRegressor, x_val:pd.DataFrame, y_val:np.ndarray, w_val:Optional[np.ndarray]=None) -> pd.DataFrame:
+def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
     check_rfpimp(); from rfpimp import importances
-    return importances(rf, x_val, y_val, features=x_val.columns, sample_weights=w_val).reset_index()
+    return importances(rf, inputs, targets, features=inputs.columns, sample_weights=weights).reset_index()
 
 
-def rf_rank_features(df_trn:pd.DataFrame, df_val:pd.DataFrame, objective:str,
+def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
                      train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None,
-                     cut:float=0.0) -> List[str]:
-    w_trn = None if wgt_name is None else df_trn[wgt_name]
-    w_val = None if wgt_name is None else df_val[wgt_name]
+                     importance_cut:float=0.0) -> List[str]:
+    w_trn = None if wgt_name is None else train_df[wgt_name]
+    w_val = None if wgt_name is None else val_df[wgt_name]
     print("Optimising RF")
-    _, rf = get_opt_rf_params(df_trn[train_feats], df_trn[targ_name], df_val[train_feats], df_val[targ_name],
+    _, rf = get_opt_rf_params(train_df[train_feats], train_df[targ_name], val_df[train_feats], val_df[targ_name],
                               objective, w_trn=w_trn, w_val=w_val, verbose=False)
 
-    fi = get_rf_feat_importance(rf, df_val[train_feats], df_val[targ_name], w_val)
+    fi = get_rf_feat_importance(rf, val_df[train_feats], val_df[targ_name], w_val)
     print("Top ten most important features:\n", fi[:min(len(fi), 10)])
     plot_importance(fi[:min(len(fi), 30)])
 
-    top_feats = list(fi[fi.Importance > cut].Feature)
-    print(f"\n{len(top_feats)} features found with importance greater than {cut}:\n", top_feats)
+    top_feats = list(fi[fi.Importance > importance_cut].Feature)
+    print(f"\n{len(top_feats)} features found with importance greater than {importance_cut}:\n", top_feats)
     print("\nOptimising new RF")
-    _, rf_new = get_opt_rf_params(df_trn[top_feats], df_trn[targ_name], df_val[top_feats], df_val[targ_name],
+    _, rf_new = get_opt_rf_params(train_df[top_feats], train_df[targ_name], val_df[top_feats], val_df[targ_name],
                                   objective, w_trn=w_trn, w_val=w_val, verbose=False)  
     print("Comparing RF scores, higher = better")                           
-    print(f"All features:\t{rf.score(df_val[train_feats], df_val[targ_name], w_val):.5f}")
-    print(f"Top features:\t{rf_new.score(df_val[top_feats], df_val[targ_name], w_val):.5f}")
+    print(f"All features:\t{rf.score(val_df[train_feats], val_df[targ_name], w_val):.5f}")
+    print(f"Top features:\t{rf_new.score(val_df[top_feats], val_df[targ_name], w_val):.5f}")
     return top_feats

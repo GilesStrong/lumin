@@ -9,8 +9,7 @@ import torch
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 
-def to_np(x:Tensor) -> np.ndarray:
-    return x.cpu().detach().numpy()
+def to_np(x:Tensor) -> np.ndarray: return x.cpu().detach().numpy()
 
 
 def to_device(x:Union[Tensor,List[Tensor]], device:torch.device=device):
@@ -19,13 +18,12 @@ def to_device(x:Union[Tensor,List[Tensor]], device:torch.device=device):
     return x.to(device)
 
 
-def to_tensor(x:np.ndarray) -> Union[Tensor, None]:
-    return Tensor(x) if x is not None else None
+def to_tensor(x:np.ndarray) -> Union[Tensor, None]: return Tensor(x) if x is not None else None
 
 
-def str2bool(x:str) -> bool:
-    if isinstance(x, bool): return x
-    else: return x.lower() in ("yes", "true", "t", "1")
+def str2bool(string:str) -> bool:
+    if isinstance(string, bool): return string
+    else:                        return string.lower() in ("yes", "true", "t", "1")
 
 
 def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) -> None:
@@ -38,7 +36,7 @@ def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) 
     df['pred'] = preds
 
 
-def ids2unique(x: Union[List, np.ndarray]) -> np.ndarray:
-    if not isinstance(x, np.ndarray): x = np.array(x)[:,None]
-    primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+x.shape[1])]), x.shape)
-    return (primes**x).prod(axis=-1)
+def ids2unique(ids: Union[List, np.ndarray]) -> np.ndarray:
+    if not isinstance(ids, np.ndarray): x = np.array(ids)[:,None]
+    primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+ids.shape[1])]), x.shape)
+    return (primes**ids).prod(axis=-1)

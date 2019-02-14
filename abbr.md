@@ -31,7 +31,7 @@
 |Normalisation|norm||
 |Signal|sig, s||
 |Background|bkg, b||
-|Uncertainty|unc||
+|Uncertainty|uncert, unc||
 |Systematic|syst|syst_unc_b|
 |Prediction|pred|pred_name|
 |Generator level|gen_*|gen_target|
@@ -77,6 +77,10 @@
 |Embedding|embed||
 |Class|cls||
 |Timer|tmr|fol_tmr|
+|Random Forest|rf||
+|Percentage|perc||
+|Identification number|id||
+
 
 
 

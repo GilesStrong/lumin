@@ -7,7 +7,7 @@ import timeit
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
-from ..nn.data.fold_yielder import FoldYielder
+from ..nn.data.fy import FoldYielder
 from ..nn.data.batch_yielder import BatchYielder
 from ..nn.models.model_builder import ModelBuilder
 from ..nn.models.model import Model
@@ -18,7 +18,7 @@ from ..plotting.plot_settings import PlotSettings
 import matplotlib.pyplot as plt
 
 
-def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, X_val:np.ndarray, y_val:np.ndarray, objective:str,
+def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
                       params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
                       verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
@@ -36,8 +36,8 @@ def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, X_val:np.ndarray, y_va
         for i, value in enumerate(pb):
             pb.comment = f'{param} = {params[param][min(i+1, len(params[param])-1)]}'
             m = rf(**{**best_params, param: value})
-            m.fit(X_trn, y_trn, w_trn)
-            scores.append(m.score(X_val, y_val, w_val))
+            m.fit(x_trn, y_trn, w_trn)
+            scores.append(m.score(x_val, y_val, w_val))
             if len(best_scores) == 0 or scores[-1] > best_scores[-1]:
                 best_scores.append(scores[-1])
                 best_params[param] = value
@@ -52,23 +52,23 @@ def get_opt_rf_params(X_trn:np.ndarray, y_trn:np.ndarray, X_val:np.ndarray, y_va
     return best_params, best_m
 
 
-def fold_lr_find(fold_yielder:FoldYielder, model_builder:ModelBuilder, bs:int,
+def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
                  plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
-    start = timeit.default_timer()
-    indeces = range(fold_yielder.n_folds) if n_folds < 1 else range(min(n_folds, fold_yielder.n_folds))
+    tmr = timeit.default_timer()
+    idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
     lr_finders = []
-    for trn_id in progress_bar(indeces):
+    for trn_id in progress_bar(idxs):
         model = Model(model_builder)
-        trn_fold = fold_yielder.get_fold(trn_id)
+        trn_fold = fy.get_fold(trn_id)
         nb = len(trn_fold['targets'])//bs
         lr_finder = LRFinder(nb=nb, lr_bounds=lr_bounds, model=model)
         lr_finder.on_train_begin()
-        batch_yielder = BatchYielder(**fold_yielder.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold)
+        batch_yielder = BatchYielder(**fy.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold)
         model.fit(batch_yielder, [lr_finder])
         lr_finders.append(lr_finder)
         
-    print("LR finder took {:.3f}s ".format(timeit.default_timer()-start))
+    print("LR finder took {:.3f}s ".format(timeit.default_timer()-tmr))
     if n_folds != 1:
         plot_lr_finders(lr_finders, loss='loss', cut=-2, settings=plot_settings)
     else:

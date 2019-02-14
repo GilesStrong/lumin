@@ -13,23 +13,23 @@ Todo:
 '''
 
 
-def binary_class_cut(in_data:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
+def binary_class_cut(df:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
                      plot_settings:PlotSettings=PlotSettings()) -> float:
     '''Find a fluctaution resiliant cut which should generalise better by 
     taking the mean class prediction of the top top_perc percentage of points
     as ranked by AMS'''
-    sig = (in_data.gen_target == 1)
-    bkg = (in_data.gen_target == 0)
-    if 'ams' not in in_data.columns:
-        in_data['ams'] = -1
-        in_data.loc[in_data[pred_name] >= min_pred, 'ams'] = in_data[in_data[pred_name] >= min_pred].apply(lambda row:
-                                                                                                           calc_ams(wgt_factor*np.sum(in_data.loc[(in_data[pred_name] >= row[pred_name]) & sig, wgt_name]),
-                                                                                                                    wgt_factor*np.sum(in_data.loc[(in_data[pred_name] >= row[pred_name]) & bkg, wgt_name]),
-                                                                                                                    br=br, unc_b=syst_unc_b), axis=1)
+    sig = (df.gen_target == 1)
+    bkg = (df.gen_target == 0)
+    if 'ams' not in df.columns:
+        df['ams'] = -1
+        df.loc[df[pred_name] >= min_pred, 'ams'] = df[df[pred_name] >= min_pred].apply(
+            lambda row: calc_ams(wgt_factor*np.sum(df.loc[(df[pred_name] >= row[pred_name]) & sig, wgt_name]),
+                                 wgt_factor*np.sum(df.loc[(df[pred_name] >= row[pred_name]) & bkg, wgt_name]),
+                                 br=br, unc_b=syst_unc_b), axis=1)
         
-    sort = in_data.sort_values(by='ams', ascending=False)
+    sort = df.sort_values(by='ams', ascending=False)
     cuts = sort[pred_name].values[0:int(top_perc * len(sort))]
 
     cut = np.mean(cuts)

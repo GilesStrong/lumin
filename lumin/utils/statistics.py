@@ -14,10 +14,8 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
     if 'mean' not in args: args['mean'] = False
     if 'std'  not in args: args['std']  = False  
     if 'c68'  not in args: args['c68']  = False
-    if args['kde'] and args['data'].dtype != 'float64': 
-        data = np.array(args['data'], dtype='float64')
-    else:
-        data = args['data']
+    if args['kde'] and args['data'].dtype != 'float64': data = np.array(args['data'], dtype='float64')
+    else:                                               data = args['data']
     len_d = len(data)
 
     np.random.seed()
@@ -39,11 +37,11 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
     else: return out_dict
 
 
-def get_moments(x:np.ndarray) -> Tuple[float,float,float,float]:
-    n = len(x)
-    m = np.mean(x)
-    m_4 = np.mean((x-m)**4)
-    s = np.std(x, ddof=1)
+def get_moments(array:np.ndarray) -> Tuple[float,float,float,float]:
+    n = len(array)
+    m = np.mean(array)
+    m_4 = np.mean((array-m)**4)
+    s = np.std(array, ddof=1)
     s4 = s**4
     se_s2 = ((m_4-(s4*(n-3)/(n-1)))/n)**0.25
     se_s = se_s2/(2*s)
@@ -60,8 +58,8 @@ def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
     i = 0    
     while uncert * (10**i) <= 1: i += 1
     
-    round_uncert = factor * round(uncert, i)
-    round_value  = factor * round(value, i)
+    round_uncert = factor*round(uncert, i)
+    round_value  = factor*round(value, i)
     if int(round_uncert) == round_uncert:
         round_uncert = int(round_uncert)
         round_value  = int(round_value)
