@@ -9,8 +9,8 @@ from ..data.fold_yielder import FoldYielder
 
 
 class RegPull(EvalMetric):
-    def __init__(self, use_bs:bool=False, use_weights:bool=True, ret_mean=False, use_pull=True, targ_name:str='targets', weight_name:Optional[str]=None):
-        super().__init__(targ_name=targ_name, weight_name=weight_name)
+    def __init__(self, use_bs:bool=False, use_weights:bool=True, ret_mean=False, use_pull=True, targ_name:str='targets', wgt_name:Optional[str]=None):
+        super().__init__(targ_name=targ_name, wgt_name=wgt_name)
         self.use_bs,self.use_weights,self.ret_mean,self.use_pull = use_bs,use_weights,ret_mean,use_pull
 
     def compute(self, df:pd.DataFrame) -> float:
@@ -32,8 +32,8 @@ class RegPull(EvalMetric):
 
 
 class RegAsProxyPull(RegPull):
-    def __init__(self, func, use_bs:bool=False, use_weights:bool=True, ret_mean=False, use_pull=True, targ_name:str='targets', weight_name:Optional[str]=None):
-        super().__init__(use_bs=use_bs, use_weights=use_weights, ret_mean=ret_mean, use_pull=use_pull, targ_name=targ_name, weight_name=weight_name)
+    def __init__(self, func, use_bs:bool=False, use_weights:bool=True, ret_mean=False, use_pull=True, targ_name:str='targets', wgt_name:Optional[str]=None):
+        super().__init__(use_bs=use_bs, use_weights=use_weights, ret_mean=ret_mean, use_pull=use_pull, targ_name=targ_name, wgt_name=wgt_name)
         self.func = func
             
     def evaluate(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> float:

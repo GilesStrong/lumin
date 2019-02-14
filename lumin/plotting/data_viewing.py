@@ -12,7 +12,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-def plot_feat(in_data:pd.DataFrame, feat:str, weight_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
+def plot_feat(in_data:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
               plot_params:List[Dict[str,Any]]={}, size='mid', moments=True, ax_labels={'y': 'Density', 'x': None},
               savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
@@ -30,18 +30,18 @@ def plot_feat(in_data:pd.DataFrame, feat:str, weight_name:Optional[str]=None, cu
                 if feat_range[0] == feat_range[1]: break
                 cut = (in_data[feat] > feat_range[0]) & (in_data[feat] < feat_range[1])
                 if cuts[i] is not None: cut = cut & (cuts[i])
-                if weight_name is None:
+                if wgt_name is None:
                     plot_data = np.nan_to_num(in_data.loc[cut, feat])
                 else:
-                    weights = in_data.loc[cut, weight_name].values.astype('float64')
+                    weights = in_data.loc[cut, wgt_name].values.astype('float64')
                     weights /= weights.sum()
                     plot_data = np.random.choice(np.nan_to_num(in_data.loc[cut, feat]), n_samples, p=weights)
             else:
                 tmp_data = in_data if cuts[i] is not None else in_data.loc[cuts[i]]
-                if weight_name is None:
+                if wgt_name is None:
                     plot_data = np.nan_to_num(tmp_data[feat])
                 else:
-                    weights = tmp_data[weight_name].values.astype('float64')
+                    weights = tmp_data[wgt_name].values.astype('float64')
                     weights /= weights.sum()
                     plot_data = np.random.choice(np.nan_to_num(tmp_data[feat]), n_samples, p=weights)
             label = labels[i]

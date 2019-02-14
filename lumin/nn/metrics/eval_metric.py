@@ -7,13 +7,13 @@ from ..data.fold_yielder import FoldYielder
 
 
 class EvalMetric(ABC):
-    def __init__(self, targ_name:str='targets', weight_name:Optional[str]=None):
-        self.targ_name,self.weight_name = targ_name,weight_name
+    def __init__(self, targ_name:str='targets', wgt_name:Optional[str]=None):
+        self.targ_name,self.wgt_name = targ_name,wgt_name
         self.lower_better = True
 
     def get_df(self, data:FoldYielder, index:int, y_pred:np.ndarray) -> pd.DataFrame:
         df = pd.DataFrame()
-        if self.weight_name is not None: df['gen_weight'] = data.get_column(column=self.weight_name, n_flds=1, fold_id=index)
+        if self.wgt_name is not None: df['gen_weight'] = data.get_column(column=self.wgt_name, n_flds=1, fold_id=index)
         
         targets = data.get_column(column=self.targ_name, n_flds=1, fold_id=index)
         if len(targets.shape) > 1:

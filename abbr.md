@@ -29,4 +29,14 @@
 |value|val|default_vals|
 |Calculation|calc|calc_pair_mass|
 |Normalisation|norm||
+|Signal|sig, s||
+|Background|bkg, b||
+|Uncertainty|unc||
+|Systematic|syst|syst_unc_b|
+|Prediction|pred|pred_name|
+|Generator level|gen_*|gen_target|
+|Minimum|min|min_events|
+|Maximum|max|max_ams|
+|Approximate Medean Significance|ams||
+|Progress|prog|show_prog|
 
