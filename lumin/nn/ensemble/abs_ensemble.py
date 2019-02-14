@@ -7,25 +7,18 @@ from ..data.fold_yielder import FoldYielder
 
 
 class AbsEnsemble(ABC):
-    def __init__(self):
-        self.models = []
-        self.weights = []
-        self.size = 0
+    def __init__(self): self.models,self.weights,self.size = [],[],0
 
-    def __repr__(self) -> str:
-        return f"Ensemble of size {self.size}\nWeights:\n{self.weights}\nModels:\n{self.models}"
+    def __repr__(self) -> str: return f"Ensemble of size {self.size}\nWeights:\n{self.weights}\nModels:\n{self.models}"
 
-    def __len__(self) -> int:
-        return self.size
+    def __len__(self) -> int: return self.size
 
     def __iter__(self) -> Tuple[float, AbsModel]:
         for w, m in zip(self.weights, self.models): yield w, m
 
-    def __getitem__(self, idx:int) -> Tuple[float, AbsModel]:
-        return self.weights[idx], self.models[idx]
+    def __getitem__(self, idx:int) -> Tuple[float, AbsModel]: return self.weights[idx], self.models[idx]
 
-    def __setitem__(self, idx:int, value:Tuple[float, AbsModel]) -> None:
-        self.weights[idx],self.models[idx] = value
+    def __setitem__(self, idx:int, value:Tuple[float, AbsModel]) -> None: self.weights[idx],self.models[idx] = value
 
     def append(self, value:Tuple[float, AbsModel]) -> None:
         self.weights.append(value[0])
@@ -39,6 +32,7 @@ class AbsEnsemble(ABC):
         return w, m
     
     @abstractmethod
-    def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]: pass
+    def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]:
+        pass
 
     

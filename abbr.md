@@ -53,4 +53,9 @@
 |Include|inc_*|inc_inputs|
 |Coordinate|coord||
 |Augment|aug||
+|Argument|arg|snapshot_args|
+|FoldYielder|fy||
+|Batch size|bs||
+|Evaluation|eval||
+
 

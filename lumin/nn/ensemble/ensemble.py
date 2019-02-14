@@ -15,7 +15,7 @@ from torch.tensor import Tensor
 from .abs_ensemble import AbsEnsemble
 from ..models.model import Model
 from ..models.model_builder import ModelBuilder
-from ..data.fold_yielder import FoldYielder
+from ..data.fy import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.statistics import uncert_round
@@ -23,21 +23,17 @@ from ...utils.statistics import uncert_round
 
 class Ensemble(AbsEnsemble):
     def __init__(self, input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None, model_builder:Optional[ModelBuilder]=None):
+        super().__init__()
         self.input_pipe,self.output_pipe,self.model_builder = input_pipe,output_pipe,model_builder
-        self.models = []
-        self.weights = []
-        self.size = 0
         
-    def add_input_pipe(self, pipe:Pipeline) -> None:
-        self.input_pipe = pipe
+    def add_input_pipe(self, pipe:Pipeline) -> None: self.input_pipe = pipe
 
-    def add_output_pipe(self, pipe:Pipeline) -> None:
-        self.output_pipe = pipe
+    def add_output_pipe(self, pipe:Pipeline) -> None: self.output_pipe = pipe
     
     @staticmethod
-    def load_trained_model(model_id:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model: 
+    def load_trained_model(model_idx:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model: 
         model = Model(model_builder)
-        model.load(f'{name}{model_id}.h5')
+        model.load(f'{name}{model_idx}.h5')
         return model
     
     @staticmethod
@@ -47,8 +43,7 @@ class Ensemble(AbsEnsemble):
         else: raise ValueError("No other weighting currently supported")
 
     def build_ensemble(self, results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
-                       metric:str='loss', weighting:str='reciprocal', higher_better:bool=False,
-                       snapshot_args:Dict[str,Any]={},
+                       metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Dict[str,Any]={},
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
         self.model_builder = model_builder
         cycle_losses     = None if 'cycle_losses'     not in snapshot_args else snapshot_args['cycle_losses']
@@ -66,18 +61,17 @@ class Ensemble(AbsEnsemble):
             warnings.warn("Warning: Setting model weighting to uniform")
             weighting = 'uniform'
     
-        self.models = []
-        weights = []
-    
         if verbose: print(f"Choosing ensemble by {metric}")
-        dtype = [('model', int), ('result', float)]
-        values = np.sort(np.array([(i, result[metric] if not higher_better else 1/result[metric]) for i, result in enumerate(results)], dtype=dtype), order=['result'])
-    
+        values = np.sort(np.array([(i, result[metric] if not higher_metric_better else 1/result[metric]) for i, result in enumerate(results)],
+                                  dtype=[('model', int), ('result', float)]), order=['result'])
+
+        self.models, weights = [], []
         for i in progress_bar(range(min([size, len(results)]))):
             if not (load_cycles_only and n_cycles):
                 self.models.append(self.load_trained_model(values[i]['model'], self.model_builder, name=location/'train_'))
                 weights.append(self._get_weights(values[i]['result'], metric, weighting))
-                if verbose: print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result'] if not higher_better else 1/values[i]['result']}")
+                if verbose:
+                    print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result'] if not higher_metric_better else 1/values[i]['result']}")
 
             if n_cycles:
                 end_cycle = len(cycle_losses[values[i]['model']])-patience-1
@@ -93,48 +87,47 @@ class Ensemble(AbsEnsemble):
         self.n_out = self.models[0].get_out_size()
         self.results = results
         
-    def predict_array(self, in_data:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
-        pred = np.zeros((len(in_data), self.n_out))
+    def predict_array(self, array:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
+        pred = np.zeros((len(array), self.n_out))
         
         n_models = len(self.models) if n_models is None else n_models
         models = self.models[:n_models]
         weights = self.weights[:n_models]
         weights = weights/weights.sum()
         
-        in_data = Tensor(in_data)
+        array = Tensor(array)
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=bool(parent_bar))):
-            tmp_pred = m.predict(in_data)
+            tmp_pred = m.predict(array)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred
     
-    def predict_folds(self, fold_yielder:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
+    def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
         n_models = len(self.models) if n_models is None else n_models
         times = []
-        mb = master_bar(range(len(fold_yielder.source)))
+        mb = master_bar(range(len(fy.foldfile)))
         for fold_idx in mb:
             fold_tmr = timeit.default_timer()
-            if not fold_yielder.test_time_aug:
-                fold = fold_yielder.get_fold(fold_idx)['inputs']
+            if not fy.test_time_aug:
+                fold = fy.get_fold(fold_idx)['inputs']
                 pred = self.predict_array(fold, n_models, mb)
-
             else:
                 tmpPred = []
-                pb = progress_bar(range(fold_yielder.aug_mult), parent=mb)
+                pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
-                    fold = fold_yielder.get_test_fold(fold_idx, aug)['inputs']
+                    fold = fy.get_test_fold(fold_idx, aug)['inputs']
                     tmpPred.append(self.predict_array(fold, n_models))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
-            if self.n_out > 1: fold_yielder.save_fold_pred(pred, fold_idx, pred_name=pred_name)
-            else: fold_yielder.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
+            if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
+            else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
         times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
         print(f'Mean time per event = {times[0]}±{times[1]}')
 
-    def predict(self, in_data:Union[np.ndarray, FoldYielder, List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None, np.ndarray]:
-        if not isinstance(in_data, FoldYielder): return self.predict_array(in_data, n_models)
-        self.predict_folds(in_data, n_models, pred_name)
+    def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None,np.ndarray]:
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models)
+        self.predict_folds(inputs, n_models, pred_name)
     
     def save(self, name:str, feats:List[str]=None, overwrite:bool=False) -> None:
         if (len(glob.glob(f"{name}*.json")) or len(glob.glob(f"{name}*.h5")) or len(glob.glob(f"{name}*.pkl"))) and not overwrite:
@@ -176,5 +169,5 @@ class Ensemble(AbsEnsemble):
     def export2onnx(self, base_name:str, bs:int=1) -> None:
         for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)
 
-    def get_feat_importance(self, fold_yielder:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
-        return get_ensemble_feat_importance(self, fold_yielder, eval_metric)
+    def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+        return get_ensemble_feat_importance(self, fy, eval_metric)
