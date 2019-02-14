@@ -20,6 +20,7 @@
 |Vector|vec, v||
 |Difference|delta, d|dphi|
 |Absolute|abs|abs_mom|
+|Abstract|abs|AbsCallback|
 |Momentum|mom, p|abs_mom, px|
 |Energy|e, E||
 |Missing transverse momentum|mpt||
