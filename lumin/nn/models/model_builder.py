@@ -97,34 +97,19 @@ class ModelBuilder(object):
 
     def set_lr(self, lr:float) -> None: self.opt_args['lr'] = lr
 
-    def get_dense(self, fan_in:Optional[int]=None, fan_out:Optional[int]=None, act:Optional[int]=None, last_layer:bool=False) -> nn.Module:
-        fan_in  = self.width if fan_in  is None else fan_in
-        fan_out = self.width if fan_out is None else fan_out
-        act     = self.act   if act     is None else act
-
-        layers = []
-        layers.append(nn.Linear(fan_in, fan_out))
-        init, args = self.lookup_init(act, fan_in, fan_out)
-        init(layers[-1].weight, **args)
-        if act != 'linear': layers.append(self.lookup_act(act))
-            
-        if self.bn and not last_layer: layers.append(nn.BatchNorm1d(fan_out))
-        if self.do and not last_layer: 
-            if act == 'selu': layers.append(nn.AlphaDropout(self.do))
-            else:             layers.append(nn.Dropout(self.do))
-        return nn.Sequential(*layers)
-
     def get_head(self) -> nn.Module:
-        return self.head(self.n_cont_in, self.n_cat_in, self.emb_szs, self.do_cont, self.do_cat, self.cat_names, self.emb_load_path, freeze=self.freeze_head)
+        return self.head(n_cont_in=self.n_cont_in, n_cat_in=self.n_cat_in, cat_names=self.cat_names, n_out=self.width, act=self.act,
+                         emb_szs=self.emb_szs, emb_load_path=self.emb_load_path, do=self.do, do_cont=self.do_cont, do_cat=self.do_cat, bn=self.bn,
+                         lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_head)
 
-    def get_body(self, n_in:int, depth:int) -> nn.Module:
-        return self.body(n_in, depth, self.width, self.do, self.bn, self.act, self.res, self.dense, freeze=self.freeze_head)
+    def get_body(self, depth:int) -> nn.Module:
+        return self.body(depth=depth, width=self.width, do=self.do, bn=self.bn, act=self.act, res=self.res, dense=self.dense, freeze=self.freeze_body)
 
     def get_tail(self, n_in) -> nn.Module: return self.tail(n_in, self.n_out, self.objective, self.y_range)
 
     def build_model(self) -> nn.Module:
         head = self.get_head()
-        body = self.get_body(head.get_out_size(), self.depth)
+        body = self.get_body(self.depth-1)
         if hasattr(body, 'get_out_size'):
             out_size = body.get_out_size()
         else:
