@@ -21,8 +21,8 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
         fig, ax = plt.subplots(figsize=(settings.w_large, (0.75)*settings.lbl_sz))
         xerr = None if unc_name not in df else 'Uncertainty'
         df.plot(feat_name, imp_name, 'barh', ax=ax, legend=False, xerr=xerr, error_kw={'elinewidth': 3})
-        ax.set_xlabel('Importance via feature permutation', fontsize=16, color='black')
-        ax.set_ylabel('Feature', fontsize=16, color='black')
+        ax.set_xlabel('Importance via feature permutation', fontsize=settings.lbl_sz, color=settings.lbl_col)
+        ax.set_ylabel('Feature', fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')

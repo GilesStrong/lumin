@@ -30,7 +30,7 @@ def ams_scan_quick(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:f
         ams = calc_ams(max(0, s*wgt_factor), max(0, b*wgt_factor), br, syst_unc_b)
         if ams > max_ams: max_ams, threshold = ams, cut
         if df[targ_name].values[i]: s -= df[wgt_name].values[i]
-        else:                            b -= df[wgt_name].values[i]        
+        else:                       b -= df[wgt_name].values[i]        
     return max_ams, threshold
 
 
@@ -45,11 +45,11 @@ def ams_scan_slow(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:fl
     syst_unc_b2 = np.square(syst_unc_b)
 
     for i, cut in enumerate(progress_bar(df.loc[df[pred_name] >= start_cut, pred_name].values, display=show_prog, leave=show_prog)):
-        bkg_pass = bkg.loc[(bkg[pred_name] >= cut), 'gen_weight']
+        bkg_pass = bkg.loc[(bkg[pred_name] >= cut), wgt_name]
         n_bkg = len(bkg_pass)
         if n_bkg < min_events: continue
 
-        s = np.sum(sig.loc[(sig[pred_name] >= cut), 'gen_weight'])
+        s = np.sum(sig.loc[(sig[pred_name] >= cut), wgt_name])
         b = np.sum(bkg_pass)
         if use_stat_unc: unc_b = np.sqrt(syst_unc_b2+(1/n_bkg))
         else:            unc_b = syst_unc_b

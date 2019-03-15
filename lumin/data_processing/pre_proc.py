@@ -1,6 +1,5 @@
 import pandas as pd
-from typing import List, Optional, Tuple, Union
-from pathlib import Path
+from typing import List, Optional, Tuple
 import pickle
 from collections import OrderedDict
 
@@ -26,23 +25,21 @@ def get_pre_proc_pipes(norm_in=False, norm_out=False, pca=False, whiten=False, w
     return input_pipe, output_pipe
 
 
-def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], savepath:Optional[Union[Path, str]]=None) -> Pipeline:
+def fit_input_pipe(df:pd.DataFrame, cont_feats:List[str], savename:str=None) -> Pipeline:
     '''Fit pipeline to continuous features and optionally save to savepath'''
-    if isinstance(savepath, str): savepath = Path(savepath)
     input_pipe, _ = get_pre_proc_pipes(norm_in=True)
     input_pipe.fit(df[cont_feats].values.astype('float32'))
-    if savepath is not None:
-        with open(savepath/'input_pipe.pkl', 'wb') as fout: pickle.dump(input_pipe, fout)
+    if savename is not None:
+        with open(f'{savename}.pkl', 'wb') as fout: pickle.dump(input_pipe, fout)
     return input_pipe
 
 
-def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], savepath:Optional[Union[Path, str]]=None) -> Pipeline:
+def fit_output_pipe(df:pd.DataFrame, targ_feats:List[str], savename:str=None) -> Pipeline:
     '''Fit pipeline to targets and optionally save to savepath. Have you thought about using a y_range for regression instead?'''
-    if isinstance(savepath, str): savepath = Path(savepath)
     _, output_pipe = get_pre_proc_pipes(norm_out=True)
     output_pipe.fit(df[targ_feats].values.astype('float32'))
-    if savepath is not None:
-        with open(savepath/'output_pipe.pkl', 'wb') as fout: pickle.dump(output_pipe, fout)
+    if savename is not None:
+        with open(f'{savename}.pkl', 'wb') as fout: pickle.dump(output_pipe, fout)
     return output_pipe
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 '''
 Todo:
@@ -61,6 +61,10 @@ def twist(dphi:float, deta:float) -> float: return np.arctan(np.abs(dphi/deta))
 def add_abs_mom(df:pd.DataFrame, vec:str, z:bool=True) -> None:
     if z: df[f'{vec}_absp'] = np.sqrt(np.square(df[f'{vec}_px'])+np.square(df[f'{vec}_py'])+np.square(df[f'{vec}_pz']))
     else: df[f'{vec}_absp'] = np.sqrt(np.square(df[f'{vec}_px'])+np.square(df[f'{vec}_py']))
+
+
+def add_mass(df:pd.DataFrame, vec:str) -> None:
+    df[f'{vec}_mass'] = np.sqrt(np.square(df[f'{vec}_E'])-np.square(df[f'{vec}_absp']))
 
 
 def add_energy(df:pd.DataFrame, vec:str) -> None:
@@ -151,9 +155,10 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
         df.drop(columns=[f'{f}keep'], inplace=True)
 
 
-def calc_pair_mass(df:pd.DataFrame, masses:Tuple[float,float], feat_map:Dict[str,str]) -> np.ndarray:
+def calc_pair_mass(df:pd.DataFrame, masses:Union[Tuple[float,float],Tuple[np.ndarray,np.ndarray]], feat_map:Dict[str,str]) -> np.ndarray:
     '''Compute invarient mass of pair of particles with given masses, using 3-momenta.
-    feat_map maps requested momentum components to the features in df'''
+    feat_map maps requested momentum components to the features in df
+    TODO: no need for dataframe anymore'''
     tmp = pd.DataFrame()
     tmp['0_E'] = np.sqrt((masses[0]**2)+np.square(df.loc[:, feat_map['0_px']])+np.square(df.loc[:, feat_map['0_py']])+np.square(df.loc[:, feat_map['0_pz']]))
     tmp['1_E'] = np.sqrt((masses[1]**2)+np.square(df.loc[:, feat_map['1_px']])+np.square(df.loc[:, feat_map['1_py']])+np.square(df.loc[:, feat_map['1_pz']]))

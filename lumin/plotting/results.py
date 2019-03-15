@@ -134,7 +134,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_targe
     else:
         width_scale = 1
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette, len(bkg_samples)):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette, 1+max([sample2col[x] for x in sample2col])):
         fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid)) if zoom_args is None else plt.subplots(figsize=(width_scale*settings.w_mid, settings.h_mid))
         if zoom_args is not None: axins = inset_axes(ax, width_zoom, height_zoom, loc='right', bbox_to_anchor=anchor, bbox_transform=ax.figure.transFigure)
         ax.hist([df[df[sample_name] == sample][pred_name] for sample in bkg_samples],
@@ -180,4 +180,4 @@ def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_targe
                 axins.grid(True, which="both")
         ax.set_title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
-        fig.show() 
+        fig.show()
