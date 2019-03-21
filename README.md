@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/163840693.svg)](https://zenodo.org/badge/latestdoi/163840693)
+
 **N.B.: LUMIN is not yet officially released and is currently undergoing beta testing. Feel free to check it out and provide feedback if you want, but there's no guarantee it will work at the moment. If by some chance you think it's pretty neat, I would ask that you avoid advertising it to others until testing is finished and this message goes away. Cheers, Giles**
 
 # LUMIN: Lumin Unifies Many Improvements for Networks
