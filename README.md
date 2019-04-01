@@ -69,13 +69,13 @@ LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy
 - Guaranteed to spark joy (in its current beta state, LUMIN may instead ignite rage, despair, and frustration - *dev.*)
 
 ## Installation
-### PIP
+### From PyPI
 The main package can be installed via:
 `pip install lumin`
 
 Full functionality requires two additional packages as described below.
 
-### Source:
+### From source:
 ```
 git clone git@github.com:GilesStrong/lumin.git
 cd lumin
@@ -119,3 +119,8 @@ Aside from being a recursive accronym (and therefore the best kind of accronym) 
 Currently just me - Giles Strong; a British-born, Lisbon-based, PhD student in particle physics at IST, researcher at LIP-Lisbon, member of Marie Curie ITN [AMVA4NewPhysics](https://amva4newphysics.wordpress.com/) and the CMS collaboration.
 
 Certainly more developers and contributors are welcome to join and help out!
+
+### Reference
+If you have used LUMIN in you analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), http://doi.org/10.5281/zenodo.2601858, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
+
+[Bibtex export](https://zenodo.org/record/2601858/export/hx)
