@@ -17,7 +17,7 @@ from ....plotting.interpretation import plot_embedding
 
 class CatEmbHead(nn.Module):
     '''Standard model head for columnar data. Provides inputs for continuous features, and embeddign matrices for categorical inputs'''
-    def __init__(self, n_cont_in:int, n_cat_in:int, n_out:int, emb_szs:Optional[List[int]], emb_load_path:Optional[Path],
+    def __init__(self, n_cont_in:int, n_cat_in:int, n_out:int, emb_szs:Optional[np.ndarray], emb_load_path:Optional[Path],
                  act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_names:Optional[List[str]], 
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, freeze:bool=False):
