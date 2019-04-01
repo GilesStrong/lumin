@@ -1,4 +1,5 @@
-[![DOI](https://zenodo.org/badge/163840693.svg)](https://zenodo.org/badge/latestdoi/163840693)
+[![pypi lumin version](https://img.shields.io/pypi/v/lumin.svg)](https://pypi.python.org/pypi/lumin) [![DOI](https://zenodo.org/badge/163840693.svg)](https://zenodo.org/badge/latestdoi/163840693)
+[![lumin python compatibility](https://img.shields.io/pypi/pyversions/lumin.svg)](https://pypi.python.org/pypi/lumin) [![lumin license](https://img.shields.io/pypi/l/lumin.svg)](https://pypi.python.org/pypi/lumin)
 
 # LUMIN: Lumin Unifies Many Improvements for Networks
 LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-specific requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
@@ -79,7 +80,7 @@ Optionally, run pip install with `-e` flag for development installation.
 ### Additional modules
 Full use of LUMIN requires the latest versions of rfpimp and PDPbox, but these are not released yet on PyPI, so you'll need to install them from source, too:
 - `git clone https://github.com/parrt/random-forest-importances.git && cd random-forest-importances/src && pip install .`
-- `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install . -e` note the `-e` flag to make sure the version number gets set properly.
+- `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install -e .` note the `-e` flag to make sure the version number gets set properly.
 
 ## Notes
 ### Why use LUMIN

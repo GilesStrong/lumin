@@ -4,11 +4,7 @@
 try:  from setuptools import setup, find_packages
 except ImportError: from distutils.core import setup, find_packages
     
-try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
-except ImportError:
-    with open("README.md", "r") as fin: long_description = fin.read()
+with open("README.md", "r") as fin: long_description = fin.read()
 
 with open('requirements.txt') as f: requirements = f.read().strip().split('\n')
 
@@ -38,9 +34,10 @@ setup(
         "Programming Language :: Python :: 3.6",
         'Programming Language :: Python :: 3.7',
         "License :: OSI Approved :: Apache Software License",
-        "Operating System :: OS Independent",
+        "Operating System :: MacOS :: MacOS X ",
+        "Operating System :: POSIX :: Linux",
         'Intended Audience :: Developers',
-        'Intended Audience :: Scientists',
+        'Intended Audience :: Science/Research',
         'Natural Language :: English',
         'Development Status :: 3 - Alpha',
     ],
