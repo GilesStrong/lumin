@@ -1,5 +1,5 @@
-[![pypi lumin version](https://img.shields.io/pypi/v/lumin.svg)](https://pypi.python.org/pypi/lumin) [![DOI](https://zenodo.org/badge/163840693.svg)](https://zenodo.org/badge/latestdoi/163840693)
-[![lumin python compatibility](https://img.shields.io/pypi/pyversions/lumin.svg)](https://pypi.python.org/pypi/lumin) [![lumin license](https://img.shields.io/pypi/l/lumin.svg)](https://pypi.python.org/pypi/lumin)
+[![pypi lumin version](https://img.shields.io/pypi/v/lumin.svg)](https://pypi.python.org/pypi/lumin) 
+[![lumin python compatibility](https://img.shields.io/pypi/pyversions/lumin.svg)](https://pypi.python.org/pypi/lumin) [![lumin license](https://img.shields.io/pypi/l/lumin.svg)](https://pypi.python.org/pypi/lumin) [![DOI](https://zenodo.org/badge/163840693.svg)](https://zenodo.org/badge/latestdoi/163840693)
 
 # LUMIN: Lumin Unifies Many Improvements for Networks
 LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-specific requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
@@ -69,13 +69,19 @@ LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy
 - Guaranteed to spark joy (in its current beta state, LUMIN may instead ignite rage, despair, and frustration - *dev.*)
 
 ## Installation
-Not yet available on PyPI yet. Please install from source:
+### PIP
+The main package can be installed via:
+`pip install lumin`
+
+Full functionality requires two additional packages as described below.
+
+### Source:
 ```
 git clone git@github.com:GilesStrong/lumin.git
 cd lumin
 pip install .
 ```
-Optionally, run pip install with `-e` flag for development installation.
+Optionally, run pip install with `-e` flag for development installation. Full functionality requires two additional packages as described below.
 
 ### Additional modules
 Full use of LUMIN requires the latest versions of rfpimp and PDPbox, but these are not released yet on PyPI, so you'll need to install them from source, too:
