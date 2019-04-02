@@ -39,6 +39,6 @@ setup(
         'Intended Audience :: Developers',
         'Intended Audience :: Science/Research',
         'Natural Language :: English',
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
     ],
 )
