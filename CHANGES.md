@@ -1,4 +1,4 @@
-# Master
+# Master - targeting V0.1.1
 
 ## Breaking
 
@@ -12,6 +12,6 @@
 
 ## Comments
 
-# V0.1.0
+# V0.1.0 PyPI am assuming direct control
 
 Record of changes begins
