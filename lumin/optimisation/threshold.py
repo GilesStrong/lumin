@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from typing import Tuple
 
 from ..evaluation.ams import calc_ams
 from ..plotting.plot_settings import PlotSettings
@@ -16,7 +17,7 @@ Todo:
 def binary_class_cut(df:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
-                     plot_settings:PlotSettings=PlotSettings()) -> float:
+                     plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
     '''Find a fluctaution resiliant cut which should generalise better by 
     taking the mean class prediction of the top top_perc percentage of points
     as ranked by AMS'''
@@ -49,4 +50,4 @@ def binary_class_cut(df:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
         plt.xlabel('Class prediction', fontsize=plot_settings.lbl_sz, color=plot_settings.lbl_col)
         plt.ylabel(r"$\frac{1}{N}\ \frac{dN}{dp}$", fontsize=plot_settings.lbl_sz, color=plot_settings.lbl_col)
         plt.show()
-    return cut
+    return cut, ams, sort.iloc[0]["ams"]
