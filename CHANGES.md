@@ -10,6 +10,8 @@
 
 ## Fixes
 
+- `uncert_round` converts `NaN` uncertainty to `0`
+
 ## Comments
 
 # V0.1.0 PyPI am assuming direct control
