@@ -27,7 +27,7 @@ class CatEmbHead(nn.Module):
         if self.n_cat_in > 0: self.embeds = nn.ModuleList([nn.Embedding(ni, no) for ni, no in self.emb_szs])
         if self.emb_load_path is not None: self.load_embeds()
         input_sz = self.n_cont_in if self.n_cat_in == 0 else self.n_cont_in+np.sum(self.emb_szs[:,1])
-        if self.do_cat   > 0: self.emd_do     = nn.Dropout(self.do_cat)
+        if self.do_cat   > 0: self.emb_do     = nn.Dropout(self.do_cat)
         if self.do_cont  > 0: self.cont_in_do = nn.Dropout(self.do_cont)
         if self.n_cat_in > 0: self.input_bn   = nn.BatchNorm1d(input_sz)
         self.dense = self.get_dense(input_sz, self.n_out, self.act)
@@ -58,7 +58,7 @@ class CatEmbHead(nn.Module):
         if self.n_cat_in > 0:
             x_cat = x_in[:,self.n_cont_in:].long()
             x = torch.cat([emb(x_cat[:,i]) for i, emb in enumerate(self.embeds)], dim=1)
-            if self.do_cat > 0: x = self.emd_do(x)
+            if self.do_cat > 0: x = self.emb_do(x)
         if self.n_cont_in > 0:
             x_cont = x_in[:,:self.n_cont_in]
             if self.do_cont > 0: x_cont = self.cont_in_do(x_cont) 

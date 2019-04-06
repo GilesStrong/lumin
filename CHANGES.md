@@ -11,6 +11,7 @@
 ## Fixes
 
 - `uncert_round` converts `NaN` uncertainty to `0`
+- Corect name of internal embedding dropout layer in `CatEmbHead`: emd_do -> emb_do
 
 ## Comments
 
