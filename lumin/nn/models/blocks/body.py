@@ -1,20 +1,24 @@
-from typing import Optional
+from typing import Optional, Callable
 
 import torch.nn as nn
 import torch
 from torch import Tensor
 
 from ..layers.activations import lookup_act
-from ..initialisations import lookup_init
+from ..initialisations import lookup_normal_init
 
 
 class FullyConnected(nn.Module):
     '''Fully connected set of hidden layers.
     Can optionaly have skip connections between each layer (res=true).
     Alternatively can concatinate layers (dense=true)'''
-    def __init__(self, depth:int, width:int, do:float, bn:bool, act:str, res:bool, dense:bool, freeze:bool=False):
+    def __init__(self, depth:int, width:int, do:float, bn:bool, act:str, res:bool, dense:bool,
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],nn.Module]=lookup_act, freeze:bool=False):
         super().__init__()
-        self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.freeze = depth,width,do,bn,act,res,dense,freeze
+        self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense = depth,width,do,bn,act,res,dense,
+        self.lookup_init,self.lookup_act,self.freeze = lookup_init,lookup_act,freeze
+
         self.layers = nn.ModuleList([self.get_layer(d) for d in range(depth)])
         if dense: self.layers += [self.get_layer(depth, self.width*(2**(self.depth)), self.width)]
         if self.freeze: self.freeze_layers
@@ -33,9 +37,8 @@ class FullyConnected(nn.Module):
         fan_out = width if fan_out is None else fan_out
         
         layers = [nn.Linear(fan_in, fan_out)]
-        init, args = lookup_init(self.act, fan_in, fan_out)
-        init(layers[-1].weight, **args)
-        if self.act != 'linear': layers.append(lookup_act(self.act))
+        self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
+        if self.act != 'linear': layers.append(self.lookup_act(self.act))
         if self.bn or self.res: layers.append(nn.BatchNorm1d(fan_out))
         if self.do: 
             if self.act == 'selu':

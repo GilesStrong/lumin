@@ -10,7 +10,7 @@ from torch.tensor import Tensor
 import torch
 
 from ..layers.activations import lookup_act
-from ..initialisations import lookup_init
+from ..initialisations import lookup_normal_init
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 
@@ -19,7 +19,7 @@ class CatEmbHead(nn.Module):
     '''Standard model head for columnar data. Provides inputs for continuous features, and embeddign matrices for categorical inputs'''
     def __init__(self, n_cont_in:int, n_cat_in:int, n_out:int, emb_szs:Optional[np.ndarray], emb_load_path:Optional[Path],
                  act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_names:Optional[List[str]], 
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, freeze:bool=False):
         super().__init__()
         self.n_cont_in,self.n_cat_in,self.n_out,self.emb_szs,self.do,self.do_cont,self.do_cat,self.bn = n_cont_in,n_cat_in,n_out,emb_szs,do,do_cont,do_cat,bn
@@ -44,8 +44,7 @@ class CatEmbHead(nn.Module):
     def get_dense(self, fan_in:int, fan_out:int, act:str) -> nn.Module:
         layers = []
         layers.append(nn.Linear(fan_in, fan_out))
-        init, args = self.lookup_init(act, fan_in, fan_out)
-        init(layers[-1].weight, **args)
+        self.lookup_init(act, fan_in, fan_out)(layers[-1].weight)
         if act != 'linear': layers.append(self.lookup_act(act))
             
         if self.bn: layers.append(nn.BatchNorm1d(fan_out))
