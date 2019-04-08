@@ -5,6 +5,7 @@ import torch.nn as nn
 def lookup_act(act:str) -> nn.Module:
     '''Map activation name to class'''
     if act == 'relu':       return nn.ReLU()
+    if act == 'prelu':      return nn.PReLU()
     if act == 'selu':       return nn.SELU()
     if act == 'sigmoid':    return nn.Sigmoid()
     if act == 'logsoftmax': return nn.LogSoftmax(1)

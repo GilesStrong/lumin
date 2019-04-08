@@ -8,6 +8,8 @@
 
 ## Additions
 
+- Added PReLU activation
+
 ## Fixes
 
 - `uncert_round` converts `NaN` uncertainty to `0`
