@@ -38,7 +38,7 @@ def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) 
 
 
 def ids2unique(ids: Union[List, np.ndarray]) -> np.ndarray:
-    '''Map list of inetegrs to a unique number'''
+    '''Map list of integers to a unique number'''
     if not isinstance(ids, np.ndarray): ids = np.array(ids)[:,None]
     primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+ids.shape[1])]), ids.shape)
     return (primes**ids).prod(axis=-1)

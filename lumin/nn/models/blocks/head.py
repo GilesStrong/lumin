@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Optional, List, Callable, Any, Tuple
+from typing import Dict, Optional, List, Callable
 from glob import glob
 from collections import OrderedDict
 from pathlib import Path
@@ -29,7 +29,6 @@ class CatEmbHead(nn.Module):
         input_sz = self.n_cont_in if self.n_cat_in == 0 else self.n_cont_in+np.sum(self.emb_szs[:,1])
         if self.do_cat   > 0: self.emb_do     = nn.Dropout(self.do_cat)
         if self.do_cont  > 0: self.cont_in_do = nn.Dropout(self.do_cont)
-        if self.n_cat_in > 0: self.input_bn   = nn.BatchNorm1d(input_sz)
         self.dense = self.get_dense(input_sz, self.n_out, self.act)
         if self.freeze: self.freeze_layers()
     
@@ -62,7 +61,6 @@ class CatEmbHead(nn.Module):
             x_cont = x_in[:,:self.n_cont_in]
             if self.do_cont > 0: x_cont = self.cont_in_do(x_cont) 
             x = torch.cat((x, x_cont), dim=1) if self.n_cat_in > 0 else x_cont
-        if self.n_cat_in > 0: x = self.input_bn(x)
         return self.dense(x)
     
     def load_embeds(self, path:Optional[Path]=None) -> None:
