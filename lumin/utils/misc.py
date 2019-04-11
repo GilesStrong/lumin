@@ -7,7 +7,7 @@ from torch.tensor import Tensor
 import torch
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-
+#device = torch.device('cpu')
 
 def to_np(x:Tensor) -> np.ndarray: return x.cpu().detach().numpy()
 

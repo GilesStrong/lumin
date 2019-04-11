@@ -14,7 +14,7 @@ Todo:
 '''
 
 
-def binary_class_cut(df:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
+def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
                      plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
@@ -30,7 +30,7 @@ def binary_class_cut(df:pd.DataFrame, top_perc:float=0.05, min_pred:float=0.9,
                                  br=br, unc_b=syst_unc_b), axis=1)
         
     sort = df.sort_values(by='ams', ascending=False)
-    cuts = sort[pred_name].values[0:int(top_perc * len(sort))]
+    cuts = sort[pred_name].values[0:int(top_perc*len(sort)/100)]
 
     cut = np.mean(cuts)
     ams = calc_ams(wgt_factor*np.sum(sort.loc[(sort[pred_name] >= cut) & sig, 'gen_weight']),
