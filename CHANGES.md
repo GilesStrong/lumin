@@ -23,6 +23,7 @@
 ## Changes
 
 - Removed the `BatchNorm1d` automatically added in `CatEmbHead` when using categorical inputs; assuming unit-Gaussian continuous inputs, no *a priori* resaon to add it, and tests indicated it hurt performance and train-time.
+- Changed weighting factor when not loading loading cycles only to n+2 from n+1
 
 ## Depreciations
 
