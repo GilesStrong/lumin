@@ -8,6 +8,8 @@
 
 ## Fixes
 
+- Added missing data download cell for multiclass example
+
 ## Changes
 
 ## Depreciations
