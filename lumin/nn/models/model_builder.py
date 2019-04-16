@@ -88,12 +88,12 @@ class ModelBuilder(object):
     def parse_opt_args(self, opt_args:Dict[str,Any]) -> None:
         opt_args = {k.lower(): opt_args[k] for k in opt_args}
         self.opt = 'adam' if 'opt' not in opt_args else opt_args['opt']
-        if self.opt not in ['adam', 'sgd']: raise ValueError('Optimiser not currently available')
         self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}        
 
     def build_opt(self, model:nn.Module) -> optim.Optimizer:
-        if   self.opt == 'adam': return optim.Adam(model.parameters(), **self.opt_args)
-        elif self.opt == 'sgd':  return optim.SGD(model.parameters(),  **self.opt_args)
+        if   self.opt == 'adam':      return optim.Adam(model.parameters(), **self.opt_args)
+        elif self.opt == 'sgd':       return optim.SGD(model.parameters(),  **self.opt_args)
+        else: raise ValueError(f"Optimiser {self.opt} not currently available")
 
     def set_lr(self, lr:float) -> None: self.opt_args['lr'] = lr
 

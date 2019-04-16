@@ -3,6 +3,9 @@ import pandas as pd
 from typing import Tuple
 from fastprogress import progress_bar
 
+import torch
+from torch import Tensor
+
 
 def calc_ams(s:float, b:float, br:float=0, unc_b:float=0) -> float:
     '''Compute Approximate Median Significance for signal (background) weight s (b),
@@ -14,6 +17,18 @@ def calc_ams(s:float, b:float, br:float=0, unc_b:float=0) -> float:
         sigma_b_2 = np.square(unc_b*b)
         radicand = 2*(((s+b)*np.log((s+b)*(b+sigma_b_2)/((b**2)+((s+b)*sigma_b_2))))-(((b**2)/sigma_b_2)*np.log(1+((sigma_b_2*s)/(b*(b+sigma_b_2))))))
     return np.sqrt(radicand) if radicand > 0 else -1
+
+
+def calc_ams_torch(s:Tensor, b:Tensor, br:float=0, unc_b:float=0) -> Tensor:
+    '''Compute Approximate Median Significance with torch for signal (background) weight s (b),
+    fractional systemtatic uncertainty unc_b, and offset br'''
+    if b == 0: return 1e-18*s
+    if not unc_b:
+        radicand = 2*((s+b+br)*torch.log(1.0+s/(b+br))-s)
+    else:
+        sigma_b_2 = torch.square(unc_b*b)
+        radicand = 2*(((s+b)*torch.log((s+b)*(b+sigma_b_2)/((b**2)+((s+b)*sigma_b_2))))-(((b**2)/sigma_b_2)*torch.log(1+((sigma_b_2*s)/(b*(b+sigma_b_2))))))
+    return torch.sqrt(radicand) if radicand > 0 else 1e-18*s
 
 
 def ams_scan_quick(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:float=0,
