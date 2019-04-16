@@ -10,7 +10,7 @@ from torch.tensor import Tensor
 import torch
 
 from .layers.activations import lookup_act
-from .initialisations import lookup_init
+from .initialisations import lookup_normal_init
 from .blocks.body import FullyConnected
 from .blocks.head import CatEmbHead
 from .blocks.tail import ClassRegMulti
@@ -27,7 +27,7 @@ class ModelBuilder(object):
     def __init__(self, objective:str, n_cont_in:int, n_out:int, y_range:Optional[Union[Tuple,np.ndarray]]=None,
                  model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_args:Dict[str,Any]=None,
                  loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Tuple[Callable[[Tensor, str],None],Dict[str,Any]]]=lookup_init,
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False):
         self.objective,self.n_cont_in,self.n_out,self.y_range,self.head,self.body,self.tail  = objective.lower(),n_cont_in,n_out,y_range,head,body,tail
         self.lookup_init,self.lookup_act,self.pretrain_file,self.freeze_head,self.freeze_body = lookup_init,lookup_act,pretrain_file,freeze_head,freeze_body
@@ -103,9 +103,11 @@ class ModelBuilder(object):
                          lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_head)
 
     def get_body(self, depth:int) -> nn.Module:
-        return self.body(depth=depth, width=self.width, do=self.do, bn=self.bn, act=self.act, res=self.res, dense=self.dense, freeze=self.freeze_body)
+        return self.body(depth=depth, width=self.width, do=self.do, bn=self.bn, act=self.act, res=self.res, dense=self.dense,
+                         lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body)
 
-    def get_tail(self, n_in) -> nn.Module: return self.tail(n_in, self.n_out, self.objective, self.y_range)
+    def get_tail(self, n_in) -> nn.Module:
+        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, y_range=self.y_range,lookup_init=self.lookup_init)
 
     def build_model(self) -> nn.Module:
         head = self.get_head()

@@ -52,6 +52,7 @@ def get_moments(arr:np.ndarray) -> Tuple[float,float,float,float]:
 
 def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
     '''Round value according tp given uncertainty'''
+    uncert = np.nan_to_num(uncert)
     if uncert == 0: return value, uncert
     
     factor = 1.0

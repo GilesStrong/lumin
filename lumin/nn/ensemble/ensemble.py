@@ -79,7 +79,7 @@ class Ensemble(AbsEnsemble):
                 if load_cycles_only: end_cycle += 1
                 for n, c in enumerate(range(end_cycle, max(0, end_cycle-n_cycles), -1)):
                     self.models.append(self.load_trained_model(c, self.model_builder, name=location/f'{values[i]["model"]}_cycle_'))
-                    weights.append((n+1)**weighting_pwr)
+                    weights.append((n+1 if load_cycles_only else n+2)**weighting_pwr)
                     if verbose: print(f"Model {i} cycle {c} has {metric} = {cycle_losses[values[i]['model']][c]} and weight {weights[-1]}")
         
         weights = np.array(weights)
