@@ -1,4 +1,20 @@
-# Master - targeting V0.1.1
+# Master - targeting V0.1.2
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# V0.1.1 PyPI am assuming direct control - micro update
 
 ## Breaking
 
