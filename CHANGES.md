@@ -4,6 +4,8 @@
 
 ## Additions
 
+- Added wrapper class for significance-based losses (`SignificanceLoss`)
+
 ## Removals
 
 ## Fixes

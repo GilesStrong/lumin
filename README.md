@@ -33,6 +33,7 @@ LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy
         - Tail - Scales down the body to the desired number of outputs
         - Endcap - Optional layer for use post-training to provide further computation on model outputs; useful when training on a proxy objective
     - Easy loading and saving of pre-trained embedding weights
+- HEP-specific losses, e.g. Asimov loss [Elwood & Krücker, 2018](https://arxiv.org/abs/1806.00322)
 - Easy training and inference of ensembles of models:
     - Default training method `fold_train_ensemble`, trains a specified number of models as well as just a single model
     - `Ensemble` class handles the (metric-weighted) construction of an ensemble, its inference, saving and loading, and interpretation
