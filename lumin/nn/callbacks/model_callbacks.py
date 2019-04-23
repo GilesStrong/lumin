@@ -35,16 +35,16 @@ class SWA(AbsModelCallback):
         self.start_epoch,self.renewal_period,self.cyclic_callback,self.verbose = start_epoch,renewal_period,cyclic_callback,verbose
         self.weights,self.loss = None,None
         
-    def on_train_begin(self, logs={}) -> None:
+    def on_train_begin(self, **kargs) -> None:
         if self.weights is None:
             self.weights = copy.deepcopy(self.model.get_weights())
             self.weights_new = copy.deepcopy(self.model.get_weights())
             self.test_model = copy.deepcopy(self.model)
             self.epoch,self.swa_n,self.n_since_renewal,self.first_completed,self.cycle_since_replacement,self.active = 0,0,0,False,1,False
             
-    def on_epoch_begin(self, logs={}) -> None: self.loss = None
+    def on_epoch_begin(self, **kargs) -> None: self.loss = None
 
-    def on_epoch_end(self, logs={}) -> None:
+    def on_epoch_end(self, **kargs) -> None:
         if self.epoch >= self.start_epoch and (self.cyclic_callback is None or self.cyclic_callback.cycle_end):
             if self.swa_n == 0 and not self.active:
                 if self.verbose: print("SWA beginning")

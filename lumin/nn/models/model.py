@@ -51,10 +51,10 @@ class Model(AbsModel):
         self.model.train()
         self.stop_train = False
         losses = []
-        for c in callbacks: c.on_epoch_begin(losses)
+        for c in callbacks: c.on_epoch_begin(batch_yielder=batch_yielder)
 
         for x, y, w in batch_yielder:
-            for c in callbacks: c.on_batch_begin()
+            for c in callbacks: c.on_batch_begin(inputs=x, targets=y, weights=w)
             y_pred = self.model(x)
             loss = self.loss(weight=w)(y_pred, y) if w is not None else self.loss()(y_pred, y)
             losses.append(loss.data.item())
@@ -62,10 +62,10 @@ class Model(AbsModel):
             loss.backward()
             self.opt.step()
             
-            for c in callbacks: c.on_batch_end(logs={'loss': losses[-1]})
+            for c in callbacks: c.on_batch_end(loss=losses[-1])
             if self.stop_train: break
         
-        for c in callbacks: c.on_epoch_end()
+        for c in callbacks: c.on_epoch_end(losses=losses)
         return np.mean(losses)
               
     def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None) -> float:
