@@ -8,6 +8,7 @@
 
 - Added wrapper class for significance-based losses (`SignificanceLoss`)
 - Added label smoothing for binary classification
+- Added `on_eval_begin` and `on_eval_end` callback calls
 
 ## Removals
 
