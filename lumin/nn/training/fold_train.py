@@ -96,7 +96,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                                              bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold, bulk_move=bulk_move)
                 loss_history['trn_loss'].append(model.fit(batch_yielder, callbacks))
 
-                val_loss = model.evaluate(val_x, val_y, weights=val_w)
+                val_loss = model.evaluate(val_x, val_y, weights=val_w, callbacks=callbacks)
                 loss_history['val_loss'].append(val_loss)
                 loss_callback_idx = None
                 loss = val_loss

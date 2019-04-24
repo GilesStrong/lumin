@@ -2,9 +2,12 @@
 
 ## Breaking
 
+- Changed callbacks to receive `kargs`, rather than logs to allow for great flexibility.
+
 ## Additions
 
 - Added wrapper class for significance-based losses (`SignificanceLoss`)
+- Added label smoothing for binary classification
 
 ## Removals
 
