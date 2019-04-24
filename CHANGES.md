@@ -1,4 +1,4 @@
-# Master - targeting V0.1.2
+# Master - targeting V0.2
 
 ## Breaking
 
@@ -9,6 +9,9 @@
 - Added wrapper class for significance-based losses (`SignificanceLoss`)
 - Added label smoothing for binary classification
 - Added `on_eval_begin` and `on_eval_end` callback calls
+- Added `on_backwards_begin` and `on_backwards_end` callback calls
+- Added callbacks to `fold_lr_find`
+- Added gradient-clipping callback
 
 ## Removals
 

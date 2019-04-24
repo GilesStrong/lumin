@@ -31,6 +31,7 @@ class Model(AbsModel):
             self.head, self.body, self.tail = self.model[0], self.model[1], self.model[2]
             self.objective = self.model_builder.objective
             self.n_out = self.tail.get_out_size()
+            self.parameters = self.model.parameters
 
     def __repr__(self) -> str: return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
 
@@ -59,7 +60,9 @@ class Model(AbsModel):
             loss = self.loss(weight=w)(y_pred, y) if w is not None else self.loss()(y_pred, y)
             losses.append(loss.data.item())
             self.opt.zero_grad()
+            for c in callbacks: c.on_backwards_begin(loss=loss)
             loss.backward()
+            for c in callbacks: c.on_backwards_end(loss=loss)
             self.opt.step()
             
             for c in callbacks: c.on_batch_end(loss=losses[-1])
