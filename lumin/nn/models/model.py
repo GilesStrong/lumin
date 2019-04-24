@@ -47,11 +47,11 @@ class Model(AbsModel):
             raise KeyError(key)
         raise ValueError(f'Expected string or int, recieved {key} of type {type(key)}')
         
-    def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]) -> float:
+    def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]=[]) -> float:
         self.model.train()
         self.stop_train = False
         losses = []
-        for c in callbacks: c.on_epoch_begin(losses)
+        for c in callbacks: c.on_epoch_begin(batch_yielder=batch_yielder)
 
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
@@ -62,18 +62,20 @@ class Model(AbsModel):
             loss.backward()
             self.opt.step()
             
-            for c in callbacks: c.on_batch_end(logs={'loss': losses[-1]})
+            for c in callbacks: c.on_batch_end(loss=losses[-1])
             if self.stop_train: break
         
-        for c in callbacks: c.on_epoch_end()
+        for c in callbacks: c.on_epoch_end(losses=losses)
         return np.mean(losses)
               
-    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None) -> float:
+    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:List[AbsCallback]=[]) -> float:
         self.model.eval()
         if 'multiclass' in self.objective: targets = targets.long().squeeze()
         else:                              targets = targets.float()
         y_pred = self.model(to_device(inputs.float()))
+        for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
+        for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
     def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True) -> Union[np.ndarray, Tensor]:

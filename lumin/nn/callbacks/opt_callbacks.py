@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from typing import Tuple, Optional, Dict, Any
+from typing import Tuple, Optional
 
 from .callback import Callback
 from ..models.abs_model import AbsModel
@@ -17,7 +17,7 @@ class LRFinder(Callback):
         self.lr_bounds = lr_bounds
         self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/nb)
         
-    def on_train_begin(self, logs:Dict[str,Any]={}):
+    def on_train_begin(self, **kargs):
         self.best,self.iter = math.inf,0
         self.model.set_lr(self.lr_bounds[0])
         self.history = {'loss': [], 'lr': []}
@@ -48,8 +48,7 @@ class LRFinder(Callback):
             plt.xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
             plt.show()
 
-    def on_batch_end(self, logs:Dict[str,Any]={}):
-        loss = logs['loss']
+    def on_batch_end(self, loss:float, **kargs):
         self.history['loss'].append(loss)
         self.history['lr'].append(self.model.opt.param_groups[0]['lr'])
         self.iter += 1

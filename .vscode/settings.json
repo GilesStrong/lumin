@@ -9,7 +9,5 @@
     "python.linting.pydocstyleEnabled": false,
     "python.linting.pylamaEnabled": false,
     "python.linting.flake8Args": ["--ignore=E702 E301 E222 E741 E704 E252 E271 E221 E272 E226 E231 E241 E501 W293 W391 W291 E701 W504"],
-    "markdownlint.config": {
-        "MD025": false
-    },
+    "markdownlint.config": {"MD025": false, "MD024": false, "MD041": false, "MD007": false, "MD040": false, "MD026":false, "MD034":false},
 }
