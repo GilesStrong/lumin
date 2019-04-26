@@ -1,5 +1,6 @@
-from typing import Union, Tuple, Callable, Optional
+from typing import Union, Tuple, Callable, Optional, Dict
 import numpy as np
+from fastprogress import progress_bar
 
 from torch import Tensor
 
@@ -29,15 +30,21 @@ class BinaryLabelSmooth(Callback):
 
 
 class DynamicReweight(Callback):
-    def __init__(self, reweight:Callable[[Tensor], Tensor], scale:float=1e-2, model:Optional[AbsModel]=None):
+    def __init__(self, reweight:Callable[[Tensor], Tensor], scale:float=1e-1, eval_all_folds:bool=False, model:Optional[AbsModel]=None):
         super().__init__(model=model)
-        self.scale,self.reweight = scale,reweight
+        self.scale,self.reweight,self.eval_all_folds = scale,reweight,eval_all_folds
+
+    def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
+        fld = fy.get_fold(fold_id)
+        preds = self.model.predict_array(fld['inputs'], as_np=False)
+        coefs = to_np(self.reweight(preds, to_device(Tensor(fld['targets']))))
+        start_sum = np.sum(fld['weights'])
+        fld['weights'] += self.scale*coefs*fld['weights']
+        fld['weights'] *= start_sum/np.sum(fld['weights'])
+        fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
     
     def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
-        val_fld = fy.get_fold(val_id)
-        preds = self.model.predict_array(val_fld['inputs'], as_np=False)
-        coefs = to_np(self.reweight(preds, to_device(Tensor(val_fld['targets']))))
-        start_sum = np.sum(val_fld['weights'])
-        val_fld['weights'] += self.scale*coefs*val_fld['weights']
-        val_fld['weights'] *= start_sum/np.sum(val_fld['weights'])
-        fy.foldfile[f'fold_{val_id}/weights'][...] = val_fld['weights'].squeeze()
+        if self.eval_all_folds:
+            for i in progress_bar(range(fy.n_folds), leave=False): self.reweight_fold(fy, i)
+        else:
+            self.reweight_fold(fy, val_id)
