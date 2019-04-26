@@ -1,6 +1,5 @@
 from typing import Union, Tuple, Callable, Optional, Dict
 import numpy as np
-from fastprogress import progress_bar
 
 from torch import Tensor
 
@@ -45,6 +44,6 @@ class DynamicReweight(Callback):
     
     def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
         if self.eval_all_folds:
-            for i in progress_bar(range(fy.n_folds), leave=False): self.reweight_fold(fy, i)
+            for i in range(fy.n_folds): self.reweight_fold(fy, i)
         else:
             self.reweight_fold(fy, val_id)
