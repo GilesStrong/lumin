@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, List
 
 from .callback import Callback
 from ..models.abs_model import AbsModel
@@ -96,7 +96,7 @@ class CycleMom(AbsCyclicCallback):
 class OneCycle(AbsCyclicCallback):
     '''Smith 1-cycle evolution for lr and momentum (beta_1) https://arxiv.org/abs/1803.09820
     Default interpolation uses fastai-style cosine function'''
-    def __init__(self, lengths:Tuple[int,int], lr_range:Tuple[float,float], mom_range:Tuple[float,float], interp:str='cosine',
+    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
@@ -112,7 +112,7 @@ class OneCycle(AbsCyclicCallback):
         self.param_range = self.mom_range
         mom = self.calc_param()
         self.hist['mom'].append(mom)
-        self.model.set_mom(mom)              
+        self.model.set_mom(mom)
 
     def incr_cycle(self) -> None:
         self.cycle_iter += 1
