@@ -29,9 +29,9 @@ class BinaryLabelSmooth(Callback):
 
 
 class DynamicReweight(Callback):
-    def __init__(self, reweight:Callable[[Tensor], Tensor], scale:float=1e-1, eval_all_folds:bool=False, model:Optional[AbsModel]=None):
+    def __init__(self, reweight:Callable[[Tensor], Tensor], scale:float=1e-1, model:Optional[AbsModel]=None):
         super().__init__(model=model)
-        self.scale,self.reweight,self.eval_all_folds = scale,reweight,eval_all_folds
+        self.scale,self.reweight = scale,reweight
 
     def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
@@ -43,7 +43,4 @@ class DynamicReweight(Callback):
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
     
     def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
-        if self.eval_all_folds:
-            for i in range(fy.n_folds): self.reweight_fold(fy, i)
-        else:
-            self.reweight_fold(fy, val_id)
+        self.reweight_fold(fy, val_id)
