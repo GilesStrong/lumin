@@ -44,3 +44,15 @@ class DynamicReweight(Callback):
     
     def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
         self.reweight_fold(fy, val_id)
+
+
+class DynamicReweightClass(DynamicReweight):
+    def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
+        fld = fy.get_fold(fold_id)
+        preds = self.model.predict_array(fld['inputs'], as_np=False)
+        coefs = to_np(self.reweight(preds, to_device(Tensor(fld['targets']))))
+        for c in set(fld['targets'].squeeze()):
+            start_sum = np.sum(fld['weights'][fld['targets'] == c])
+            fld['weights'][fld['targets'] == c] += self.scale*(coefs*fld['weights'])[fld['targets'] == c]
+            fld['weights'][fld['targets'] == c] *= start_sum/np.sum(fld['weights'][fld['targets'] == c])
+        fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
