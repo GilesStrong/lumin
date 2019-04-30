@@ -1,4 +1,4 @@
-from typing import Union, Tuple, Callable, Optional, Dict
+from typing import Union, Tuple, Callable, Optional
 import numpy as np
 
 from torch import Tensor
@@ -28,31 +28,33 @@ class BinaryLabelSmooth(Callback):
         targets[targets == 1] = 1-self.coefs[1]
 
 
-class DynamicReweight(Callback):
-    def __init__(self, reweight:Callable[[Tensor], Tensor], scale:float=1e-1, model:Optional[AbsModel]=None):
+class SequentialReweight(Callback):
+    '''During ensemble training, sequentially reweight data in validation folds based on prediction performance of last trained model.
+       Reweighting highlights data which are easier or more difficult to predict to the next model being trained'''
+    def __init__(self, reweight_func:Callable[[Tensor,Tensor], Tensor], scale:float=1e-1, model:Optional[AbsModel]=None):
         super().__init__(model=model)
-        self.scale,self.reweight = scale,reweight
+        self.scale,self.reweight_func = scale,reweight_func
 
     def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
         preds = self.model.predict_array(fld['inputs'], as_np=False)
-        coefs = to_np(self.reweight(preds, to_device(Tensor(fld['targets']))))
-        start_sum = np.sum(fld['weights'])
+        coefs = to_np(self.reweight_func(preds, to_device(Tensor(fld['targets']))))
+        weight = np.sum(fld['weights'])
         fld['weights'] += self.scale*coefs*fld['weights']
-        fld['weights'] *= start_sum/np.sum(fld['weights'])
+        fld['weights'] *= weight/np.sum(fld['weights'])
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
     
-    def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
-        self.reweight_fold(fy, val_id)
+    def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None: self.reweight_fold(fy, val_id)
 
 
-class DynamicReweightClass(DynamicReweight):
+class SequentialReweightClasses(SequentialReweight):
+    '''SequentialReweight designed for classification, which renormalises class weights to original weight-sum after reweighting'''
     def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
         preds = self.model.predict_array(fld['inputs'], as_np=False)
-        coefs = to_np(self.reweight(preds, to_device(Tensor(fld['targets']))))
+        coefs = to_np(self.reweight_func(preds, to_device(Tensor(fld['targets']))))
         for c in set(fld['targets'].squeeze()):
-            start_sum = np.sum(fld['weights'][fld['targets'] == c])
+            weight = np.sum(fld['weights'][fld['targets'] == c])
             fld['weights'][fld['targets'] == c] += self.scale*(coefs*fld['weights'])[fld['targets'] == c]
-            fld['weights'][fld['targets'] == c] *= start_sum/np.sum(fld['weights'][fld['targets'] == c])
+            fld['weights'][fld['targets'] == c] *= weight/np.sum(fld['weights'][fld['targets'] == c])
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()

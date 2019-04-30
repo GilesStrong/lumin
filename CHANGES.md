@@ -13,13 +13,14 @@
 - Added callbacks to `fold_lr_find`
 - Added gradient-clipping callback
 - Added default momentum range to `OneCycle` of .85-.95
+- Added `SequentialReweight` classes
 
 ## Removals
 
 ## Fixes
 
 - Added missing data download cell for multiclass example
-- Corrected type hint for `OneCycle lr_range` to `List` 
+- Corrected type hint for `OneCycle lr_range` to `List`
 
 ## Changes
 
