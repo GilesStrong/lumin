@@ -21,8 +21,10 @@
 
 - Added missing data download cell for multiclass example
 - Corrected type hint for `OneCycle lr_range` to `List`
+- Corrected `on_train_end` not being called in `fold_train_ensemble`
 
 ## Changes
+- Moved `on_train_end` call in `fold_train_ensemble` to after loading best set of weights
 
 ## Depreciations
 
