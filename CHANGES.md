@@ -14,6 +14,7 @@
 - Added gradient-clipping callback
 - Added default momentum range to `OneCycle` of .85-.95
 - Added `SequentialReweight` classes
+- Added option to turn of realtime loss plots
 
 ## Removals
 
@@ -24,6 +25,7 @@
 - Corrected `on_train_end` not being called in `fold_train_ensemble`
 
 ## Changes
+
 - Moved `on_train_end` call in `fold_train_ensemble` to after loading best set of weights
 
 ## Depreciations

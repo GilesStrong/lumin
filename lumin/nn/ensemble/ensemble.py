@@ -43,6 +43,16 @@ class Ensemble(AbsEnsemble):
         elif weighting == 'uniform':    return 1
         else: raise ValueError("No other weighting currently supported")
 
+    @classmethod
+    def from_results(cls,  results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
+                     metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Dict[str,Any]={},
+                     location:Path=Path('train_weights'), verbose:bool=True) -> AbsEnsemble:
+        ensemble = cls()
+        ensemble.build_ensemble(results=results, size=size, model_builder=model_builder,
+                                metric=metric, weighting=weighting, higher_metric_better=higher_metric_better, snapshot_args=snapshot_args,
+                                location=location, verbose=verbose)
+        return ensemble
+                
     def build_ensemble(self, results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
                        metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Dict[str,Any]={},
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
