@@ -131,10 +131,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                     print('Early stopping after {} epochs'.format(subEpoch))
                     stop = True; break
             if stop: break
-        for c in callbacks: c.on_train_end
 
         model.load(savepath/"best.h5")
         model.save(savepath/f'train_{model_num}.h5')
+        for c in callbacks: c.on_train_end(fy=fy, val_id=val_id)
+
         histories.append({})
         histories[-1] = loss_history
         results.append({})
