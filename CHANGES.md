@@ -24,12 +24,18 @@
 - Corrected type hint for `OneCycle lr_range` to `List`
 - Corrected `on_train_end` not being called in `fold_train_ensemble`
 - Fixed crash in `plot_feat` when plotting non-bulk without cuts, and non-crash bug when plotting non-bulk with cuts
+- Fixed typing of callback_args in `fold_train_ensemble`
 
 ## Changes
 
 - Moved `on_train_end` call in `fold_train_ensemble` to after loading best set of weights
 
 ## Depreciations
+
+- Callbacks:
+    - Added `callback_partials` parameter (a list of partials that yield a Callback object) in `fold_train_ensemble` to eventually replace `callback_args`; Neater appearance than previous Dict of object and kargs
+    - `callback_args` now depreciated, to be removed in v0.3
+    - Currently `callback_args` are converted to `callback_partials, code will also be removed in v0.3
 
 ## Comments
 
