@@ -91,4 +91,3 @@ def check_val_set(train:Union[pd.DataFrame,np.ndarray,FoldYielder], val:Union[pd
     If FoldYielders are passed, then trainings are run once per fold and averaged.'''
     if isinstance(train, FoldYielder): _check_val_set_fy(train, val, test, n_folds)
     if isinstance(train, pd.DataFrame) or isinstance(train, np.ndarray): _check_val_set_np(train, val, test)
-

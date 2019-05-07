@@ -23,6 +23,7 @@
 - Added missing data download cell for multiclass example
 - Corrected type hint for `OneCycle lr_range` to `List`
 - Corrected `on_train_end` not being called in `fold_train_ensemble`
+- Fixed crash in `plot_feat` when plotting non-bulk without cuts, and non-crash bug when plotting non-bulk with cuts
 
 ## Changes
 

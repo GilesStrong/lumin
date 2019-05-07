@@ -43,7 +43,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
                     weights /= weights.sum()
                     plot_data = np.random.choice(np.nan_to_num(df.loc[cut, feat]), n_samples, p=weights)
             else:
-                tmp_data = df if cuts[i] is not None else df.loc[cuts[i]]
+                tmp_data = df if cuts[i] is None else df.loc[cuts[i]]
                 if wgt_name is None:
                     plot_data = np.nan_to_num(tmp_data[feat])
                 else:
