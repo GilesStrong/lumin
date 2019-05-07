@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, List, Tuple, Any
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 import pickle
@@ -9,6 +9,8 @@ import sys
 from random import shuffle
 from collections import OrderedDict
 import math
+from functools import partial
+import warnings
 
 import torch.tensor as Tensor
 
@@ -35,11 +37,12 @@ def get_folds(val_idx, n_folds, shuffle_folds:bool=True):
 
 
 def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder,
-                        callback_args:Dict[str,Dict[str,Any]]={}, eval_metrics:Dict[str,EvalMetric]={},
+                        callback_partials:List[partial]=[], eval_metrics:Dict[str,EvalMetric]={},
                         train_on_weights:bool=True, eval_on_weights:bool=True, patience:int=10, max_epochs:int=200,
                         plots:List[str]=['history', 'realtime'], shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
-                        plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
+                        plot_settings:PlotSettings=PlotSettings(), callback_args:List[Dict[str,Any]]=[]
+                        ) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     '''Train a specified numer of models created by ModelBuilder on data provided by FoldYielder, and save them to savepath'''
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")
@@ -48,6 +51,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         old_stdout = sys.stdout
         log_file = open(savepath/'training_log.log', 'w')
         sys.stdout = log_file
+
+    if len(callback_partials) == 0 and len(callback_args) > 0:
+        warnings.warn('''Passing callback_args (list of dictionaries containing callback and kargs) is depreciated and will be removed in v0.3.
+                         Please move to passing callback_partials (list of partials yielding callbacks''', FutureWarning)
+        for c in callback_args: callback_partials.append(partial(c['callback'], **c['kargs']))
 
     train_tmr = timeit.default_timer()
     results,histories,cycle_losses = [],[],[]
@@ -68,7 +76,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         if not eval_on_weights: val_fold['weights'] = None
 
         cyclic_callback,callbacks,loss_callbacks = None,[],[]
-        for c in callback_args: callbacks.append(c['callback'](**c['kargs']))
+        for c in callback_partials: callbacks.append(c(model=model))
         for c in callbacks:
             if isinstance(c, AbsCyclicCallback):
                 c.set_nb(nb)
@@ -81,9 +89,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                     loss_callbacks.append(c)
                     model_bar.names.append(type(c).__name__)
                     loss_history[f'{type(c).__name__}_val_loss'] = []
-        for c in callbacks:
-            c.set_model(model)
-            c.on_train_begin()
+        for c in callbacks: c.on_train_begin()
 
         val_x, val_y, val_w = Tensor(val_fold['inputs']), Tensor(val_fold['targets']), to_tensor(val_fold['weights']) if train_on_weights else None
         if 'realtime' in plots: model_bar.update_graph([[0, 0] for i in range(len(model_bar.names))])
