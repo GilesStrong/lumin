@@ -136,7 +136,7 @@ class Model(AbsModel):
         
     def load(self, name:str, model_builder:ModelBuilder=None) -> None:
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
-        state = torch.load(name)
+        state = torch.load(name, map_location='cuda' if torch.cuda.is_available() else 'cpu')
         self.model.load_state_dict(state['model'])
         self.opt.load_state_dict(state['opt'])
         self.objective = self.model_builder.objective if model_builder is None else model_builder.objective

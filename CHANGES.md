@@ -15,6 +15,8 @@
 - Added default momentum range to `OneCycle` of .85-.95
 - Added `SequentialReweight` classes
 - Added option to turn of realtime loss plots
+- Added `from_results` and `from_save` classmethods for `Ensemble`
+- Added option to `SWA` to control whether it only updates on cycle end when paired with an `AbsCyclicalCallback`
 
 ## Removals
 
@@ -25,6 +27,7 @@
 - Corrected `on_train_end` not being called in `fold_train_ensemble`
 - Fixed crash in `plot_feat` when plotting non-bulk without cuts, and non-crash bug when plotting non-bulk with cuts
 - Fixed typing of callback_args in `fold_train_ensemble`
+- Fixed crash when trying to load model trained on cuda device for application on CPU device
 
 ## Changes
 

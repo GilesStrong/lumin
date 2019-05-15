@@ -44,6 +44,12 @@ class Ensemble(AbsEnsemble):
         else: raise ValueError("No other weighting currently supported")
 
     @classmethod
+    def from_save(cls, name:str) -> AbsEnsemble:
+        ensemble = cls()
+        ensemble.load(name)
+        return ensemble
+
+    @classmethod
     def from_results(cls,  results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
                      metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Dict[str,Any]={},
                      location:Path=Path('train_weights'), verbose:bool=True) -> AbsEnsemble:

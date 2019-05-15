@@ -39,12 +39,10 @@ class FullyConnected(nn.Module):
         layers = [nn.Linear(fan_in, fan_out)]
         self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
         if self.act != 'linear': layers.append(self.lookup_act(self.act))
-        if self.bn or self.res: layers.append(nn.BatchNorm1d(fan_out))
+        if self.bn or self.res:  layers.append(nn.BatchNorm1d(fan_out))
         if self.do: 
-            if self.act == 'selu':
-                layers.append(nn.AlphaDropout(self.do))
-            else:
-                layers.append(nn.Dropout(self.do))
+            if self.act == 'selu': layers.append(nn.AlphaDropout(self.do))
+            else:                  layers.append(nn.Dropout(self.do))
         return nn.Sequential(*layers)
     
     def forward(self, x:Tensor) -> Tensor:
