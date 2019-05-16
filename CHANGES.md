@@ -5,7 +5,7 @@
 - Changed callbacks to receive `kargs`, rather than logs to allow for great flexibility
 - Residual mode in `FullyConnected`:
     - Identity paths now skip two layers instead of one to align better with [arXiv:1603.05027](https://arxiv.org/abs/1603.05027)
-    - In cases where an odd number of layers are specified for the body, the number of lkayers is increased by one
+    - In cases where an odd number of layers are specified for the body, the number of layers is increased by one
     - Batch normalisation now corrected to be after the addition step (previously was set before)
 - Dense mode in `FullyConnected` now no longer adds an extra layer to scale down to the original width, instead `get_out_size` now returns the width of the final concatinated layer and the tail of the network is expected to accept this input size
 
