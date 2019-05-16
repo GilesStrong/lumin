@@ -2,7 +2,12 @@
 
 ## Breaking
 
-- Changed callbacks to receive `kargs`, rather than logs to allow for great flexibility.
+- Changed callbacks to receive `kargs`, rather than logs to allow for great flexibility
+- Residual mode in `FullyConnected`:
+    - Identity paths now skip two layers instead of one to align better with [arXiv:1603.05027](https://arxiv.org/abs/1603.05027)
+    - In cases where an odd number of layers are specified for the body, the number of layers is increased by one
+    - Batch normalisation now corrected to be after the addition step (previously was set before)
+- Dense mode in `FullyConnected` now no longer adds an extra layer to scale down to the original width, instead `get_out_size` now returns the width of the final concatinated layer and the tail of the network is expected to accept this input size
 
 ## Additions
 
@@ -28,6 +33,7 @@
 - Fixed crash in `plot_feat` when plotting non-bulk without cuts, and non-crash bug when plotting non-bulk with cuts
 - Fixed typing of callback_args in `fold_train_ensemble`
 - Fixed crash when trying to load model trained on cuda device for application on CPU device
+- Fixed positioning of batch normalisation in residual mode of `FullyConnected` to after addition
 
 ## Changes
 
