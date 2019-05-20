@@ -34,6 +34,8 @@
 - Fixed typing of callback_args in `fold_train_ensemble`
 - Fixed crash when trying to load model trained on cuda device for application on CPU device
 - Fixed positioning of batch normalisation in residual mode of `FullyConnected` to after addition
+- `rf_rank_features` was accidentally evaluating feature importance on validation data rather than training data, resulting in lower importances that it should
+- Fixed feature selection in examples using a test size of 0.8 rather than 0.2
 
 ## Changes
 
