@@ -1,5 +1,14 @@
 # Master - targeting V0.2
 
+## Important changes
+- Residual mode in `FullyConnected`:
+    - Identity paths now skip two layers instead of one to align better with [arXiv:1603.05027](https://arxiv.org/abs/1603.05027)
+    - In cases where an odd number of layers are specified for the body, the number of layers is increased by one
+    - Batch normalisation now corrected to be after the addition step (previously was set before)
+- Dense mode in `FullyConnected` now no longer adds an extra layer to scale down to the original width, instead `get_out_size` now returns the width of the final concatinated layer and the tail of the network is expected to accept this input size
+- Fixed rule-of-thumb for embedding sizes from max(50, 1+(sz//2)) to max(50, (1+sz)//2)
+
+
 ## Breaking
 
 - Changed callbacks to receive `kargs`, rather than logs to allow for great flexibility
@@ -39,6 +48,7 @@
 - `rf_rank_features` was accidentally evaluating feature importance on validation data rather than training data, resulting in lower importances that it should
 - Fixed feature selection in examples using a test size of 0.8 rather than 0.2
 - Fixed crash when no importnat features were found by `rf_rank_features`
+- Fixed rule-of-thumb for embedding sizes from max(50, 1+(sz//2)) to max(50, (1+sz)//2)
 
 ## Changes
 
