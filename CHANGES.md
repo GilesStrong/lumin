@@ -8,7 +8,6 @@
 - Dense mode in `FullyConnected` now no longer adds an extra layer to scale down to the original width, instead `get_out_size` now returns the width of the final concatinated layer and the tail of the network is expected to accept this input size
 - Fixed rule-of-thumb for embedding sizes from max(50, 1+(sz//2)) to max(50, (1+sz)//2)
 
-
 ## Breaking
 
 - Changed callbacks to receive `kargs`, rather than logs to allow for great flexibility
