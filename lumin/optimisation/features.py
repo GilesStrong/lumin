@@ -31,6 +31,9 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
 
     top_feats = list(fi[fi.Importance > importance_cut].Feature)
     print(f"\n{len(top_feats)} features found with importance greater than {importance_cut}:\n", top_feats, '\n')
+    if len(top_feats) == 0:
+        print('No features found to be important, returning all training features. Good luck.')
+        return train_feats
     if len(top_feats) < len(train_feats): 
         print("\nOptimising new RF")
         _, rf_new = get_opt_rf_params(train_df[top_feats], train_df[targ_name], val_df[top_feats], val_df[targ_name],
