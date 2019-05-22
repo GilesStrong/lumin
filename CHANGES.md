@@ -8,6 +8,7 @@
     - In cases where an odd number of layers are specified for the body, the number of layers is increased by one
     - Batch normalisation now corrected to be after the addition step (previously was set before)
 - Dense mode in `FullyConnected` now no longer adds an extra layer to scale down to the original width, instead `get_out_size` now returns the width of the final concatinated layer and the tail of the network is expected to accept this input size
+- Initialisation arguments for `CatEmbHead` changed considerably w.r.t. embedding arguments; now expects to receive a `Embedder` class
 
 ## Additions
 
@@ -22,6 +23,7 @@
 - Added option to turn of realtime loss plots
 - Added `from_results` and `from_save` classmethods for `Ensemble`
 - Added option to `SWA` to control whether it only updates on cycle end when paired with an `AbsCyclicalCallback`
+- Added helper class `Embedder` to simplify parsing of embedding settings
 
 ## Removals
 
@@ -47,7 +49,11 @@
 - Callbacks:
     - Added `callback_partials` parameter (a list of partials that yield a Callback object) in `fold_train_ensemble` to eventually replace `callback_args`; Neater appearance than previous Dict of object and kargs
     - `callback_args` now depreciated, to be removed in v0.3
-    - Currently `callback_args` are converted to `callback_partials, code will also be removed in v0.3
+    - Currently `callback_args` are converted to `callback_partials`, code will also be removed in v0.3
+- Embeddings:
+    - Added `cat_embedder` parameter to `ModelBuilder` to eventuall replace `cat_args`
+    - `cat_args` now depreciated to be removed in v0.3
+    - Currently `cat_args` are converted to an `Embedder`, code will also be removed in v0.3
 
 ## Comments
 

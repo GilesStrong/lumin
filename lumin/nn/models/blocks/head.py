@@ -9,24 +9,24 @@ import torch.nn as nn
 from torch.tensor import Tensor
 import torch
 
-from ..layers.activations import lookup_act
+from ..helpers import Embedder
 from ..initialisations import lookup_normal_init
+from ..layers.activations import lookup_act
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 
 
 class CatEmbHead(nn.Module):
     '''Standard model head for columnar data. Provides inputs for continuous features, and embeddign matrices for categorical inputs'''
-    def __init__(self, n_cont_in:int, n_cat_in:int, n_out:int, emb_szs:Optional[np.ndarray], emb_load_path:Optional[Path],
-                 act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_names:Optional[List[str]], 
+    def __init__(self, n_cont_in:int, n_out:int, act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_embedder:Optional[Embedder]=None, 
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, freeze:bool=False):
         super().__init__()
-        self.n_cont_in,self.n_cat_in,self.n_out,self.emb_szs,self.do,self.do_cont,self.do_cat,self.bn = n_cont_in,n_cat_in,n_out,emb_szs,do,do_cont,do_cat,bn
-        self.act,self.cat_names,self.emb_load_path,self.lookup_init,self.lookup_act,self.freeze = act,cat_names,emb_load_path,lookup_init,lookup_act,freeze
-        if self.n_cat_in > 0: self.embeds = nn.ModuleList([nn.Embedding(ni, no) for ni, no in self.emb_szs])
-        if self.emb_load_path is not None: self.load_embeds()
-        input_sz = self.n_cont_in if self.n_cat_in == 0 else self.n_cont_in+np.sum(self.emb_szs[:,1])
+        self.n_cont_in,self.n_out,self.do,self.do_cont,self.do_cat,self.bn,self.cat_embedder = n_cont_in,n_out,do,do_cont,do_cat,bn,cat_embedder
+        self.act,self.lookup_init,self.lookup_act,self.freeze = act,lookup_init,lookup_act,freeze
+        if self.cat_embedder.n_cat_in > 0: self.embeds = nn.ModuleList([nn.Embedding(ni, no) for _, ni, no in self.cat_embedder])
+        if self.cat_embedder.emb_load_path is not None: self.load_embeds()
+        input_sz = self.n_cont_in if self.cat_embedder.n_cat_in == 0 else self.n_cont_in+np.sum(self.cat_embedder.emb_szs)
         if self.do_cat   > 0: self.emb_do     = nn.Dropout(self.do_cat)
         if self.do_cont  > 0: self.cont_in_do = nn.Dropout(self.do_cont)
         self.dense = self.get_dense(input_sz, self.n_out, self.act)
@@ -53,18 +53,18 @@ class CatEmbHead(nn.Module):
         return nn.Sequential(*layers)
         
     def forward(self, x_in:Tensor) -> Tensor:
-        if self.n_cat_in > 0:
+        if self.cat_embedder.n_cat_in > 0:
             x_cat = x_in[:,self.n_cont_in:].long()
             x = torch.cat([emb(x_cat[:,i]) for i, emb in enumerate(self.embeds)], dim=1)
             if self.do_cat > 0: x = self.emb_do(x)
         if self.n_cont_in > 0:
             x_cont = x_in[:,:self.n_cont_in]
             if self.do_cont > 0: x_cont = self.cont_in_do(x_cont) 
-            x = torch.cat((x, x_cont), dim=1) if self.n_cat_in > 0 else x_cont
+            x = torch.cat((x, x_cont), dim=1) if self.cat_embedder.n_cat_in > 0 else x_cont
         return self.dense(x)
     
     def load_embeds(self, path:Optional[Path]=None) -> None:
-        path = self.emb_load_path if path is None else path
+        path = self.cat_embedder.emb_load_path if path is None else path
         avail = {x.index(x[:-3]): x for x in glob(f'{path}/*.h5') if x[x.rfind('/')+1:-3] in self.cat_names}
         print(f'Loading embedings: {avail}')
         for i in avail: self.embeds[i].load_state_dict(torch.load(avail[i], map_location='cpu'))

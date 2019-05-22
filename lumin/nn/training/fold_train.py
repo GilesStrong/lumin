@@ -52,9 +52,10 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         log_file = open(savepath/'training_log.log', 'w')
         sys.stdout = log_file
 
+    # XXX remove in v0.3
     if len(callback_partials) == 0 and len(callback_args) > 0:
         warnings.warn('''Passing callback_args (list of dictionaries containing callback and kargs) is depreciated and will be removed in v0.3.
-                         Please move to passing callback_partials (list of partials yielding callbacks''', FutureWarning)
+                         Please move to passing callback_partials (list of partials yielding callbacks''')
         for c in callback_args: callback_partials.append(partial(c['callback'], **c['kargs']))
 
     train_tmr = timeit.default_timer()
