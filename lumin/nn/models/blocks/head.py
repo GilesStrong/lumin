@@ -24,10 +24,12 @@ class CatEmbHead(nn.Module):
         super().__init__()
         self.n_cont_in,self.n_out,self.do,self.do_cont,self.do_cat,self.bn,self.cat_embedder = n_cont_in,n_out,do,do_cont,do_cat,bn,cat_embedder
         self.act,self.lookup_init,self.lookup_act,self.freeze = act,lookup_init,lookup_act,freeze
-        if self.cat_embedder.n_cat_in > 0: self.embeds = nn.ModuleList([nn.Embedding(ni, no) for _, ni, no in self.cat_embedder])
-        if self.cat_embedder.emb_load_path is not None: self.load_embeds()
+        if self.cat_embedder is None: self.cat_embedder = Embedder([], [])
+        if self.cat_embedder.n_cat_in > 0: 
+            self.embeds = nn.ModuleList([nn.Embedding(ni, no) for _, ni, no in self.cat_embedder])
+            if self.cat_embedder.emb_load_path is not None: self.load_embeds()
+            if self.do_cat   > 0: self.emb_do     = nn.Dropout(self.do_cat)
         input_sz = self.n_cont_in if self.cat_embedder.n_cat_in == 0 else self.n_cont_in+np.sum(self.cat_embedder.emb_szs)
-        if self.do_cat   > 0: self.emb_do     = nn.Dropout(self.do_cat)
         if self.do_cont  > 0: self.cont_in_do = nn.Dropout(self.do_cont)
         self.dense = self.get_dense(input_sz, self.n_out, self.act)
         if self.freeze: self.freeze_layers()
@@ -65,17 +67,17 @@ class CatEmbHead(nn.Module):
     
     def load_embeds(self, path:Optional[Path]=None) -> None:
         path = self.cat_embedder.emb_load_path if path is None else path
-        avail = {x.index(x[:-3]): x for x in glob(f'{path}/*.h5') if x[x.rfind('/')+1:-3] in self.cat_names}
+        avail = {x.index(x[:-3]): x for x in glob(f'{path}/*.h5') if x[x.rfind('/')+1:-3] in self.cat_embedder.cat_names}
         print(f'Loading embedings: {avail}')
         for i in avail: self.embeds[i].load_state_dict(torch.load(avail[i], map_location='cpu'))
             
     def save_embeds(self, path:Path) -> None:
         os.makedirs(path, exist_ok=True)
-        for i, name in enumerate(self.cat_names): torch.save(self.embeds[i].state_dict(), path/f'{name}.h5')
+        for i, name in enumerate(self.cat_embedder.cat_names): torch.save(self.embeds[i].state_dict(), path/f'{name}.h5')
             
-    def get_embeds(self) -> Dict[str,OrderedDict]: return {n: self.embeds[i].state_dict() for i, n in enumerate(self.cat_names)}
+    def get_embeds(self) -> Dict[str,OrderedDict]: return {n: self.embeds[i].state_dict() for i, n in enumerate(self.cat_embedder.cat_names)}
     
     def get_out_size(self) -> int: return self.n_out
 
     def plot_embeds(self, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-        for i, n in enumerate(self.cat_names): plot_embedding(self.embeds[i].state_dict(), n, savename=savename, settings=settings)
+        for i, n in enumerate(self.cat_embedder.cat_names): plot_embedding(self.embeds[i].state_dict(), n, savename=savename, settings=settings)

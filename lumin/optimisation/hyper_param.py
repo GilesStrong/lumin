@@ -59,11 +59,12 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 
 def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
-                 callback_partials:List[partial]=[], plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
+                 callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
     '''Wrapper function for running Smith LR range tests (https://arxiv.org/abs/1803.09820) using folds in FoldYielder'''
-    tmr = timeit.default_timer()
+    if callback_partials is None: callback_partials = []
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
     lr_finders = []
+    tmr = timeit.default_timer()
     for trn_id in progress_bar(idxs):
         model = Model(model_builder)
         trn_fold = fy.get_fold(trn_id)

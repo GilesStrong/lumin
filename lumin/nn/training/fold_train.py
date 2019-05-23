@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 import pickle
@@ -37,15 +37,16 @@ def get_folds(val_idx, n_folds, shuffle_folds:bool=True):
 
 
 def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder,
-                        callback_partials:List[partial]=[], eval_metrics:Dict[str,EvalMetric]={},
+                        callback_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None,
                         train_on_weights:bool=True, eval_on_weights:bool=True, patience:int=10, max_epochs:int=200,
                         plots:List[str]=['history', 'realtime'], shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
-                        plot_settings:PlotSettings=PlotSettings(), callback_args:List[Dict[str,Any]]=[]
+                        plot_settings:PlotSettings=PlotSettings(), callback_args:Optional[List[Dict[str,Any]]]=None
                         ) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     '''Train a specified numer of models created by ModelBuilder on data provided by FoldYielder, and save them to savepath'''
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")
+    if callback_partials is None: callback_partials = []
     
     if log_output:
         old_stdout = sys.stdout
@@ -53,6 +54,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         sys.stdout = log_file
 
     # XXX remove in v0.3
+    if callback_args is None: callback_args = []
     if len(callback_partials) == 0 and len(callback_args) > 0:
         warnings.warn('''Passing callback_args (list of dictionaries containing callback and kargs) is depreciated and will be removed in v0.3.
                          Please move to passing callback_partials (list of partials yielding callbacks''')
@@ -147,7 +149,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         histories[-1] = loss_history
         results.append({})
         results[-1]['loss'] = best_loss
-        if len(eval_metrics) > 0:
+        if eval_metrics is not None and len(eval_metrics) > 0:
             y_pred = model.predict(Tensor(val_fold['inputs']))
             for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_id, y_pred)
         print(f"Scores are: {results[-1]}")

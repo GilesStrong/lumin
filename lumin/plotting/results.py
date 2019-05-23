@@ -77,7 +77,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 
 
@@ -110,7 +110,7 @@ def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='g
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show() 
 
 
@@ -179,5 +179,5 @@ def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_targe
                 axins.set_yscale('log', nonposy='clip')
                 axins.grid(True, which="both")
         ax.set_title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         fig.show()

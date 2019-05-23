@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple, Union, Optional
 
 '''
 Todo:
@@ -122,18 +122,19 @@ def fix_event_y(df:pd.DataFrame, ref_vec_0:str, ref_vec_1:str) -> None:
             if v != ref_vec_0: df.loc[cut, f'{v}_py'] = -df.loc[cut, f'{v}_py']
 
 
-def event_to_cartesian(df:pd.DataFrame, drop:bool=False, ignore:List[str]=[]) -> None:
+def event_to_cartesian(df:pd.DataFrame, drop:bool=False, ignore:Optional[List[str]]=None) -> None:
     '''Convert entire event to Cartesian coordinates, except vectors in ignore.
     Optionally, drop old pT,eta,phi features'''
     for v in get_vecs(df.columns):
-        if v not in ignore: to_cartesian(df, v, drop=drop)
+        if ignore is None or v not in ignore: to_cartesian(df, v, drop=drop)
 
 
 def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, use_cartesian=False,
-               ref_vec_0:str=None, ref_vec_1:str=None, keep_feats=[], default_vals=[]) -> None:
+               ref_vec_0:str=None, ref_vec_1:str=None, keep_feats:Optional[List[str]]=None, default_vals:Optional[List[str]]=None) -> None:
     '''Pass data through conversions and drop uneeded columns'''
-    df.replace([np.inf, -np.inf]+default_vals, np.nan, inplace=True)
-    for f in keep_feats: df[f'{f}keep'] = df[f'{f}']
+    df.replace([np.inf, -np.inf]+default_vals if default_vals is not None else [np.inf, -np.inf], np.nan, inplace=True)
+    if keep_feats is not None:
+        for f in keep_feats: df[f'{f}keep'] = df[f'{f}']
     
     if fix_phi:
         print(f'Setting {ref_vec_0} to phi = 0')
@@ -150,9 +151,10 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
     if   fix_phi and not use_cartesian: df.drop(columns=[f"{ref_vec_0}_phi"], inplace=True)
     elif fix_phi and     use_cartesian: df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
     
-    for f in keep_feats:
-        df[f'{f}'] = df[f'{f}keep']
-        df.drop(columns=[f'{f}keep'], inplace=True)
+    if keep_feats is not None:
+        for f in keep_feats:
+            df[f'{f}'] = df[f'{f}keep']
+            df.drop(columns=[f'{f}keep'], inplace=True)
 
 
 def calc_pair_mass(df:pd.DataFrame, masses:Union[Tuple[float,float],Tuple[np.ndarray,np.ndarray]], feat_map:Dict[str,str]) -> np.ndarray:

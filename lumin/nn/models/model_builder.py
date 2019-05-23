@@ -27,7 +27,7 @@ Todo
 class ModelBuilder(object):
     '''Class to build models to specified architecture on demand along with an optimiser'''
     def __init__(self, objective:str, n_cont_in:int, n_out:int, y_range:Optional[Union[Tuple,np.ndarray]]=None,
-                 model_args:Dict[str,Any]={}, opt_args:Dict[str,Any]={}, cat_embedder:Optional[Embedder]=None,
+                 model_args:Optional[Dict[str,Any]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[Embedder]=None,
                  loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False,
@@ -71,22 +71,23 @@ class ModelBuilder(object):
         else:   
             self.loss = loss
 
-    def parse_model_args(self, model_args:Dict[str,Any]) -> None:
+    def parse_model_args(self, model_args:Optional[Dict[str,Any]]=None) -> None:
         model_args   = {k.lower(): model_args[k] for k in model_args}
-        self.width   = 100    if 'width'   not in model_args else model_args['width']
-        self.depth   = 4      if 'depth'   not in model_args else model_args['depth']
-        self.do      = 0      if 'do'      not in model_args else model_args['do']
-        self.do_cat  = 0      if 'do_cat'  not in model_args else model_args['do_cat']
-        self.do_cont = 0      if 'do_cont' not in model_args else model_args['do_cont']
-        self.bn      = False  if 'bn'      not in model_args else model_args['bn']
-        self.act     = 'relu' if 'act'     not in model_args else model_args['act'].lower()
-        self.res     = False  if 'res'     not in model_args else model_args['res']
-        self.dense   = False  if 'dense'   not in model_args else model_args['dense']
+        self.width   = 100    if model_args is None or 'width'   not in model_args else model_args['width']
+        self.depth   = 4      if model_args is None or 'depth'   not in model_args else model_args['depth']
+        self.do      = 0      if model_args is None or 'do'      not in model_args else model_args['do']
+        self.do_cat  = 0      if model_args is None or 'do_cat'  not in model_args else model_args['do_cat']
+        self.do_cont = 0      if model_args is None or 'do_cont' not in model_args else model_args['do_cont']
+        self.bn      = False  if model_args is None or 'bn'      not in model_args else model_args['bn']
+        self.act     = 'relu' if model_args is None or 'act'     not in model_args else model_args['act'].lower()
+        self.res     = False  if model_args is None or 'res'     not in model_args else model_args['res']
+        self.dense   = False  if model_args is None or 'dense'   not in model_args else model_args['dense']
     
-    def parse_opt_args(self, opt_args:Dict[str,Any]) -> None:
-        opt_args = {k.lower(): opt_args[k] for k in opt_args}
+    def parse_opt_args(self, opt_args:Optional[Dict[str,Any]]=None) -> None:
+        if opt_args is None: opt_args = {}
+        else:                opt_args = {k.lower(): opt_args[k] for k in opt_args}
+        self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}   
         self.opt = 'adam' if 'opt' not in opt_args else opt_args['opt']
-        self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}        
 
     def build_opt(self, model:nn.Module) -> optim.Optimizer:
         if   self.opt == 'adam':      return optim.Adam(model.parameters(), **self.opt_args)

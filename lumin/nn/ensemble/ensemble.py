@@ -51,7 +51,7 @@ class Ensemble(AbsEnsemble):
 
     @classmethod
     def from_results(cls,  results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
-                     metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Dict[str,Any]={},
+                     metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None,
                      location:Path=Path('train_weights'), verbose:bool=True) -> AbsEnsemble:
         ensemble = cls()
         ensemble.build_ensemble(results=results, size=size, model_builder=model_builder,
@@ -60,14 +60,14 @@ class Ensemble(AbsEnsemble):
         return ensemble
                 
     def build_ensemble(self, results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
-                       metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Dict[str,Any]={},
+                       metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None,
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
         self.model_builder = model_builder
-        cycle_losses     = None if 'cycle_losses'     not in snapshot_args else snapshot_args['cycle_losses']
-        n_cycles         = None if 'n_cycles'         not in snapshot_args else snapshot_args['n_cycles']
-        load_cycles_only = None if 'load_cycles_only' not in snapshot_args else snapshot_args['load_cycles_only']
-        patience         = 2    if 'patience'         not in snapshot_args else snapshot_args['patience']
-        weighting_pwr    = 0    if 'weighting_pwr'    not in snapshot_args else snapshot_args['weighting_pwr']    
+        cycle_losses     = None if snapshot_args is None or 'cycle_losses'     not in snapshot_args else snapshot_args['cycle_losses']
+        n_cycles         = None if snapshot_args is None or 'n_cycles'         not in snapshot_args else snapshot_args['n_cycles']
+        load_cycles_only = None if snapshot_args is None or 'load_cycles_only' not in snapshot_args else snapshot_args['load_cycles_only']
+        patience         = 2    if snapshot_args is None or 'patience'         not in snapshot_args else snapshot_args['patience']
+        weighting_pwr    = 0    if snapshot_args is None or 'weighting_pwr'    not in snapshot_args else snapshot_args['weighting_pwr']    
     
         if (cycle_losses is not None and n_cycles is None) or (cycle_losses is None and n_cycles is not None):
             warnings.warn("Warning: cycle ensembles requested, but not enough information passed")
@@ -146,7 +146,7 @@ class Ensemble(AbsEnsemble):
         if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models)
         self.predict_folds(inputs, n_models, pred_name)
     
-    def save(self, name:str, feats:List[str]=None, overwrite:bool=False) -> None:
+    def save(self, name:str, feats:Any=None, overwrite:bool=False) -> None:
         if (len(glob.glob(f"{name}*.json")) or len(glob.glob(f"{name}*.h5")) or len(glob.glob(f"{name}*.pkl"))) and not overwrite:
             raise FileExistsError("Ensemble already exists with that name, call with overwrite=True to force save")
         else:
@@ -171,6 +171,7 @@ class Ensemble(AbsEnsemble):
             m = Model(self.model_builder)
             m.load(n)
             self.models.append(m)
+        self.size = len(self.models)
         self.n_out = self.models[0].get_out_size()
         with     open(f'{name}_weights.pkl', 'rb')     as fin: self.weights     = pickle.load(fin)
         try: 
@@ -185,6 +186,9 @@ class Ensemble(AbsEnsemble):
 
     def export2onnx(self, base_name:str, bs:int=1) -> None:
         for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)
+
+    def export2tfpb(self, base_name:str, bs:int=1) -> None:
+        for i, m in enumerate(self.models): m.export2tfpb(f'{base_name}_{i}', bs)
 
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         return get_ensemble_feat_importance(self, fy, eval_metric)

@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
+import warnings
 
 import torch
 from torch.tensor import Tensor
@@ -47,11 +48,18 @@ class Model(AbsModel):
             if key == 'tail': return self.tail
             raise KeyError(key)
         raise ValueError(f'Expected string or int, recieved {key} of type {type(key)}')
+
+    @classmethod
+    def from_save(cls, name:str, model_builder:ModelBuilder=None) -> AbsModel:
+        m = cls(model_builder)
+        m.load(name)
+        return m
         
-    def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]=[]) -> float:
+    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
         self.model.train()
         self.stop_train = False
         losses = []
+        if callbacks is None: callbacks = []
         for c in callbacks: c.on_epoch_begin(batch_yielder=batch_yielder)
 
         for x, y, w in batch_yielder:
@@ -71,7 +79,8 @@ class Model(AbsModel):
         for c in callbacks: c.on_epoch_end(losses=losses)
         return np.mean(losses)
               
-    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:List[AbsCallback]=[]) -> float:
+    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:Optional[List[AbsCallback]]=None) -> float:
+        if callbacks is None: callbacks = []
         self.model.eval()
         if 'multiclass' in self.objective: targets = targets.long().squeeze()
         else:                              targets = targets.float()
@@ -142,10 +151,23 @@ class Model(AbsModel):
         self.objective = self.model_builder.objective if model_builder is None else model_builder.objective
 
     def export2onnx(self, name:str, bs:int=1) -> None:
+        warnings.warn("""ONNX export of LUMIN models has not been fully explored or sufficiently tested yet.
+                         Please use with caution, and report any trouble""")
         if '.onnx' not in name: name += '.onnx'
-        dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.n_cat_in)
-        torch.onnx.export(self.model, dummy_input, name)     
-
+        dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.cat_embedder.n_cat_in)
+        torch.onnx.export(self.model, dummy_input, name)
+    
+    def export2tfpb(self, name:str, bs:int=1) -> None:
+        import onnx
+        from onnx_tf.backend import prepare
+        warnings.warn("""Tensorflow ProtocolBuffer export of LUMIN models (via ONNX) has not been fully explored or sufficiently tested yet.
+                         Please use with caution, and report any trouble""")
+        if '.' in name: name = name[:name.rfind('.')]
+        self.export2onnx(name, bs)
+        m = onnx.load(f'{name}.onnx')
+        tf_rep = prepare(m)
+        tf_rep.export_graph(f'{name}.pb')
+           
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         return get_nn_feat_importance(self, fy, eval_metric)
 
