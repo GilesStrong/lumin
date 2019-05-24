@@ -50,7 +50,7 @@ class Model(AbsModel):
         raise ValueError(f'Expected string or int, recieved {key} of type {type(key)}')
 
     @classmethod
-    def from_save(cls, name:str, model_builder:ModelBuilder=None) -> AbsModel:
+    def from_save(cls, name:str, model_builder:ModelBuilder) -> AbsModel:
         m = cls(model_builder)
         m.load(name)
         return m
