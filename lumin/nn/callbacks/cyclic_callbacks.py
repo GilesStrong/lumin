@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Optional, Dict, Any, Tuple, Union
+from typing import Optional, Tuple, Union, List
 
 from .callback import Callback
 from ..models.abs_model import AbsModel
@@ -51,11 +51,11 @@ class AbsCyclicCallback(Callback):
         else:
             raise ValueError(f"Interpolation mode {self.interp} not implemented")
 
-    def on_epoch_begin(self, logs:Dict[str,Any]={}) -> None: self.cycle_end = False
+    def on_epoch_begin(self, **kargs) -> None: self.cycle_end = False
     
-    def on_batch_end(self,   logs:Dict[str,Any]={}) -> None: self.incr_cycle()
+    def on_batch_end(self,   **kargs) -> None: self.incr_cycle()
 
-    def on_batch_begin(self, logs:Dict[str,Any]={}) -> float:
+    def on_batch_begin(self, **kargs) -> float:
         param = self.calc_param()
         self.hist.append(param)
         return param
@@ -72,8 +72,8 @@ class CycleLR(AbsCyclicCallback):
                          decrease_param=decrease_param, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
         self.param_name = 'Learning Rate'
         
-    def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
-        lr = super().on_batch_begin(logs)
+    def on_batch_begin(self, **kargs) -> None:
+        lr = super().on_batch_begin(**kargs)
         self.model.set_lr(lr)
 
 
@@ -88,20 +88,20 @@ class CycleMom(AbsCyclicCallback):
                          decrease_param=decrease_param, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
         self.param_name = 'Momentum'
         
-    def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
-        mom = super().on_batch_begin(logs)
+    def on_batch_begin(self, **kargs) -> None:
+        mom = super().on_batch_begin(**kargs)
         self.model.set_mom(mom) 
 
 
 class OneCycle(AbsCyclicCallback):
     '''Smith 1-cycle evolution for lr and momentum (beta_1) https://arxiv.org/abs/1803.09820
     Default interpolation uses fastai-style cosine function'''
-    def __init__(self, lengths:Tuple[int,int], lr_range:Tuple[float,float], mom_range:Tuple[float,float], interp:str='cosine',
+    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
 
-    def on_batch_begin(self, logs:Dict[str,Any]={}) -> None:
+    def on_batch_begin(self, **kargs) -> None:
         self.decrease_param = self.cycle_count % 1 != 0
         self.param_range = self.lr_range
         lr = self.calc_param()
@@ -112,7 +112,7 @@ class OneCycle(AbsCyclicCallback):
         self.param_range = self.mom_range
         mom = self.calc_param()
         self.hist['mom'].append(mom)
-        self.model.set_mom(mom)              
+        self.model.set_mom(mom)
 
     def incr_cycle(self) -> None:
         self.cycle_iter += 1

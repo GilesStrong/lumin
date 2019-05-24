@@ -4,6 +4,7 @@ from typing import List, Optional, Union
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
+import warnings
 
 import torch
 from torch.tensor import Tensor
@@ -31,6 +32,7 @@ class Model(AbsModel):
             self.head, self.body, self.tail = self.model[0], self.model[1], self.model[2]
             self.objective = self.model_builder.objective
             self.n_out = self.tail.get_out_size()
+            self.parameters = self.model.parameters
 
     def __repr__(self) -> str: return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
 
@@ -46,12 +48,19 @@ class Model(AbsModel):
             if key == 'tail': return self.tail
             raise KeyError(key)
         raise ValueError(f'Expected string or int, recieved {key} of type {type(key)}')
+
+    @classmethod
+    def from_save(cls, name:str, model_builder:ModelBuilder) -> AbsModel:
+        m = cls(model_builder)
+        m.load(name)
+        return m
         
-    def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]) -> float:
+    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
         self.model.train()
         self.stop_train = False
         losses = []
-        for c in callbacks: c.on_epoch_begin(losses)
+        if callbacks is None: callbacks = []
+        for c in callbacks: c.on_epoch_begin(batch_yielder=batch_yielder)
 
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
@@ -59,21 +68,26 @@ class Model(AbsModel):
             loss = self.loss(weight=w)(y_pred, y) if w is not None else self.loss()(y_pred, y)
             losses.append(loss.data.item())
             self.opt.zero_grad()
+            for c in callbacks: c.on_backwards_begin(loss=loss)
             loss.backward()
+            for c in callbacks: c.on_backwards_end(loss=loss)
             self.opt.step()
             
-            for c in callbacks: c.on_batch_end(logs={'loss': losses[-1]})
+            for c in callbacks: c.on_batch_end(loss=losses[-1])
             if self.stop_train: break
         
-        for c in callbacks: c.on_epoch_end()
+        for c in callbacks: c.on_epoch_end(losses=losses)
         return np.mean(losses)
               
-    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None) -> float:
+    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:Optional[List[AbsCallback]]=None) -> float:
+        if callbacks is None: callbacks = []
         self.model.eval()
         if 'multiclass' in self.objective: targets = targets.long().squeeze()
         else:                              targets = targets.float()
         y_pred = self.model(to_device(inputs.float()))
+        for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
+        for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
     def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True) -> Union[np.ndarray, Tensor]:
@@ -131,16 +145,29 @@ class Model(AbsModel):
         
     def load(self, name:str, model_builder:ModelBuilder=None) -> None:
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
-        state = torch.load(name)
+        state = torch.load(name, map_location='cuda' if torch.cuda.is_available() else 'cpu')
         self.model.load_state_dict(state['model'])
         self.opt.load_state_dict(state['opt'])
         self.objective = self.model_builder.objective if model_builder is None else model_builder.objective
 
     def export2onnx(self, name:str, bs:int=1) -> None:
+        warnings.warn("""ONNX export of LUMIN models has not been fully explored or sufficiently tested yet.
+                         Please use with caution, and report any trouble""")
         if '.onnx' not in name: name += '.onnx'
-        dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.n_cat_in)
-        torch.onnx.export(self.model, dummy_input, name)     
-
+        dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.cat_embedder.n_cat_in)
+        torch.onnx.export(self.model, dummy_input, name)
+    
+    def export2tfpb(self, name:str, bs:int=1) -> None:
+        import onnx
+        from onnx_tf.backend import prepare
+        warnings.warn("""Tensorflow ProtocolBuffer export of LUMIN models (via ONNX) has not been fully explored or sufficiently tested yet.
+                         Please use with caution, and report any trouble""")
+        if '.' in name: name = name[:name.rfind('.')]
+        self.export2onnx(name, bs)
+        m = onnx.load(f'{name}.onnx')
+        tf_rep = prepare(m)
+        tf_rep.export_graph(f'{name}.pb')
+           
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         return get_nn_feat_importance(self, fy, eval_metric)
 

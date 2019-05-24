@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Union
 
 import scipy
 from scipy.cluster import hierarchy as hc
@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
-              plot_params:List[Dict[str,Any]]={}, size='mid', show_moments=True, ax_labels={'y': 'Density', 'x': None},
+              plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, size='mid', show_moments=True, ax_labels={'y': 'Density', 'x': None},
               savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     '''A flexible function to provide indicative information about the 1D distribution of a feature.
     By default it will produce a weighted KDE+histogram for the [1,99] percentile of the data,
@@ -24,6 +24,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
     should be used to provide final results.'''
     if not isinstance(labels, list): labels = [labels]
     if not isinstance(cuts,   list): cuts   = [cuts]
+    if plot_params is None: plot_params = {}
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
     
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
@@ -43,7 +44,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
                     weights /= weights.sum()
                     plot_data = np.random.choice(np.nan_to_num(df.loc[cut, feat]), n_samples, p=weights)
             else:
-                tmp_data = df if cuts[i] is not None else df.loc[cuts[i]]
+                tmp_data = df if cuts[i] is None else df.loc[cuts[i]]
                 if wgt_name is None:
                     plot_data = np.nan_to_num(tmp_data[feat])
                 else:
@@ -65,7 +66,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         plt.ylabel(ax_labels['y'], fontsize=settings.lbl_sz, color=settings.lbl_col)
         x_lbl = feat if ax_labels['x'] is None else ax_labels['x']
         plt.xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 
 
@@ -118,7 +119,7 @@ def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotS
         hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz)
         plt.xlabel('Distance', fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 
 
@@ -151,5 +152,5 @@ def plot_kdes_from_bs(arr:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Di
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()  

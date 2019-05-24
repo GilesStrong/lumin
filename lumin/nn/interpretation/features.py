@@ -11,11 +11,13 @@ from ...plotting.interpretation import plot_importance
 from ..models.abs_model import AbsModel
 from ..data.fold_yielder import FoldYielder
 from ..metrics.eval_metric import EvalMetric
+from ...plotting.plot_settings import PlotSettings
 
 from torch import Tensor
 
 
-def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None, plot:bool=True) -> pd.DataFrame:
+def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
+                           plot:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     '''Compute permutation importance of features used by a NN.
     Returns bootstrapped mean importance from sample constructed by computing importance for each fold in fy.
     Default importance computed using loss, but can optionally compute it using eval_metric''' 
@@ -50,11 +52,12 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
     if plot:
         tmp_fi = fi.sort_values('Importance', ascending=False).reset_index(drop=True)
         print("Top ten most important features:\n", tmp_fi[:min(len(tmp_fi), 10)])
-        plot_importance(tmp_fi)
+        plot_importance(tmp_fi, savename=savename, settings=settings)
     return fi
 
 
-def get_ensemble_feat_importance(ensemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+def get_ensemble_feat_importance(ensemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None,
+                                 savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     '''Compute permutation importance of features used by an ensemble of NNs.
     Returns bootstrapped mean importance from sample constructed by computing importance for each model in ensemble.
     Default importance computed using loss, but can optionally compute it using eval_metric'''
@@ -77,5 +80,5 @@ def get_ensemble_feat_importance(ensemble, fy:FoldYielder, eval_metric:Optional[
                        'Importance':  [np.mean(bs_mean[f'{i}_mean']) for i in range(len(feats))], 
                        'Uncertainty': [np.mean(bs_std[f'{i}_mean'])  for i in range(len(feats))]}).sort_values('Importance', ascending=False).reset_index(drop=True)
     print("Top ten most important features:\n", fi[:min(len(fi), 10)])
-    plot_importance(fi)
+    plot_importance(fi, savename=savename, settings=settings)
     return fi

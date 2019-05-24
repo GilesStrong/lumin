@@ -15,13 +15,16 @@ from ...plotting.plot_settings import PlotSettings
 class AbsModelCallback(Callback):
     '''Abstract class for callbacks which provide alternative models during training'''
     def __init__(self, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
-                 cyclic_callback:Optional[AbsCyclicCallback]=None, plot_settings:PlotSettings=PlotSettings()):
+                 cyclic_callback:Optional[AbsCyclicCallback]=None, update_on_cycle_end:Optional[bool]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
-        self.val_fold,self.cyclic_callback,self.active = val_fold,cyclic_callback,False
+        self.val_fold,self.cyclic_callback,self.update_on_cycle_end,self.active = val_fold,cyclic_callback,update_on_cycle_end,False
 
     def set_val_fold(self, val_fold:np.ndarray) -> None: self.val_fold = val_fold
     
-    def set_cyclic_callback(self, cyclic_callback:AbsCyclicCallback) -> None: self.cyclic_callback = cyclic_callback
+    def set_cyclic_callback(self, cyclic_callback:AbsCyclicCallback) -> None:
+        if cyclic_callback is not None:
+            self.cyclic_callback = cyclic_callback
+            if self.update_on_cycle_end is None: self.update_on_cycle_end = True
 
     @abstractmethod
     def get_loss(self) -> float: pass
@@ -30,26 +33,27 @@ class AbsModelCallback(Callback):
 class SWA(AbsModelCallback):
     '''Track weight-avergaed model during training using Stochastic Weight Averaging https://arxiv.org/abs/1803.05407'''
     def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
-                 cyclic_callback:Optional[AbsCyclicCallback]=None, verbose=False, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback, plot_settings=plot_settings)
-        self.start_epoch,self.renewal_period,self.cyclic_callback,self.verbose = start_epoch,renewal_period,cyclic_callback,verbose
+                 cyclic_callback:Optional[AbsCyclicCallback]=None, update_on_cycle_end:Optional[bool]=None,
+                 verbose=False, plot_settings:PlotSettings=PlotSettings()):
+        super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback, update_on_cycle_end=update_on_cycle_end, plot_settings=plot_settings)
+        self.start_epoch,self.renewal_period,self.verbose = start_epoch,renewal_period,verbose
         self.weights,self.loss = None,None
         
-    def on_train_begin(self, logs={}) -> None:
+    def on_train_begin(self, **kargs) -> None:
         if self.weights is None:
             self.weights = copy.deepcopy(self.model.get_weights())
             self.weights_new = copy.deepcopy(self.model.get_weights())
             self.test_model = copy.deepcopy(self.model)
             self.epoch,self.swa_n,self.n_since_renewal,self.first_completed,self.cycle_since_replacement,self.active = 0,0,0,False,1,False
             
-    def on_epoch_begin(self, logs={}) -> None: self.loss = None
+    def on_epoch_begin(self, **kargs) -> None: self.loss = None
 
-    def on_epoch_end(self, logs={}) -> None:
-        if self.epoch >= self.start_epoch and (self.cyclic_callback is None or self.cyclic_callback.cycle_end):
+    def on_epoch_end(self, **kargs) -> None:
+        if self.epoch >= self.start_epoch and ((not self.update_on_cycle_end) or self.cyclic_callback.cycle_end):
             if self.swa_n == 0 and not self.active:
                 if self.verbose: print("SWA beginning")
                 self.active = True
-            elif self.cyclic_callback is not None and self.cyclic_callback.cycle_mult > 1:
+            elif self.update_on_cycle_end and self.cyclic_callback.cycle_mult > 1:
                 if self.verbose: print("Updating average")
                 self.active = True
             self.update_average_model()
@@ -60,8 +64,8 @@ class SWA(AbsModelCallback):
                 self.n_since_renewal += 1
                 if self.n_since_renewal > self.cycle_since_replacement*self.renewal_period and self.renewal_period > 0: self.compare_averages()
             
-        if self.cyclic_callback is None or self.cyclic_callback.cycle_end: self.epoch += 1
-        if self.active and not (self.cyclic_callback is None or self.cyclic_callback.cycle_end or self.cyclic_callback.cycle_mult == 1): self.active = False
+        if (not self.update_on_cycle_end) or self.cyclic_callback.cycle_end: self.epoch += 1
+        if self.active and not ((not self.update_on_cycle_end) or self.cyclic_callback.cycle_end or self.cyclic_callback.cycle_mult == 1): self.active = False
             
     def update_average_model(self) -> None:
         if self.verbose: print(f"Model is {self.swa_n} epochs old")
