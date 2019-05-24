@@ -1,4 +1,22 @@
-# Master - targeting V0.2
+# Matser - Targeting V0.2.1
+
+## Important changes
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# V0.2 Bonfire Lit
 
 ## Important changes
 
