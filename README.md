@@ -5,7 +5,7 @@
 
 LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-specific requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
 
-For an introduction and motivation for LUMIN, checkout that talk from IML-2019 at CERN: (video)[https://cds.cern.ch/record/2672119] (slides)[https://indico.cern.ch/event/766872/timetable/?view=standard#29-lumin-a-deep-learning-and-d].
+For an introduction and motivation for LUMIN, checkout that talk from IML-2019 at CERN: [video](https://cds.cern.ch/record/2672119), [slides](https://indico.cern.ch/event/766872/timetable/?view=standard#29-lumin-a-deep-learning-and-d).
 
 ## Distinguishing Characteristics
 
