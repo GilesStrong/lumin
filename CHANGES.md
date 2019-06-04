@@ -6,9 +6,14 @@
 
 ## Additions
 
+- Added `n_estimators` parameter to `rf_rank_features` and `get_opt_rf_params` to adjust the number of trees
+- Added `n_rfs` parameter to `rf_rank_features` to average feature importance over several random forests
+
 ## Removals
 
 ## Fixes
+
+- Missing bbox_inches in `plot_embedding`
 
 ## Changes
 

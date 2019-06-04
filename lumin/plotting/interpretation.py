@@ -39,7 +39,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
-        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 
     

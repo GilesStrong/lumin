@@ -25,11 +25,11 @@ import matplotlib.pyplot as plt
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
                       params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
-                      verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
+                      n_estimators:int=40, verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
     '''Uses a guided grid search to roughly optimise random forest parameters'''
     rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
     
-    best_params = {'n_estimators': 40, 'n_jobs': -1, 'max_features':'sqrt'}
+    best_params = {'n_estimators': n_estimators, 'n_jobs': -1, 'max_features':'sqrt'}
     best_scores = []
     scores = []
     mb = master_bar(params)
