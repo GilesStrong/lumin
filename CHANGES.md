@@ -17,6 +17,8 @@
 
 ## Changes
 
+- Made `save_to_grp` and `fold2foldfile` private methods to reduce clutter; methods only used by `df2foldfile`, can't see a need for user to access them directly
+
 ## Depreciations
 
 ## Comments

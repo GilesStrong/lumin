@@ -8,7 +8,7 @@ from pathlib import Path
 from sklearn.model_selection import StratifiedKFold, KFold
 
 
-def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
+def _save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
     r'''
     Save Numpy array as a dataset in an h5py Group
     
@@ -18,15 +18,15 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
         name: name of dataset to create
     '''
 
-    # TODO Option for string lenght
+    # TODO Option for string length
 
     ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name != 'object' else 'S16')
     ds[...] = arr if arr.dtype.name != 'object' else arr.astype('S16')
 
 
-def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
-                  cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:Any,
-                  misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None) -> None:
+def _fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
+                   cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:Any,
+                   misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None) -> None:
     r'''
     Save fold of data into an h5py Group
     Arguments:
@@ -44,11 +44,11 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
     # TODO infer target type automatically
 
     grp = out_file.create_group(f'fold_{fold_idx}')
-    save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
-    save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
-    if wgt_feat is not None: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
+    _save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
+    _save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
+    if wgt_feat is not None: _save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
     if misc_feats is not None:
-        for f in misc_feats: save_to_grp(df[f].values, grp, f)  
+        for f in misc_feats: _save_to_grp(df[f].values, grp, f)  
 
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
@@ -82,6 +82,6 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         folds = kf.split(df, df[strat_key])
     for fold_idx, (_, fold) in enumerate(folds):
         print(f"Saving fold {fold_idx} with {len(fold)} events")
-        fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
-                      targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat)
+        _fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
+                       targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat)
                       
