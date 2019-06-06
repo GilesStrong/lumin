@@ -29,6 +29,7 @@ def _fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
                    misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None) -> None:
     r'''
     Save fold of data into an h5py Group
+
     Arguments:
         df: Dataframe from which to save data
         out_file: h5py file to save data in
@@ -56,6 +57,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
                 strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None):
     r'''
     Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`FoldYielder`
+    
     Arguments:
         df: Dataframe from which to save data
         n_folds: number of folds to split df into

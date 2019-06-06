@@ -8,6 +8,7 @@
 
 - Added `n_estimators` parameter to `rf_rank_features` and `get_opt_rf_params` to adjust the number of trees
 - Added `n_rfs` parameter to `rf_rank_features` to average feature importance over several random forests
+- Added automatic computation of 3-momenta magnitude to `add_mass` if it's missing
 
 ## Removals
 
@@ -18,8 +19,11 @@
 ## Changes
 
 - Made `save_to_grp` and `fold2foldfile` private methods to reduce clutter; methods only used by `df2foldfile`, can't see a need for user to access them directly
+- `to_pt_eta_phi` now infers presence of z momentum from dataframe
 
 ## Depreciations
+
+- Passing `eta` argument to `to_pt_eta_phi`. Will be removed in v0.3
 
 ## Comments
 
