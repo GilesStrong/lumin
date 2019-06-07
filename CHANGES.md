@@ -2,6 +2,8 @@
 
 ## Important changes
 
+- `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
+
 ## Breaking
 
 ## Additions
@@ -9,17 +11,23 @@
 - Added `n_estimators` parameter to `rf_rank_features` and `get_opt_rf_params` to adjust the number of trees
 - Added `n_rfs` parameter to `rf_rank_features` to average feature importance over several random forests
 - Added automatic computation of 3-momenta magnitude to `add_mass` if it's missing
+- `n_components` to `get_pre_proc_pipes` to be passed to `PCA`
+- `Pipeline` configuration parameters to `fit_input_pipe`
+- Ability to pass an instantiated `Pipeline` to `fit_input_pipe`
 
 ## Removals
 
 ## Fixes
 
 - Missing bbox_inches in `plot_embedding`
+- Typing for  `cont_feats` and `savename` in `fit_input_pipe`
+- Typing for  `targ_feats` and `savename` in `fit_output_pipe`
 
 ## Changes
 
 - Made `save_to_grp` and `fold2foldfile` private methods to reduce clutter; methods only used by `df2foldfile`, can't see a need for user to access them directly
 - `to_pt_eta_phi` now infers presence of z momentum from dataframe
+- `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
 
 ## Depreciations
 
