@@ -80,7 +80,7 @@
 |Random Forest|rf||
 |Percentage|perc||
 |Identification number|id||
-
+|Batch Yielder|by||
 
 
 

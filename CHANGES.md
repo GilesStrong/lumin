@@ -14,18 +14,21 @@
 - `n_components` to `get_pre_proc_pipes` to be passed to `PCA`
 - `Pipeline` configuration parameters to `fit_input_pipe`
 - Ability to pass an instantiated `Pipeline` to `fit_input_pipe`
+- `BootstrapResample` callback for resampling training and validation data 
 
 ## Removals
+
+- `evaluate` in `Model` no longer automatically converts tensor types
 
 ## Fixes
 
 - Missing bbox_inches in `plot_embedding`
 - Typing for  `cont_feats` and `savename` in `fit_input_pipe`
 - Typing for  `targ_feats` and `savename` in `fit_output_pipe`
+- Moved predictions to after callback `on_eval_begin`
 
 ## Changes
 
-- Made `save_to_grp` and `fold2foldfile` private methods to reduce clutter; methods only used by `df2foldfile`, can't see a need for user to access them directly
 - `to_pt_eta_phi` now infers presence of z momentum from dataframe
 - `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
 

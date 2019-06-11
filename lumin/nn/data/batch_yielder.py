@@ -30,6 +30,8 @@ class BatchYielder:
                 data = list(zip(self.inputs, self.targets))
                 np.random.shuffle(data)
                 inputs, targets = zip(*data)
+        else:
+            inputs, targets, weights = self.inputs, self.targets, self.weights
 
         if self.bulk_move:
             inputs = to_device(Tensor(inputs))

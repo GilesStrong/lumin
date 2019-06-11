@@ -60,7 +60,7 @@ class Model(AbsModel):
         self.stop_train = False
         losses = []
         if callbacks is None: callbacks = []
-        for c in callbacks: c.on_epoch_begin(batch_yielder=batch_yielder)
+        for c in callbacks: c.on_epoch_begin(by=batch_yielder)
 
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
@@ -82,10 +82,8 @@ class Model(AbsModel):
     def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:Optional[List[AbsCallback]]=None) -> float:
         if callbacks is None: callbacks = []
         self.model.eval()
-        if 'multiclass' in self.objective: targets = targets.long().squeeze()
-        else:                              targets = targets.float()
-        y_pred = self.model(to_device(inputs.float()))
         for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
+        y_pred = self.model(to_device(inputs.float()))
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()

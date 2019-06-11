@@ -94,7 +94,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                     loss_history[f'{type(c).__name__}_val_loss'] = []
         for c in callbacks: c.on_train_begin()
 
+        # Validation data
         val_x, val_y, val_w = Tensor(val_fold['inputs']), Tensor(val_fold['targets']), to_tensor(val_fold['weights']) if train_on_weights else None
+        if 'multiclass' in model_builder.objective: val_y = val_y.long().squeeze()
+        else:                                       val_y = val_y.float()
+
         if 'realtime' in plots: model_bar.update_graph([[0, 0] for i in range(len(model_bar.names))])
         epoch_pb = progress_bar(range(max_epochs), leave=True)
         if 'realtime' in plots: model_bar.show()
