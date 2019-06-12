@@ -1,4 +1,4 @@
-# Matser - Targeting V0.2.1
+# Targeting V0.2.1
 
 ## Important changes
 
@@ -14,7 +14,12 @@
 - `n_components` to `get_pre_proc_pipes` to be passed to `PCA`
 - `Pipeline` configuration parameters to `fit_input_pipe`
 - Ability to pass an instantiated `Pipeline` to `fit_input_pipe`
-- `BootstrapResample` callback for resampling training and validation data 
+- Callbacks now receive `model_num` and `savepath` in `on_train_begin`
+- Random Forest *like* ensembling:
+    - `BootstrapResample` callback for resampling training and validation data
+    - Feature subsambling:
+        - `FeatureSubsample` callback for training on random selection of features
+        - `Model` now has an `input_mask` to automatically mask inputs at inference time (train-time inputs should be masked at `BatchYielder` level)
 
 ## Removals
 
@@ -26,11 +31,13 @@
 - Typing for  `cont_feats` and `savename` in `fit_input_pipe`
 - Typing for  `targ_feats` and `savename` in `fit_output_pipe`
 - Moved predictions to after callback `on_eval_begin`
+- Updated `from_model_builder` class method of `ModelBuilder`to use and `Embedder`
 
 ## Changes
 
 - `to_pt_eta_phi` now infers presence of z momentum from dataframe
 - `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
+- `fold_train_ensemble` now always trains `n_models`, and validation fold IDs are cycled through according to `fy.n_folds % model_num`
 
 ## Depreciations
 

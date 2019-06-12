@@ -64,10 +64,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     results,histories,cycle_losses = [],[],[]
     nb = len(fy.foldfile['fold_0/targets'])//bs
 
-    model_bar = master_bar(np.random.choice(range(fy.n_folds), size=n_models, replace=False))
+    model_bar = master_bar(range(n_models))
     if 'realtime' in plots: model_bar.names = ['Best', 'Train', 'Validation']
-    for model_num, val_id in enumerate(model_bar):
-        print(f"Training model {model_num+1} / {n_models}")
+    for model_num in (model_bar):
+        val_id = model_num % fy.n_folds
+        print(f"Training model {model_num+1} / {n_models}, Val ID = {val_id}")
         model_tmr = timeit.default_timer()
         os.system(f"rm {savepath}/best.h5")
         best_loss,epoch_counter,subEpoch,stop = math.inf,0,0,False
@@ -92,7 +93,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                     loss_callbacks.append(c)
                     model_bar.names.append(type(c).__name__)
                     loss_history[f'{type(c).__name__}_val_loss'] = []
-        for c in callbacks: c.on_train_begin()
+        for c in callbacks: c.on_train_begin(model_num=model_num, savepath=savepath)
 
         # Validation data
         val_x, val_y, val_w = Tensor(val_fold['inputs']), Tensor(val_fold['targets']), to_tensor(val_fold['weights']) if train_on_weights else None
@@ -154,7 +155,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         results.append({})
         results[-1]['loss'] = best_loss
         if eval_metrics is not None and len(eval_metrics) > 0:
-            y_pred = model.predict(Tensor(val_fold['inputs']))
+            y_pred = model.predict(val_fold['inputs'])
             for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_id, y_pred)
         print(f"Scores are: {results[-1]}")
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)

@@ -1,5 +1,7 @@
-from typing import Union, Tuple, Callable, Optional
+from typing import Union, Tuple, Callable, Optional, List
 import numpy as np
+import json
+from pathlib import Path
 
 import torch
 from torch import Tensor
@@ -62,10 +64,9 @@ class SequentialReweightClasses(SequentialReweight):
 
 
 class BootstrapResample(Callback): 
-    def __init__(self, n_folds:int, bag_each_time:bool=False, bag_val_fold:bool=False,
-                 reweight:bool=True, model:Optional[AbsModel]=None):
+    def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True, model:Optional[AbsModel]=None):
         super().__init__(model=model)
-        self.n_trn_flds,self.bag_each_time,self.bag_val_fold,self.reweight = n_folds-1,bag_each_time,bag_val_fold,reweight
+        self.n_trn_flds,self.bag_each_time,self.reweight = n_folds-1,bag_each_time,reweight
         
     def get_sample(self, length:int) -> np.ndarray: return np.random.choice(range(length), length, replace=True)
     
@@ -93,7 +94,7 @@ class BootstrapResample(Callback):
                 else: weights *= weight_sum/pkg.sum(weights)
         
     def on_train_begin(self, **kargs) -> None:
-        self.iter,self.samples,self.val_sample,self.objective,self.val_resampled = 0,[],None,None,False
+        self.iter,self.samples,self.objective = 0,[],None
         np.random.seed()  # Is this necessary?
     
     def on_epoch_begin(self, by:BatchYielder, **kargs) -> None:
@@ -105,9 +106,22 @@ class BootstrapResample(Callback):
         self.iter += 1
         if self.objective is None: self.objective = by.objective
         self.resample(sample, by.inputs, by.targets, by.weights)
-         
-    def on_eval_begin(self, inputs:Tensor, targets:Tensor, weights:Union[Tensor,None], **kargs) -> None:
-        if self.val_resampled or not self.bag_val_fold: return
-        if self.val_sample is None: self.val_sample = self.get_sample(len(targets))
-        self.resample(self.val_sample, inputs, targets, weights)
-        self.val_resampled = True
+
+
+class FeatureSubsample(Callback):
+    def __init__(self, cont_feats:List[str], model:Optional[AbsModel]=None):
+        super().__init__(model=model)
+        self.cont_feats = cont_feats
+        
+    def _sample_feats(self) -> None:
+        cont_idxs = np.random.choice(range(len(self.cont_feats)), size=self.model.model_builder.n_cont_in, replace=False)
+        self.feat_idxs = np.hstack((cont_idxs, len(self.cont_feats)+np.arange(self.model.model_builder.cat_embedder.n_cat_in)))
+        self.feat_idxs.sort()
+    
+    def on_train_begin(self, model_num:int, savepath:Path, **kargs) -> None:
+        self.model_num,self.savepath = model_num,savepath
+        np.random.seed()  # Is this necessary?
+        self._sample_feats()
+        self.model.set_input_mask(self.feat_idxs)
+        
+    def on_epoch_begin(self, by:BatchYielder, **kargs) -> None: by.inputs = by.inputs[:,self.feat_idxs]

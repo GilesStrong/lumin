@@ -51,13 +51,11 @@ class ModelBuilder(object):
                            loss:Optional[Any]=None, opt_args:Optional[Dict[str,Any]]=None):
         if isinstance(model_builder, str):
             with open(model_builder, 'rb') as fin: model_builder = pickle.load(fin)
-        cat_args = {'n_cat_in': model_builder.n_cat_in, 'cat_szs': model_builder.cat_szs,
-                    'emb_szs': model_builder.emb_szs, 'cat_names': model_builder.cat_names}
         model_args = {'width': model_builder.width, 'depth': model_builder.depth,
                       'do': model_builder.do, 'do_cat': model_builder.do_cat, 'do_cont': model_builder.do_cont,
                       'bn': model_builder.bn, 'act': model_builder.act, 'res': model_builder.res, 'dense': model_builder.dense}
         return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out, y_range=model_builder.y_range,
-                   cat_args=cat_args, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
+                   cat_embedder=model_builder.cat_embedder, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
                    loss=model_builder.loss if loss is None else loss, head=model_builder.head, body=model_builder.body, tail=model_builder.tail,
                    pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body)
             

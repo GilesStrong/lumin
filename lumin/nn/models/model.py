@@ -24,8 +24,8 @@ from ...utils.statistics import uncert_round
 
 class Model(AbsModel):
     '''Class to handle training and inference of NNs created via a ModelBuilder'''
-    def __init__(self, model_builder:ModelBuilder=None):
-        self.model_builder = model_builder
+    def __init__(self, model_builder:Optional[ModelBuilder]=None):
+        self.model_builder,self.input_mask = model_builder,None
         if self.model_builder is not None:
             self.model, self.opt, self.loss = self.model_builder.get_model()
             self.model = to_device(self.model)
@@ -54,6 +54,8 @@ class Model(AbsModel):
         m = cls(model_builder)
         m.load(name)
         return m
+
+    def set_input_mask(self, mask:np.ndarray) -> None: self.input_mask = mask
         
     def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
         self.model.train()
@@ -79,17 +81,20 @@ class Model(AbsModel):
         for c in callbacks: c.on_epoch_end(losses=losses)
         return np.mean(losses)
               
-    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:Optional[List[AbsCallback]]=None) -> float:
+    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:Optional[List[AbsCallback]]=None,
+                 mask_inputs:bool=True) -> float:
         if callbacks is None: callbacks = []
         self.model.eval()
         for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
+        if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
         y_pred = self.model(to_device(inputs.float()))
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
-    def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True) -> Union[np.ndarray, Tensor]:
+    def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, mask_inputs:bool=True) -> Union[np.ndarray, Tensor]:
         self.model.eval()
+        if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
         if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
         pred = self.model(to_device(inputs.float()))
@@ -139,13 +144,14 @@ class Model(AbsModel):
         if   'betas'    in self.opt.param_groups: self.opt.param_groups[0]['betas'][0] = mom
         elif 'momentum' in self.opt.param_groups: self.opt.param_groups[0]['lr']       = mom
     
-    def save(self, name:str) -> None: torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict()}, name)
+    def save(self, name:str) -> None: torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict(), 'input_mask':self.input_mask}, name)
         
     def load(self, name:str, model_builder:ModelBuilder=None) -> None:
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
         state = torch.load(name, map_location='cuda' if torch.cuda.is_available() else 'cpu')
         self.model.load_state_dict(state['model'])
         self.opt.load_state_dict(state['opt'])
+        self.input_mask = state['input_mask']
         self.objective = self.model_builder.objective if model_builder is None else model_builder.objective
 
     def export2onnx(self, name:str, bs:int=1) -> None:
