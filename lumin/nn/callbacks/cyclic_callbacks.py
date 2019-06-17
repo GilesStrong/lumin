@@ -62,9 +62,24 @@ class AbsCyclicCallback(Callback):
 
 
 class CycleLR(AbsCyclicCallback):
-    '''Cycle lr during training, either:
+    r'''
+    Callback to cycle learning rate during training according to either:
     cosine interpolation for SGDR https://arxiv.org/abs/1608.03983
-    or linear interpolation for Smith cycling https://arxiv.org/abs/1506.01186'''
+    or linear interpolation for Smith cycling https://arxiv.org/abs/1506.01186
+
+    Arguments:
+        lr_range: tuple of initial and final LRs
+        interp: 'cosine' or 'linear' interpolation
+        cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
+        decrease_param: whether to increase or decrease the LR (effectively reverses `lr_range` order), 'auto' selects according to `interp`
+        scale: Multiplicative constant for altering the length of a cycle. `1` corresponds to one cycle = one (sub-)epoch
+        model: :class:`Model` to alter, alternatively call :meth:`set_model`
+        nb: Number of batches in a (sub-)epoch
+        plot_settings: :class:`PlotSettings` class to control figure appearance
+    '''
+
+    # TODO sort lr-range or remove decrease_param
+
     def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = True if interp == 'cosine' else False
@@ -78,9 +93,25 @@ class CycleLR(AbsCyclicCallback):
 
 
 class CycleMom(AbsCyclicCallback):
-    '''Cycle momentum (beta_1) during training, either:
+    r'''
+    Callback to cycle momentum (beta 1) during training according to either:
     cosine interpolation for SGDR https://arxiv.org/abs/1608.03983
-    or linear interpolation for Smith cycling https://arxiv.org/abs/1506.01186'''
+    or linear interpolation for Smith cycling https://arxiv.org/abs/1506.01186
+    By default is set to evolve in opposite direction to learning rate, a la https://arxiv.org/abs/1803.09820
+
+    Arguments:
+        mom_range: tuple of initial and final momenta
+        interp: 'cosine' or 'linear' interpolation
+        cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
+        decrease_param: whether to increase or decrease the momentum (effectively reverses `mom_range` order), 'auto' selects according to `interp`
+        scale: Multiplicative constant for altering the length of a cycle. `1` corresponds to one cycle = one (sub-)epoch
+        model: :class:`Model` to alter, alternatively call :meth:`set_model`
+        nb: Number of batches in a (sub-)epoch
+        plot_settings: :class:`PlotSettings` class to control figure appearance
+    '''
+
+    # TODO sort lr-range or remove decrease_param
+
     def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = False if interp == 'cosine' else True
@@ -94,8 +125,21 @@ class CycleMom(AbsCyclicCallback):
 
 
 class OneCycle(AbsCyclicCallback):
-    '''Smith 1-cycle evolution for lr and momentum (beta_1) https://arxiv.org/abs/1803.09820
-    Default interpolation uses fastai-style cosine function'''
+    r'''
+    Callback implementing Smith 1-cycle evolution for lr and momentum (beta_1) https://arxiv.org/abs/1803.09820
+    Default interpolation uses fastai-style cosine function.
+    Automatically triggers early stopping on cycle completion.
+
+    Arguments:
+        lengths: tuple of number of (sub-)epochs in first and second stages of cycle
+        lr_range: tuple of initial and final LRs
+        mom_range: tuple of initial and final momenta
+        interp: 'cosine' or 'linear' interpolation
+        model: :class:`Model` to alter, alternatively call :meth:`set_model`
+        nb: Number of batches in a (sub-)epoch
+        plot_settings: :class:`PlotSettings` class to control figure appearance
+    '''
+
     def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
