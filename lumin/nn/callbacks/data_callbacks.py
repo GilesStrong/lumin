@@ -14,7 +14,19 @@ from ..models.abs_model import AbsModel
 
 
 class BinaryLabelSmooth(Callback):
-    '''Apply label smoothing to binary classes, based on arXiv:1512.00567'''
+    r'''
+    Callback for applying label smoothing to binary classes, based on https://arxiv.org/abs/1512.00567
+    Applies smoothing during both training and inference.
+
+    Arguments:
+        coefs: Smoothing coefficients: `0->coef[0]` `1->1-coef[1]`. if passed float, `coef[0]=coef[1]`
+        model: not used, only for compatability
+
+    Examples::
+        >>> lbl_smooth = BinaryLabelSmooth(0.1)
+        >>> lbl_smooth = BinaryLabelSmooth((0.1, 0.02))
+    '''
+
     def __init__(self, coefs:Union[float,Tuple[float,float]]=0, model:Optional[AbsModel]=None):
         super().__init__(model=model)
         self.coefs = coefs if isinstance(coefs, tuple) else (coefs, coefs)
@@ -32,8 +44,20 @@ class BinaryLabelSmooth(Callback):
 
 
 class SequentialReweight(Callback):
-    '''During ensemble training, sequentially reweight data in validation folds based on prediction performance of last trained model.
-       Reweighting highlights data which are easier or more difficult to predict to the next model being trained'''
+    r'''
+    **Experiemntal proceedure**
+    During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
+    Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
+
+    Arguments:
+        reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
+        scale: multiplicative factor for rescaling returned tensor of `reweight_func`
+        model: :class:`Model` to provide predictions, alternatively call :meth:`set_model`
+
+    Examples::
+        >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
+    '''
+
     def __init__(self, reweight_func:Callable[[Tensor,Tensor], Tensor], scale:float=1e-1, model:Optional[AbsModel]=None):
         super().__init__(model=model)
         self.scale,self.reweight_func = scale,reweight_func
@@ -51,7 +75,21 @@ class SequentialReweight(Callback):
 
 
 class SequentialReweightClasses(SequentialReweight):
-    '''SequentialReweight designed for classification, which renormalises class weights to original weight-sum after reweighting'''
+    r'''
+    **Experiemntal proceedure**
+    Version of :class:`SequentialReweight` designed for classification, which renormalises class weights to original weight-sum after reweighting
+    During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
+    Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
+
+    Arguments:
+        reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
+        scale: multiplicative factor for rescaling returned tensor of `reweight_func`
+        model: :class:`Model` to provide predictions, alternatively call :meth:`set_model`
+
+    Examples::
+        >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
+    '''
+
     def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
         preds = self.model.predict_array(fld['inputs'], as_np=False)
@@ -63,7 +101,20 @@ class SequentialReweightClasses(SequentialReweight):
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
 
 
-class BootstrapResample(Callback): 
+class BootstrapResample(Callback):
+    r'''
+    Callback for bootstrap sampling new training datasets from original training data during (ensemble) training.
+
+    Arguments:
+        n_folds: the number of folds present in training :class:`FoldYielder`
+        bag_each_time: whether to sample a new set for each sub-epoch or to use the same sample each time
+        reweight: whether to reweight the sampleed data to mathch the weight sum (per class) of the original data
+        model: not used, only for compatability
+
+    Examples::
+        >>> bs_resample BootstrapResample(n_folds=len(train_fy))
+    '''
+
     def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True, model:Optional[AbsModel]=None):
         super().__init__(model=model)
         self.n_trn_flds,self.bag_each_time,self.reweight = n_folds-1,bag_each_time,reweight
@@ -109,6 +160,21 @@ class BootstrapResample(Callback):
 
 
 class FeatureSubsample(Callback):
+    r'''
+    Callback for training a model on a random sub-sample of the range of possible input features.
+    Only sub-samples continuous features. Number of continuous inputs infered from model.
+    Associated :class:`Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
+
+    Arguments:
+        cont_feats: list of all continuous features in input data. Order must match.
+        model: :class:`Model` being trained, alternatively call :meth:`set_model`        
+
+    Examples::
+        >>> feat_subsample = FeatureSubsample(cont_feats=['pT', 'eta', 'phi'])
+    '''
+
+    # TODO cont feat names no longer required only number; move to infer number of cont feats from model_builder and batch_yielder
+
     def __init__(self, cont_feats:List[str], model:Optional[AbsModel]=None):
         super().__init__(model=model)
         self.cont_feats = cont_feats
