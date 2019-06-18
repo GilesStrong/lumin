@@ -32,6 +32,8 @@
 - Typing for  `targ_feats` and `savename` in `fit_output_pipe`
 - Moved predictions to after callback `on_eval_begin`
 - Updated `from_model_builder` class method of `ModelBuilder`to use and `Embedder`
+- Hard coded savename in `Model` during save to hopefull solve occaisional permission error during save
+- Typing for `val_fold` in `SWA`
 
 ## Changes
 

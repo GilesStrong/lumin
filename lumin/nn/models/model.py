@@ -144,7 +144,7 @@ class Model(AbsModel):
         if   'betas'    in self.opt.param_groups: self.opt.param_groups[0]['betas'][0] = mom
         elif 'momentum' in self.opt.param_groups: self.opt.param_groups[0]['lr']       = mom
     
-    def save(self, name:str) -> None: torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict(), 'input_mask':self.input_mask}, name)
+    def save(self, name:str) -> None: torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict(), 'input_mask':self.input_mask}, str(name))
         
     def load(self, name:str, model_builder:ModelBuilder=None) -> None:
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
