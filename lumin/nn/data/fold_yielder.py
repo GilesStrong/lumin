@@ -9,7 +9,21 @@ from sklearn.pipeline import Pipeline
 
 
 class FoldYielder:
-    '''Base class for accessing data from foldfile'''
+    r'''
+    Interface class for accessing data from foldfiles created by :meth:df2foldfile
+
+    Arguments:
+        foldfile: filename of hdf5 file
+        cont_feats: list of names of continuous features present in input data
+        cat_feats: list of names of categorical features present in input data
+        ignore_feats: optional list of input features which should be ignored
+        input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
+        output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
+
+    Examples::
+        >>> fy = FoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'], cat_feats=['channel'], ignore_feats=['phi'], input_pipe='input_pipe.pkl')
+    '''
+
     def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
@@ -30,7 +44,14 @@ class FoldYielder:
     def __iter__(self) -> Dict[str,np.ndarray]:
         for i in range(self.n_folds): yield self.get_fold(i)
 
-    def set_ignore(self, feats:List[str]) -> None:
+    def add_ignore(self, feats:List[str]) -> None:
+        r'''
+        Add features to ignored features.
+
+        Arguments:
+            feats: list of feature names to ignore
+        '''
+
         self._ignore_feats += feats
         self.cont_feats = [f for f in self.cont_feats if f not in self._ignore_feats]
         self.cat_feats  = [f for f in self.cat_feats  if f not in self._ignore_feats]
@@ -50,6 +71,18 @@ class FoldYielder:
         with open(name, 'rb') as fin: self.output_pipe = pickle.load(fin)
 
     def get_fold(self, idx:int) -> Dict[str,np.ndarray]:
+        r'''
+        Get data for single fold. Data consists of dictionary of inputs, targets, and weights.
+        Accounts for ignored features.
+        Inputs are passed through np.nan_to_num to deal with nans and infs.
+
+        Arguments:
+            idx: fold index to load
+
+        Returns:
+            tuple of inputs, targets, and weights as Numpy arrays
+        '''
+
         data = self.get_data(n_folds=1, fold_idx=idx)
         if len(self._ignore_feats) == 0:
             return data
@@ -60,6 +93,19 @@ class FoldYielder:
             return data
 
     def get_column(self, column:str, n_folds:Optional[int]=None, fold_idx:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
+        r'''
+        Load column (h5py group) from foldfile. Used for getting arbitrary data which isn't automatically grabbed by other methods.
+
+        Arguments:
+            column: name of h5py group to get
+            n_folds: number of folds to get data from. Default all folds. Not compatable with fold_idx
+            fold_idx: Only load group from a single, specified fold. Not compatable with n_folds
+            add_newaxis: whether expand shape of returned data if data shape is ()
+
+        Returns:
+            Numpy array of column data
+        '''
+
         if f'fold_0/{column}' not in self.foldfile: return None
 
         if fold_idx is None:
@@ -73,12 +119,44 @@ class FoldYielder:
         return data[:, None] if data[0].shape is () and add_newaxis else data
 
     def get_data(self, n_folds:Optional[int]=None, fold_idx:Optional[int]=None) -> Dict[str,np.ndarray]:
+        r'''
+        Get data for single, specified fold or several of folds. Data consists of dictionary of inputs, targets, and weights.
+        Does not accounts for ignored features.
+        Inputs are passed through np.nan_to_num to deal with nans and infs.
+
+        Arguments:
+            n_folds: number of folds to get data from. Default all folds. Not compatable with fold_idx
+            fold_idx: Only load group from a single, specified fold. Not compatable with n_folds
+
+        Returns:
+            tuple of inputs, targets, and weights as Numpy arrays
+        '''
+
         return {'inputs': np.nan_to_num(self.get_column('inputs',  n_folds=n_folds, fold_idx=fold_idx)),
                 'targets':              self.get_column('targets', n_folds=n_folds, fold_idx=fold_idx, add_newaxis=True),
                 'weights':              self.get_column('weights', n_folds=n_folds, fold_idx=fold_idx, add_newaxis=True)}
 
     def get_df(self, pred_name:str='pred', targ_name:str='targets', wgt_name:str='weights', n_folds:Optional[int]=None, fold_idx:Optional[int]=None,
                inc_inputs:bool=False, inc_ignore:bool=False, deprocess:bool=False, verbose:bool=True, suppress_warn:bool=False) -> pd.DataFrame:
+        r'''
+        Get a Pandas DataFrameof the data in the foldfile. Will add columns for inputs (if requested), targets, weights, and predictions (if present)
+
+        Arguments:
+            pred_name: name of prediction group
+            targ_name: name of target group
+            wgt_name: name of weight group
+            n_folds: number of folds to get data from. Default all folds. Not compatable with fold_idx
+            fold_idx: Only load group from a single, specified fold. Not compatable with n_folds
+            inc_inputs: whether to include input data
+            inc_ignore: whether to include ignored features
+            deprocess: whether to deprocess inputs and targets if pipelines have been
+            verbose: whether to print the number of datapoints loaded
+            suppress_warn: whether to supress the warning about missing columns
+
+        Returns:
+            Pandas DataFrame with requested data
+        '''
+
         if inc_inputs:
             inputs = self.get_column('inputs',  n_folds=n_folds, fold_idx=fold_idx)
             if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:,:len(self.orig_cont_feats)]),
@@ -113,7 +191,7 @@ class FoldYielder:
             data['pred'] = preds
         elif not suppress_warn:
             warnings.warn(f'{pred_name} not found in foldfile file')
-        if verbose: print(f'{len(data)} candidates loaded')
+        if verbose: print(f'{len(data)} datapoints loaded')
         return data
 
     def save_fold_pred(self, pred:np.ndarray, fold_idx:int, pred_name:str='pred') -> None:
@@ -123,6 +201,30 @@ class FoldYielder:
 
 
 class HEPAugFoldYielder(FoldYielder):
+    r'''
+    Specialaised version of :class:FoldYielder providing HEP specific data augmetation at train and test time.
+
+    Arguments:
+        foldfile: filename of hdf5 file
+        cont_feats: list of names of continuous features present in input data
+        cat_feats: list of names of categorical features present in input data
+        ignore_feats: optional list of input features which should be ignored
+        targ_feats: optional list of target features to also be transformed
+        rot_mult: number of rotations of event in phi to make at test-time (currently must be even).
+                  Greater than zero will also apply random rotations during train-time
+        random_rot: whether test-time rotation angles should be random or in steps of 2pi/rot_mult
+        reflect_x: whether to reflect events in x axis at train and test time
+        reflect_y: whether to reflect events in y axis at train and test time
+        reflect_z: whether to reflect events in z axis at train and test time
+        train_time_aug: whether to apply augmentations at train time
+        test_time_aug: whether to apply augmentations at test time
+        input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
+        output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
+
+    Examples::
+        >>> fy = HEPAugFoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'], rot_mult=2, reflect_y=True, reflect_z=True, input_pipe='input_pipe.pkl')
+    '''
+
     '''Accessing data from foldfile and apply HEP specific data augmentation during training and testing'''
     def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, targ_feats:Optional[List[str]]=None,
@@ -168,13 +270,13 @@ class HEPAugFoldYielder(FoldYielder):
                 self.aug_mult *= 2
         print(f'Total augmentation multiplicity is {self.aug_mult}')
     
-    def rotate(self, df:pd.DataFrame, vecs:List[str]) -> None:
+    def _rotate(self, df:pd.DataFrame, vecs:List[str]) -> None:
         for vec in vecs:
             df.loc[:, f'{vec}_pxtmp'] = df.loc[:, f'{vec}_px']*np.cos(df.loc[:, 'aug_angle'])-df.loc[:, f'{vec}_py']*np.sin(df.loc[:, 'aug_angle'])
             df.loc[:, f'{vec}_py']    = df.loc[:, f'{vec}_py']*np.cos(df.loc[:, 'aug_angle'])+df.loc[:, f'{vec}_px']*np.sin(df.loc[:, 'aug_angle'])
             df.loc[:, f'{vec}_px']    = df.loc[:, f'{vec}_pxtmp']
     
-    def reflect(self, df:pd.DataFrame, vectors:List[str]) -> None:
+    def _reflect(self, df:pd.DataFrame, vectors:List[str]) -> None:
         for vector in vectors:
             for coord in self.reflect_axes:
                 try:
@@ -191,16 +293,16 @@ class HEPAugFoldYielder(FoldYielder):
             
         if self.rot_mult:
             inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
-            self.rotate(inputs, self.vectors)
+            self._rotate(inputs, self.vectors)
             if self.targ_feats is not None:
                 targets['aug_angle'] = inputs['aug_angle']
-                self.rotate(targets, self.targ_vectors)
+                self._rotate(targets, self.targ_vectors)
             
         for coord in self.reflect_axes:
             inputs[f'aug{coord}'] = np.random.randint(0, 2, size=len(inputs))
             if self.targ_feats is not None: targets[f'aug{coord}'] = inputs[f'aug{coord}']
-        self.reflect(inputs, self.vectors)
-        if self.targ_feats is not None: self.reflect(targets, self.targ_vectors)
+        self._reflect(inputs, self.vectors)
+        if self.targ_feats is not None: self._reflect(targets, self.targ_vectors)
 
         inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
         data['inputs'] = np.nan_to_num(inputs.values)
@@ -227,20 +329,20 @@ class HEPAugFoldYielder(FoldYielder):
             ref_idx = self._get_ref_idx(aug_idx)
             if self.random_rot: inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[rot_idx]
-            self.rotate(inputs, self.vectors)            
+            self._rotate(inputs, self.vectors)            
 
             for i, coord in enumerate(self.reflect_axes): inputs[f'aug{coord}'] = int(ref_idx[i])
-            self.reflect(inputs, self.vectors)
+            self._reflect(inputs, self.vectors)
             
         elif len(self.reflect_axes) > 0:
             ref_idx = self._get_ref_idx(aug_idx)
             for i, coord in enumerate(self.reflect_axes): inputs[f'aug{coord}'] = int(ref_idx[i])
-            self.reflect(inputs, self.vectors)
+            self._reflect(inputs, self.vectors)
             
         elif self.rot_mult:
             if self.random_rot: inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             else:               inputs['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[aug_idx]
-            self.rotate(inputs, self.vectors)
+            self._rotate(inputs, self.vectors)
             
         inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
         data['inputs'] = np.nan_to_num(inputs.values)
@@ -252,20 +354,20 @@ class HEPAugFoldYielder(FoldYielder):
                 ref_idx = self._get_ref_idx(aug_idx)
                 if self.random_rot: targets['aug_angle'] = (2*np.pi*np.random.random(size=len(targets)))-np.pi
                 else:               targets['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[rot_idx]
-                self.rotate(targets, self.targ_vectors)            
+                self._rotate(targets, self.targ_vectors)            
 
                 for i, coord in enumerate(self.reflect_axes): targets[f'aug{coord}'] = int(ref_idx[i])
-                self.reflect(targets, self.targ_vectors)
+                self._reflect(targets, self.targ_vectors)
 
             elif len(self.reflect_axes) > 0:
                 ref_idx = self._get_ref_idx(aug_idx)
                 for i, coord in enumerate(self.reflect_axes): targets[f'aug{coord}'] = int(ref_idx[i])
-                self.reflect(targets, self.targ_vectors)
+                self._reflect(targets, self.targ_vectors)
 
             elif self.rot_mult:
                 if self.random_rot: targets['aug_angle'] = (2*np.pi*np.random.random(size=len(targets)))-np.pi
                 else:               targets['aug_angle'] = np.linspace(0, 2*np.pi, (self.rot_mult)+1)[aug_idx]
-                self.rotate(targets, self.targ_vectors)
+                self._rotate(targets, self.targ_vectors)
             
             targets = targets[self.targ_feats]
             data['targets'] = np.nan_to_num(targets.values)

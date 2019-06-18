@@ -40,6 +40,8 @@
 - `to_pt_eta_phi` now infers presence of z momentum from dataframe
 - `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
 - `fold_train_ensemble` now always trains `n_models`, and validation fold IDs are cycled through according to `fy.n_folds % model_num`
+- `FoldYielder.set_ignore` changed to `FoldYielder.add_ignore`
+- Changed `HEPAugFoldYielder.rotate` and `HEPAugFoldYielder.reflect` to private methods
 
 ## Depreciations
 

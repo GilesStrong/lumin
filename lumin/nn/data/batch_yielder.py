@@ -33,6 +33,13 @@ class BatchYielder:
             inputs,targets,weights,bs,objective,shuffle,use_weights,bulk_move
 
     def __iter__(self) -> List[Tensor]:
+        r'''
+        Iterate through data in batches.
+
+        Returns:
+            tuple of batches of inputs, targets, and weights as tensors on device
+        '''
+
         if self.shuffle:
             if self.weights is not None and self.use_weights:
                 data = list(zip(self.inputs, self.targets, self.weights))

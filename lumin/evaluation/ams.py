@@ -32,7 +32,7 @@ def calc_ams(s:float, b:float, br:float=0, unc_b:float=0) -> float:
 
 def calc_ams_torch(s:Tensor, b:Tensor, br:float=0, unc_b:float=0) -> Tensor:
     r'''
-    Compute Approximate Median Significance (https://arxiv.org/abs/1007.1727) using `Tensor` inputs
+    Compute Approximate Median Significance (https://arxiv.org/abs/1007.1727) using Tensor inputs
 
     Arguments:
         s: signal weight

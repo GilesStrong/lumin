@@ -34,31 +34,31 @@ class SWA(AbsModelCallback):
     r'''
     Callback providing Stochastic Weight Averaging based on (https://arxiv.org/abs/1803.05407)
     This adapted version allows the tracking of a pair of average models in order to avoid having to hardcode a specific start point for averaging:
-        1. Model average *x0* will begin to be tracked `start_epoch` (sub-)epochs/cycles after training begins.
-        1. `cycle_since_replacement` is set to 1
-        1. `renewal_period` (sub-)epochs/cycles later, a second average *x1* will be tracked.
-        1. At the next renewal period, the performance of x0 and x1 will be compared on data contained in `val_fold`.
+        1. Model average *x0* will begin to be tracked start_epoch (sub-)epochs/cycles after training begins.
+        1. cycle_since_replacement is set to 1
+        1. renewal_period (sub-)epochs/cycles later, a second average *x1* will be tracked.
+        1. At the next renewal period, the performance of x0 and x1 will be compared on data contained in val_fold.
             - If x0 is better than x1:
                 - x1 is replaced by a copy of the current model
-                - `cycle_since_replacement` is increased by 1
-                - `renewal_period` is multiplied by `cycle_since_replacement`
+                - cycle_since_replacement is increased by 1
+                - renewal_period is multiplied by cycle_since_replacement
             - Else:
                 - x0 is replaced by x1
                 - x1 is replaced by a copy of the current model
-                - `cycle_since_replacement` is set to 1
-                 - `renewal_period` is set back to its original value
+                - cycle_since_replacement is set to 1
+                 - renewal_period is set back to its original value
 
     Additonally, will optionally (default True) lock-in to any cyclical callbacks to only update at the end of a cycle.
 
     Arguments:
         start_epoch: (sub-)epoch/cycle to begin averaging
         renewal_period: How often to check performance of averages, and renew tracking of least performant
-        model: :class:`Model` to provide parameters, alternatively call :meth:`set_model`
-        val_fold: Dictionary containing inputs, targets, and weights (or `None`) as Numpy arrays
+        model: :class:Model to provide parameters, alternatively call :meth:set_model
+        val_fold: Dictionary containing inputs, targets, and weights (or None) as Numpy arrays
         cyclic_callback: Optional for any cyclical callback which is running
         update_on_cycle_end: Whether to lock in to the cyclic callback and only update at the end of a cycle. Default yes, if cyclic callback present.
         verbose: Whether to print out update information for testing and operation confirmation
-        plot_settings: :class:`PlotSettings` class to control figure appearance
+        plot_settings: :class:PlotSettings class to control figure appearance
 
     Examples::
         >>> swa = SWA(start_epoch=5, renewal_period=5)

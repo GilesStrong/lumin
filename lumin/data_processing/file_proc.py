@@ -33,11 +33,11 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
     Arguments:
         df: Dataframe from which to save data
         out_file: h5py file to save data in
-        fold_idx: ID for the fold; used name h5py group according to `'fold_{fold_idx}'`
+        fold_idx: ID for the fold; used name h5py group according to 'fold_{fold_idx}'
         cont_feats: list of columns in df to save as continuous variables
         cat_feats: list of columns in df to save as discreet variables
         targ_feats (list of) column(s) in df to save as target feature(s)
-        targ_type: type of target feature, e.g. `int`,`'float32'`
+        targ_type: type of target feature, e.g. int,'float32'
         misc_feats (optional): any extra columns to save
         wgt_feat (optional): column to save as data weights
     '''
@@ -56,7 +56,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
                 strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None):
     r'''
-    Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`FoldYielder`
+    Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:FoldYielder
     
     Arguments:
         df: Dataframe from which to save data
@@ -64,8 +64,8 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         cont_feats: list of columns in df to save as continuous variables
         cat_feats: list of columns in df to save as discreet variables
         targ_feats (list of) column(s) in df to save as target feature(s)
-        savename: name of h5py file to create (`.h5py` extension not required)
-        targ_type: type of target feature, e.g. `int`,`'float32'`
+        savename: name of h5py file to create (.h5py extension not required)
+        targ_type: type of target feature, e.g. int,'float32'
         strat_key (optional): column to use for stratified splitting
         misc_feats (optional): any extra columns to save
         wgt_feat (optional): column to save as data weights

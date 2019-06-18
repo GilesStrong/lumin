@@ -11,20 +11,20 @@ from sklearn.decomposition import PCA
 def get_pre_proc_pipes(norm_in:bool=True, norm_out:bool=False, pca:bool=False, whiten:bool=False,
                        with_mean:bool=True, with_std:bool=True, n_components:Optional[int]=None) -> Tuple[Pipeline,Pipeline]:
     r'''
-    Configure SKLearn `Pipeline`s for processing inputs and targets with the requested transformations.
+    Configure SKLearn Pipelines for processing inputs and targets with the requested transformations.
 
     Arguments:
-        norm_in: whether to apply `StandardScaler` to inputs
-        norm_out: whether to apply `StandardScaler` to outputs
-        pca: whether to apply `PCA` to inputs. Perforemed prior to `StandardScaler`. No dimensionality reduction is applied, purely rotation.
+        norm_in: whether to apply StandardScaler to inputs
+        norm_out: whether to apply StandardScaler to outputs
+        pca: whether to apply PCA to inputs. Perforemed prior to StandardScaler. No dimensionality reduction is applied, purely rotation.
         whiten: whether PCA should whiten inputs.
-        with_mean: whether `StandardScaler`s should shift means to 0
-        with_std: whether `StandardScaler`s should scale standard deviations to 1
-        n_components: if set, causes `PCA` to reduce the dimensionality of the input data
+        with_mean: whether StandardScalers should shift means to 0
+        with_std: whether StandardScalers should scale standard deviations to 1
+        n_components: if set, causes PCA to reduce the dimensionality of the input data
 
     Returns:
-        `Pipeline` for input data
-        `Pipeline` for target data
+        Pipeline for input data
+        Pipeline for target data
     '''
 
     steps_in = []
@@ -51,18 +51,18 @@ def fit_input_pipe(df:pd.DataFrame, cont_feats:Union[str,List[str]], savename:Op
     Arguments:
         df: DataFrame with data to fit pipeline
         cont_feats: (list of) column(s) to use as input data for fitting
-        savename: if set will save the fitted `Pipeline` to with that name as Pickle (.pkl extension added automatically)
-        input_pipe: if set will fit, otherwise will instantiate a new `Pipeline`
-        norm_in: whether to apply `StandardScaler` to inputs. Only used if input_pipe is not set.
-        pca: whether to apply `PCA` to inputs. Perforemed prior to `StandardScaler`.
+        savename: if set will save the fitted Pipeline to with that name as Pickle (.pkl extension added automatically)
+        input_pipe: if set will fit, otherwise will instantiate a new Pipeline
+        norm_in: whether to apply StandardScaler to inputs. Only used if input_pipe is not set.
+        pca: whether to apply PCA to inputs. Perforemed prior to StandardScaler.
              No dimensionality reduction is applied, purely rotation. Only used if input_pipe is not set.
         whiten: whether PCA should whiten inputs. Only used if input_pipe is not set.
-        with_mean: whether `StandardScaler`s should shift means to 0. Only used if input_pipe is not set.
-        with_std: whether `StandardScaler`s should scale standard deviations to 1. Only used if input_pipe is not set.
-        n_components: if set, causes `PCA` to reduce the dimensionality of the input data. Only used if input_pipe is not set.
+        with_mean: whether StandardScalers should shift means to 0. Only used if input_pipe is not set.
+        with_std: whether StandardScalers should scale standard deviations to 1. Only used if input_pipe is not set.
+        n_components: if set, causes PCA to reduce the dimensionality of the input data. Only used if input_pipe is not set.
 
     Returns:
-        Fitted `Pipeline`
+        Fitted Pipeline
     '''
     
     if input_pipe is None: input_pipe, _ = get_pre_proc_pipes(norm_in=norm_in, pca=pca, whiten=whiten,
@@ -81,12 +81,12 @@ def fit_output_pipe(df:pd.DataFrame, targ_feats:Union[str,List[str]], savename:O
     Arguments:
         df: DataFrame with data to fit pipeline
         targ_feats: (list of) column(s) to use as input data for fitting
-        savename: if set will save the fitted `Pipeline` to with that name as Pickle (.pkl extension added automatically)
-        output_pipe: if set will fit, otherwise will instantiate a new `Pipeline`
-        norm_out: whether to apply `StandardScaler` to outputs . Only used if output_pipe is not set.
+        savename: if set will save the fitted Pipeline to with that name as Pickle (.pkl extension added automatically)
+        output_pipe: if set will fit, otherwise will instantiate a new Pipeline
+        norm_out: whether to apply StandardScaler to outputs . Only used if output_pipe is not set.
 
     Returns:
-        Fitted `Pipeline`
+        Fitted Pipeline
     '''
 
     if output_pipe is None: _, output_pipe = get_pre_proc_pipes(norm_out=True)
