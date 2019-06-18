@@ -73,7 +73,7 @@ class CycleLR(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the LR (effectively reverses `lr_range` order), 'auto' selects according to `interp`
         scale: Multiplicative constant for altering the length of a cycle. `1` corresponds to one cycle = one (sub-)epoch
-        model: :class:`Model` to alter, alternatively call :meth:`set_model`
+        model: :class:`Model` to alter, alternatively call :meth:`set_model`.
         nb: Number of batches in a (sub-)epoch
         plot_settings: :class:`PlotSettings` class to control figure appearance
 
