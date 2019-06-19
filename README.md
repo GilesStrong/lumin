@@ -84,7 +84,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
 ### Statistics and uncertainties
 
 - Integral to experimental science
-- Quantative results are accompanied by uncertainties
+- Quantitative results are accompanied by uncertainties
 - Use of bootstrapping to improve precision of statistics estimated from small samples
 
 ### Look and feel
