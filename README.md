@@ -162,6 +162,6 @@ Certainly more developers and contributors are welcome to join and help out!
 
 ### Reference
 
-If you have used LUMIN in you analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), http://doi.org/10.5281/zenodo.2601858, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
+If you have used LUMIN in your analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), http://doi.org/10.5281/zenodo.2601858, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
 
 [Bibtex export](https://zenodo.org/record/2601858/export/hx)
