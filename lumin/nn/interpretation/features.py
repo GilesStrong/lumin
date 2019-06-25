@@ -9,6 +9,7 @@ from ...utils.statistics import bootstrap_stats
 from ...utils.multiprocessing import mp_run
 from ...plotting.interpretation import plot_importance
 from ..models.abs_model import AbsModel
+from ..ensemble.abs_ensemble import AbsEnsemble
 from ..data.fold_yielder import FoldYielder
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.plot_settings import PlotSettings
@@ -18,9 +19,28 @@ from torch import Tensor
 
 def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
                            plot:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
-    '''Compute permutation importance of features used by a NN.
+    r'''
+    Compute permutation importance of features used by a :class:Model on provided data using either loss or an :class:EvalMetric to quantify performance.
     Returns bootstrapped mean importance from sample constructed by computing importance for each fold in fy.
-    Default importance computed using loss, but can optionally compute it using eval_metric''' 
+
+    Arguments:
+        model: :class:Model to use to evaluate feature importance
+        fy: :class:FoldYielder interfacing to data used to train model
+        eval_metric: Optional :class:EvalMetric to use to quantify performance in place of loss
+        pb_parent: Not used if calling method directly
+        plot: whetehr to plot resulting feature importances
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+
+    Returns:
+        Pandas DataFrame containing mean importance and associated uncertainty for each feature
+
+    Examples::
+        >>> fi = get_nn_feat_importance(model, train_fy)
+        >>> fi = get_nn_feat_importance(model, train_fy, savename='feat_import')
+        >>> fi = get_nn_feat_importance(model, train_fy, eval_metric=AMS(n_total=100000))
+    '''
+
     feats = fy.cont_feats + fy.cat_feats
     scores = []
     fold_bar = progress_bar(range(fy.n_folds), parent=pb_parent)
@@ -56,11 +76,28 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
     return fi
 
 
-def get_ensemble_feat_importance(ensemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None,
+def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None,
                                  savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
-    '''Compute permutation importance of features used by an ensemble of NNs.
-    Returns bootstrapped mean importance from sample constructed by computing importance for each model in ensemble.
-    Default importance computed using loss, but can optionally compute it using eval_metric'''
+    r'''
+    Compute permutation importance of features used by an :class:Ensemble on provided data using either loss or an :class:EvalMetric to quantify performance.
+    Returns bootstrapped mean importance from sample constructed by computing importance for each :class:Model in ensemble.
+
+    Arguments:
+        ensemble: :class:Ensemble to use to evaluate feature importance
+        fy: :class:FoldYielder interfacing to data used to train models in ensemble
+        eval_metric: Optional :class:EvalMetric to use to quantify performance in place of loss
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+
+    Returns:
+        Pandas DataFrame containing mean importance and associated uncertainty for each feature
+
+    Examples::
+        >>> fi = get_ensemble_feat_importance(ensemble, train_fy)
+        >>> fi = get_ensemble_feat_importance(ensemble, train_fy, savename='feat_import')
+        >>> fi = get_ensemble_feat_importance(ensemble, train_fy, eval_metric=AMS(n_total=100000))
+    '''
+
     mean_fi = []
     std_fi = []
     feats = fy.cont_feats + fy.cat_feats
