@@ -6,6 +6,8 @@
 
 ## Breaking
 
+- Changed order of arugments in `AMS` and `MultiAMS` and removed some default values
+
 ## Additions
 
 - Added `n_estimators` parameter to `rf_rank_features` and `get_opt_rf_params` to adjust the number of trees
