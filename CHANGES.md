@@ -7,6 +7,7 @@
 ## Breaking
 
 - Changed order of arugments in `AMS` and `MultiAMS` and removed some default values
+- Removed default for `return_mean` in `RegAsProxyPull` and `RegPull`
 
 ## Additions
 
@@ -26,6 +27,8 @@
 ## Removals
 
 - `evaluate` in `Model` no longer automatically converts tensor types
+- Some default values of arugments in `AMS` and `MultiAMS`
+- Default for `return_mean` in `RegAsProxyPull` and `RegPull`
 
 ## Fixes
 
@@ -44,6 +47,7 @@
 - `fold_train_ensemble` now always trains `n_models`, and validation fold IDs are cycled through according to `fy.n_folds % model_num`
 - `FoldYielder.set_ignore` changed to `FoldYielder.add_ignore`
 - Changed `HEPAugFoldYielder.rotate` and `HEPAugFoldYielder.reflect` to private methods
+- `compute` method of `RegEval` now private
 
 ## Depreciations
 

@@ -97,6 +97,8 @@ class MultiAMS(AMS):
         Examples::
             >>> ams = ams_metric.evaluate(train_fy, val_id, val_preds)
         '''
+
+        # TODO: make the zero and one preds more user-friendly
         
         df = self.get_df(fy, idx, y_pred)
         to_binary_class(df, self.zero_preds, self.one_preds)
