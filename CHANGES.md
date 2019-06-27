@@ -47,7 +47,9 @@
 - `fold_train_ensemble` now always trains `n_models`, and validation fold IDs are cycled through according to `fy.n_folds % model_num`
 - `FoldYielder.set_ignore` changed to `FoldYielder.add_ignore`
 - Changed `HEPAugFoldYielder.rotate` and `HEPAugFoldYielder.reflect` to private methods
-- `compute` method of `RegEval` now private
+- `compute` method of `RegPull` now private
+- Renamed `data` to `fy` in `RegPull.evaluate` and `RegAsProxyPull.evaluate`
+- Made `get_layer` in `FullyConnected` private
 
 ## Depreciations
 
