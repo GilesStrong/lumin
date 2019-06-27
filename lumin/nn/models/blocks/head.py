@@ -21,7 +21,7 @@ class CatEmbHead(nn.Module):
     Standard model head for columnar data.
     Provides inputs for continuous features and embedding matrices for categorical inputs, and uses a dense layer to upscale to width of network body.
     Designed to be passed as a 'head' to :class:ModelBuilder.
-
+    Supports batch normalisation and dropout (at separate rates for pre-dense continuous, pre-dense categorical embeddings, and post dense).
     Continuous features are expected to be the first n_cont_in columns of input tensors and categorical features the remaining columns.
     Embedding arguments for categorical features are set using a :class:Embedder.
 

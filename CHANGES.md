@@ -51,6 +51,7 @@
 - Renamed `data` to `fy` in `RegPull.evaluate` and `RegAsProxyPull.evaluate`
 - Made `get_layer` in `FullyConnected` private
 - Made `get_dense` and `load_embeds` in `CatEmbHead` private
+Made `build_layers` in 'ClassRegMulti` private
 
 
 ## Depreciations
