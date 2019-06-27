@@ -94,4 +94,12 @@ class FullyConnected(nn.Module):
                     x = l(x)
         return x
     
-    def get_out_size(self) -> int: return self.width if not self.dense else self.width*(2**(self.depth-1))
+    def get_out_size(self) -> int:
+        r'''
+        Get size width of output layer
+
+        Returns:
+            Width of output layer
+        '''
+        
+        return self.width if not self.dense else self.width*(2**(self.depth-1))
