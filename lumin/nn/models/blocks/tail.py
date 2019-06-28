@@ -16,7 +16,7 @@ class ClassRegMulti(nn.Module):
     For regression tasks, y_range can be set with per-output minima and maxima. The outputs are then adjusted according to ((y_max-y_min)*x)+self.y_min, where x
     is the output of the network passed through a sigmoid function. Effectively allowing regression to be performed without normalising and standardising the
     target values. Note it is safest to allow some leaway in setting the min and max, e.g. max = 1.2*max, min = 0.8*min 
-    Output activation function is automatically set accoring to objective and y_range.
+    Output activation function is automatically set according to objective and y_range.
 
     Arguments:
         n_in: number of inputs to expect
