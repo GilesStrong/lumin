@@ -369,6 +369,7 @@ class Ensemble(AbsEnsemble):
             base_name: Exported models will be called {base_name}_{model_num}.onnx
             bs: batch size for exported models
         '''
+        
         for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)
 
     def export2tfpb(self, base_name:str, bs:int=1) -> None:

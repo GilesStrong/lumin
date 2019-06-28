@@ -39,6 +39,8 @@
 - Updated `from_model_builder` class method of `ModelBuilder`to use and `Embedder`
 - Hard coded savename in `Model` during save to hopefull solve occaisional permission error during save
 - Typing for `val_fold` in `SWA`
+- 'lr' to 'momentum' in `Model.set_mom`
+- `Model.get_mom` now actually returns momentum (beta_1) rather than lr
 
 ## Changes
 
