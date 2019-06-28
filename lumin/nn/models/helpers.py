@@ -6,8 +6,27 @@ from ..data.fold_yielder import FoldYielder
 
 
 class Embedder():
-    def __init__(self, cat_names:List[str], cat_szs:List[int],
-                 emb_szs:Optional[List[int]]=None, max_emb_sz:int=50, emb_load_path:Optional[Union[Path,str]]=None):
+    r'''
+    Helper class for embedding categorical features. Designed to be passed to :class:ModelBuilder.
+    Note that the classmethod :meth:from_fy may be used to instantiate an :class:Embedder from a :class:FoldYielder.
+
+    Arguments:
+        cat_names: list of names of catgorical features in order in which they will be passed as inputs columns
+        cat_szs: list of cardinalities (number of unique elements) for each feature
+        emb_szs: Optional list of embedding sizes for each feature.  If None, will use min(max_emb_sz, (1+sz)//2)
+        max_emb_sz: Maximum size of embedding if emb_szs is None
+        emb_load_path: if not None, will cause :class:ModelBuilder to attempt to load pretrained embeddings from path
+
+    Examples::
+        >>> cat_embedder = Embedder(cat_name=['n_jets', 'channel'], cat_szs=[5, 3])
+        >>> cat_embedder = Embedder(cat_name=['n_jets', 'channel'], cat_szs=[5, 3], emb_szs=[2, 2])
+        >>> cat_embedder = Embedder(cat_name=['n_jets', 'channel'], cat_szs=[5, 3], emb_szs=[2, 2], emb_load_path=Path('weights'))
+    '''
+
+    # TODO: load pretrained embeddings to check sizes
+
+    def __init__(self, cat_names:List[str], cat_szs:List[int], emb_szs:Optional[List[int]]=None, max_emb_sz:int=50,
+                 emb_load_path:Optional[Union[Path,str]]=None):
         assert len(cat_names) == len(cat_szs), "Different number of feature names and feature cardinalities received"
         if emb_szs is not None: assert len(cat_szs) == len(emb_szs), "Different number of features and embedding sizes received"
         self.cat_names,self.cat_szs,self.emb_szs,self.max_emb_sz,self.emb_load_path = cat_names,cat_szs,emb_szs,max_emb_sz,emb_load_path
@@ -30,6 +49,24 @@ class Embedder():
             
     @classmethod
     def from_fy(cls, fy:FoldYielder,  emb_szs:Optional[List[int]]=None, max_emb_sz:int=50, emb_load_path:Optional[Union[Path,str]]=None):
+        r'''
+        Instantiate an :class:Embedder from a :class:FoldYielder, i.e. avoid having to pass cat_names and cat_szs.
+        
+        Arguments:
+            fy: :class:FoldYielder with training data
+            emb_szs: Optional list of embedding sizes for each feature.  If None, will use min(max_emb_sz, (1+sz)//2)
+            max_emb_sz: Maximum size of embedding if emb_szs is None
+            emb_load_path: if not None, will cause :class:ModelBuilder to attempt to load pretrained embeddings from path
+
+        Returns:
+            :class:Embedder
+
+        Examples::
+            >>> cat_embedder = Embedder.from_fy(train_fy)
+            >>> cat_embedder = Embedder.from_fy(train_fy, emb_szs=[2, 2])
+            >>> cat_embedder = Embedder.from_fy(train_fy, emb_szs=[2, 2], emb_load_path=Path('weights'))
+        '''
+
         cat_names = fy.cat_feats
         cat_szs = None
         # Get cardinalities
