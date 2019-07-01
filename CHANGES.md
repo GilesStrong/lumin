@@ -23,7 +23,7 @@
     - Feature subsambling:
         - `FeatureSubsample` callback for training on random selection of features
         - `Model` now has an `input_mask` to automatically mask inputs at inference time (train-time inputs should be masked at `BatchYielder` level)
-- Added catch for infinite uncertainties being passed to `uncert_round`
+- Added `plot_tsne_2d` method
 
 ## Removals
 
@@ -42,6 +42,7 @@
 - Typing for `val_fold` in `SWA`
 - 'lr' to 'momentum' in `Model.set_mom`
 - `Model.get_mom` now actually returns momentum (beta_1) rather than lr
+- Added catch for infinite uncertainties being passed to `uncert_round`
 
 ## Changes
 

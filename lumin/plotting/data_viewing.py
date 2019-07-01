@@ -5,6 +5,8 @@ from typing import List, Optional, Dict, Any, Union
 import scipy
 from scipy.cluster import hierarchy as hc
 
+from sklearn.manifold import TSNE
+
 from .plot_settings import PlotSettings
 from ..utils.statistics import uncert_round, get_moments
 
@@ -119,6 +121,41 @@ def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotS
         hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz)
         plt.xlabel('Distance', fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
+        plt.show()
+
+
+def plot_tsne_2d(df:pd.DataFrame, feats:Optional[List[str]]=None, tsne_args:Optional[Dict[str,Any]]=None,
+                 savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    Plot 2D T-SNE embedding of data considering certain features
+
+    Arguments:
+        df: Pandas DataFrame containing data
+        feats: If set, will only consider listed of columns when embedding data
+        tsne_args: arguments to pass to SK-Learn TSNE class
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
+    if tsne_args is None: tsne_args = {}
+    tsne = TSNE(n_components=2, **tsne_args)
+    tsne_results = tsne.fit_transform(df[feats] if feats is not None else df)
+
+    tmp = df[['ACTIVE']]
+    tmp['tsne-2d-one'] = tsne_results[:,0] 
+    tmp['tsne-2d-two'] = tsne_results[:,1]
+
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+        plt.figure(figsize=(settings.w_mid, settings.h_mid))
+        plt.scatter(x="tsne-2d-one", y="tsne-2d-two", data=tmp[tmp.ACTIVE == 0], label='Inactive', alpha=0.8)
+        plt.scatter(x="tsne-2d-one", y="tsne-2d-two", data=tmp[tmp.ACTIVE == 1], label='Active', alpha=0.8)
+        plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+        plt.xlabel('tsne-2d-two', fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.ylabel("tsne-2d-one", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 
