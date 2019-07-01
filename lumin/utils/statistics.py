@@ -1,6 +1,7 @@
 import numpy as np
 from typing import Tuple, Dict, Optional, Any
 import multiprocessing as mp
+import math
 
 from statsmodels.nonparametric.kde import KDEUnivariate
 
@@ -52,6 +53,7 @@ def get_moments(arr:np.ndarray) -> Tuple[float,float,float,float]:
 
 def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
     '''Round value according tp given uncertainty'''
+    if uncert == math.inf: return value, uncert
     uncert = np.nan_to_num(uncert)
     if uncert == 0: return value, uncert
     

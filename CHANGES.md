@@ -23,6 +23,7 @@
     - Feature subsambling:
         - `FeatureSubsample` callback for training on random selection of features
         - `Model` now has an `input_mask` to automatically mask inputs at inference time (train-time inputs should be masked at `BatchYielder` level)
+- Added catch for infinite uncertainties being passed to `uncert_round`
 
 ## Removals
 
