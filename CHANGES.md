@@ -8,6 +8,7 @@
 
 - Changed order of arugments in `AMS` and `MultiAMS` and removed some default values
 - Removed default for `return_mean` in `RegAsProxyPull` and `RegPull`
+- Changed`settings` to `plot_settings` in `rf_rank_features`
 
 ## Additions
 
@@ -57,6 +58,7 @@
 - Made `build_layers` in 'ClassRegMulti` private
 - Made parse methods and `build_opt` in `ModelBuilder` private
 - Made `get_folds` private
+- Changed`settings` to `plot_settings` in `rf_rank_features`
 
 ## Depreciations
 
