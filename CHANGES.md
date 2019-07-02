@@ -23,7 +23,6 @@
     - Feature subsambling:
         - `FeatureSubsample` callback for training on random selection of features
         - `Model` now has an `input_mask` to automatically mask inputs at inference time (train-time inputs should be masked at `BatchYielder` level)
-- Added `plot_tsne_2d` method
 
 ## Removals
 
@@ -57,7 +56,7 @@
 - Made `get_dense` and `load_embeds` in `CatEmbHead` private
 - Made `build_layers` in 'ClassRegMulti` private
 - Made parse methods and `build_opt` in `ModelBuilder` private
-
+- Made `get_folds` private
 
 ## Depreciations
 
