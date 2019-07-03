@@ -80,6 +80,7 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
     top_feats = list(fi[fi.Importance > importance_cut].Feature)
     print(f"\n{len(top_feats)} features found with importance greater than {importance_cut}:\n", top_feats, '\n')
     if len(top_feats) == 0:
+        print(f"Model score: :\t{orig_score:.5f}")
         print('No features found to be important, returning all training features. Good luck.')
         return train_feats
     if len(top_feats) < len(train_feats): 

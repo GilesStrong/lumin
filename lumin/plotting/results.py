@@ -19,21 +19,18 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     if 'name' not in args: args['name'] = ''
     if 'n'    not in args: args['n']    = 100
     np.random.seed()
-    if 'weights' in args: 
-        for i in range(args['n']):
-            points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
-            scores.append(roc_auc_score(args['labels'].loc[points].values, args['preds'].loc[points].values, sample_weight=args['weights'].loc[points].values))
-    else:
-        for i in range(args['n']):
-            points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
-            scores.append(roc_auc_score(args['labels'].loc[points].values, args['preds'].loc[points].values))
+    for i in range(args['n']):
+        points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
+        if len(set(args['labels'].loc[points])) == 2: scores.append(roc_auc_score(args['labels'].loc[points], args['preds'].loc[points],
+                                                                                  sample_weight=args['weights'].loc[points] if 'weights' in args else None))
     out_dict[f"{args['name']}_score"] = scores
     out_q.put(out_dict)
 
 
 def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', wgt_name:Optional[str]=None, 
              labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
-             n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+             n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True,
+             savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> Dict[str,Union[float,Tuple[float,float]]]:
     '''Plot receiver operating characteristic curve, optionally using booststrap resampling'''
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         if isinstance(data, pd.DataFrame): data,plot_params = [data],[plot_params]
@@ -58,8 +55,10 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
             if wgt_name is None: curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values)[:2])
             else:                   curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values, sample_weight=data[i][wgt_name].values)[:2])
 
+        aucs = {}
         plt.figure(figsize=(settings.h_mid, settings.h_mid))
         for i in range(len(data)):
+            aucs[labels[i]] = mean_scores[i]
             if n_bootstrap > 0:
                 mean_score = uncert_round(*mean_scores[i])
                 plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_score[0]}±{mean_score[1]}')
@@ -79,6 +78,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
+        return aucs
 
 
 def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):

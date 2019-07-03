@@ -24,6 +24,7 @@
     - Feature subsambling:
         - `FeatureSubsample` callback for training on random selection of features
         - `Model` now has an `input_mask` to automatically mask inputs at inference time (train-time inputs should be masked at `BatchYielder` level)
+- `plot_roc` now returns aucs as dictionary
 
 ## Removals
 
@@ -43,6 +44,7 @@
 - 'lr' to 'momentum' in `Model.set_mom`
 - `Model.get_mom` now actually returns momentum (beta_1) rather than lr
 - Added catch for infinite uncertainties being passed to `uncert_round`
+- Added catch for `plot_roc` with bootstraping when resamples data only contains one class
 
 ## Changes
 
@@ -63,6 +65,7 @@
 ## Depreciations
 
 - Passing `eta` argument to `to_pt_eta_phi`. Will be removed in v0.3
+- `binary_class_cut` depreciated and renamed to 
 
 ## Comments
 

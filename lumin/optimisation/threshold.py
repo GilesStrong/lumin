@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import Tuple
+import warnings
 
 from ..evaluation.ams import calc_ams
 from ..plotting.plot_settings import PlotSettings
@@ -8,19 +9,47 @@ from ..plotting.plot_settings import PlotSettings
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-'''
-Todo:
-- Multithread ams calc
-'''
-
 
 def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
                      plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
-    '''Find a fluctaution resiliant cut which should generalise better by 
-    taking the mean class prediction of the top top_perc percentage of points
-    as ranked by AMS'''
+    # XXX Remove in v0.3
+    warnings.warn('''binary_class_cut has been renamed to binary_class_cut_by_ams. binary_class_cut is now depreciated and will be removed in v0.3''')
+    binary_class_cut_by_ams(df=df, top_perc=top_perc, min_pred=min_pred,
+                            wgt_factor=wgt_factor, br=br, syst_unc_b=syst_unc_b,
+                            pred_name=pred_name, targ_name=targ_name, wgt_name=wgt_name,
+                            plot_settings=plot_settings)
+
+
+def binary_class_cut_by_ams(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
+                            wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
+                            pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
+                            plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
+    r'''
+    Optimise a cut on a signal-background classifier prediction by the Approximate Median Significance
+    Cut which should generalise better by taking the mean class prediction of the top top_perc percentage of points as ranked by AMS
+
+    Arguments:
+        df: Pandas DataFrame containing data
+        top_perc: top percentage of events to consider as ranked by AMS
+        min_pred: minimum prediction to consider
+        wgt_factor: single multiplicative coeficient for rescaling signal and background weights before computing AMS
+        br: background offset bias
+        syst_unc_b: fractional systemtatic uncertainty on background
+        pred_name: column to use as predictions
+        targ_name: column to use as truth labels for signal and background
+        wgt_name: column to use as weights for signal and background events
+        plot_settings: :class:PlotSettings class to control figure appearance
+
+    Returns:
+        Optimised cut
+        AMS at cut
+        Maximum AMS
+    '''
+
+    # TODO: Multithread AMS calculation
+    
     sig, bkg = (df.gen_target == 1), (df.gen_target == 0)
     if 'ams' not in df.columns:
         df['ams'] = -1
