@@ -27,7 +27,6 @@ class CatEmbHead(nn.Module):
 
     Arguments:
         n_cont_in: number of continuous inputs to expect
-        n_out: number of outputs to have (i.e. the width of the main part of the network)
         act: string representation of argument to pass to lookup_act
         do: if not None will add a dropout layer with dropout rate do after the dense layer
         do_cont: if not None will add a dropout layer with dropout rate do acting on the continuous inputs prior to concatination wih the categorical embeddings
@@ -45,20 +44,19 @@ class CatEmbHead(nn.Module):
         >>> head = CatEmbHead(n_cont_in=25, n_out=100, act='prelu', cat_embedder=Embedder.from_fy(train_fy), bn=True, lookup_init=lookup_uniform_init)
     '''
 
-    def __init__(self, n_cont_in:int, n_out:int, act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_embedder:Optional[Embedder]=None, 
+    def __init__(self, n_cont_in:int, act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_embedder:Optional[Embedder]=None, 
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, freeze:bool=False):
         super().__init__()
-        self.n_cont_in,self.n_out,self.do,self.do_cont,self.do_cat,self.bn,self.cat_embedder = n_cont_in,n_out,do,do_cont,do_cat,bn,cat_embedder
+        self.n_cont_in,self.do_cont,self.do_cat,self.bn,self.cat_embedder = n_cont_in,do_cont,do_cat,bn,cat_embedder
         self.act,self.lookup_init,self.lookup_act,self.freeze = act,lookup_init,lookup_act,freeze
         if self.cat_embedder is None: self.cat_embedder = Embedder([], [])
         if self.cat_embedder.n_cat_in > 0: 
             self.embeds = nn.ModuleList([nn.Embedding(ni, no) for _, ni, no in self.cat_embedder])
             if self.cat_embedder.emb_load_path is not None: self._load_embeds()
             if self.do_cat   > 0: self.emb_do     = nn.Dropout(self.do_cat)
-        input_sz = self.n_cont_in if self.cat_embedder.n_cat_in == 0 else self.n_cont_in+np.sum(self.cat_embedder.emb_szs)
+        self.n_out = self.n_cont_in if self.cat_embedder.n_cat_in == 0 else self.n_cont_in+np.sum(self.cat_embedder.emb_szs)
         if self.do_cont  > 0: self.cont_in_do = nn.Dropout(self.do_cont)
-        self.dense = self._get_dense(input_sz, self.n_out, self.act)
         if self.freeze: self.freeze_layers()
     
     def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
@@ -76,18 +74,6 @@ class CatEmbHead(nn.Module):
         '''
 
         for p in self.parameters(): p.requires_grad = True
-
-    def _get_dense(self, fan_in:int, fan_out:int, act:str) -> nn.Module:
-        layers = []
-        layers.append(nn.Linear(fan_in, fan_out))
-        self.lookup_init(act, fan_in, fan_out)(layers[-1].weight)
-        if act != 'linear': layers.append(self.lookup_act(act))
-            
-        if self.bn: layers.append(nn.BatchNorm1d(fan_out))
-        if self.do: 
-            if act == 'selu': layers.append(nn.AlphaDropout(self.do))
-            else:             layers.append(nn.Dropout(self.do))
-        return nn.Sequential(*layers)
         
     def forward(self, x_in:Tensor) -> Tensor:
         if self.cat_embedder.n_cat_in > 0:
@@ -98,7 +84,7 @@ class CatEmbHead(nn.Module):
             x_cont = x_in[:,:self.n_cont_in]
             if self.do_cont > 0: x_cont = self.cont_in_do(x_cont) 
             x = torch.cat((x, x_cont), dim=1) if self.cat_embedder.n_cat_in > 0 else x_cont
-        return self.dense(x)
+        return x
     
     def _load_embeds(self, path:Optional[Path]=None) -> None:
         path = self.cat_embedder.emb_load_path if path is None else path

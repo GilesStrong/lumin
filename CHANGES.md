@@ -3,6 +3,7 @@
 ## Important changes
 
 - `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
+- layer width in dense=True `FullyConnected` now no longer scales with input size to prevent parameter count from exploding
 
 ## Breaking
 
@@ -25,6 +26,8 @@
         - `FeatureSubsample` callback for training on random selection of features
         - `Model` now has an `input_mask` to automatically mask inputs at inference time (train-time inputs should be masked at `BatchYielder` level)
 - `plot_roc` now returns aucs as dictionary
+- growth_rate scaling coefficient to `FullyConnected` to adjust layer width by depth
+- `n_in` parameter to `FullyConnected` so it works on arbitray size inputs
 
 ## Removals
 
@@ -46,6 +49,7 @@
 - Added catch for infinite uncertainties being passed to `uncert_round`
 - Added catch for `plot_roc` with bootstraping when resamples data only contains one class
 - Error when attempting to plot categorical feature in `plot_1d_partial_dependence`
+- layer width in dense=True `FullyConnected` scaling with input size
 
 ## Changes
 
@@ -62,6 +66,7 @@
 - Made parse methods and `build_opt` in `ModelBuilder` private
 - Made `get_folds` private
 - Changed `settings` to `plot_settings` in `rf_rank_features`
+- Dense layer from `CatEmbHead` removed and placed in `FullyConnected`
 
 ## Depreciations
 

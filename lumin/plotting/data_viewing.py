@@ -145,7 +145,7 @@ def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotS
     
     # XXX Remove in v0.3
     warnings.warn('''plot_dendrogram has been renamed to plot_rank_order_dendrogram. plot_dendrogram is now depreciated and will be removed in v0.3''')
-    plot_rank_order_dendrogram(df=df, savename=savename, settings=settings)
+    return plot_rank_order_dendrogram(df=df, savename=savename, settings=settings)
 
 
 def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
