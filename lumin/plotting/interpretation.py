@@ -90,7 +90,7 @@ def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str
     feat_id = np.argwhere(feats == feat)[0][0]
     try:               in_sz = input_pipe.steps[0][1].n_samples_seen_.shape[0]
     except IndexError: in_sz = input_pipe.steps[0][1].mean_.shape[0]
-    if feat_id > in_sz: return
+    if feat_id >= in_sz: return
     x = iso.feature_grids
     x = np.broadcast_to(x[:,None], (x.shape[0], in_sz))
     x = input_pipe.inverse_transform(x)[:,feat_id]

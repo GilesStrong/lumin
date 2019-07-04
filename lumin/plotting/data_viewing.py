@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any, Union
+import warnings
 
 import scipy
 from scipy.cluster import hierarchy as hc
@@ -14,14 +15,33 @@ import matplotlib.pyplot as plt
 
 def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
-              plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, size='mid', show_moments=True, ax_labels={'y': 'Density', 'x': None},
-              savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''A flexible function to provide indicative information about the 1D distribution of a feature.
+              plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, size:str='mid', show_moments:bool=True,
+              ax_labels:Dict[str,Any]={'y': 'Density', 'x': None}, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    A flexible function to provide indicative information about the 1D distribution of a feature.
     By default it will produce a weighted KDE+histogram for the [1,99] percentile of the data,
-    as wellas compute the mean and standard deviation of the data in this region.
+    as well as compute the mean and standard deviation of the data in this region.
+    Distributions are weighted by sampling with replacement the data with probabilities propotional to the sample weights.
     By passing a list of cuts and labels, it will plot multiple distributions of the same feature for different cuts.
     Since it is designed to provide quick, indicative information, more specific functions (such as `plot_kdes_from_bs`)
-    should be used to provide final results.'''
+    should be used to provide final results.
+    
+    Arguments:
+        df: Pandas DataFrame containing data
+        feat: column name to plot
+        wgt_name: if set, will use column to weight data
+        cuts: optional list of cuts to apply to feature. Will add one KDE+hist for each cut listed on the same plot
+        labels: optional list of labels for each KDE+hist
+        plot_bulk: whether to plot the [1,99] percentile of the data, or all of it
+        n_samples: if plotting weighted distributions, how many samples to use
+        plot_params: optional list of of arguments to pass to Seaborn Distplot for each KDE+hist
+        size: string to pass to :meth:PlotSettings.str2sz to determin size of plot
+        show_moments: whether to compute and display the mean and standard deviation
+        ax_labels: dictionary of x and y axes labels
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
     if not isinstance(labels, list): labels = [labels]
     if not isinstance(cuts,   list): cuts   = [cuts]
     if plot_params is None: plot_params = {}
@@ -70,8 +90,18 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         plt.show()
 
 
-def compare_events(events: list) -> None:
-    '''Compare at least two events side by side in their transverse and longitudinal projections'''
+def compare_events(events:list) -> None:
+    r'''
+    Plot at least two events side by side in their transverse and longitudinal projections
+
+    Arguments:
+        events: list of DataFrames containing vector coordinates for 3 momenta
+    '''
+
+    # TODO: check typing, why list?
+    # TODO: make this work with a single event
+    # TODO: add plot settings & saving
+
     with sns.axes_style('whitegrid'), sns.color_palette('tab10'):
         fig, axs = plt.subplots(3, len(events), figsize=(9*len(events), 18), gridspec_kw={'height_ratios': [1, 0.5, 0.5]})
         for vector in [x[:-3] for x in events[0].columns if '_px' in x.lower()]:
@@ -109,7 +139,20 @@ def compare_events(events: list) -> None:
 
 
 def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient'''
+    r'''
+    Depreciated: renamed to plot_rank_order_dendrogram
+    '''
+    
+    # XXX Remove in v0.3
+    warnings.warn('''plot_dendrogram has been renamed to plot_rank_order_dendrogram. plot_dendrogram is now depreciated and will be removed in v0.3''')
+    plot_rank_order_dendrogram(df=df, savename=savename, settings=settings)
+
+
+def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient
+    '''
+
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
         corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
         corr_condensed = hc.distance.squareform(1-corr)

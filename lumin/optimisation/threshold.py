@@ -14,6 +14,10 @@ def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
                      plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
+    r'''
+    Depreciated: renamed to plot_rank_order_dendrogram
+    '''
+    
     # XXX Remove in v0.3
     warnings.warn('''binary_class_cut has been renamed to binary_class_cut_by_ams. binary_class_cut is now depreciated and will be removed in v0.3''')
     binary_class_cut_by_ams(df=df, top_perc=top_perc, min_pred=min_pred,

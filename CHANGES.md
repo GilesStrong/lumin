@@ -45,6 +45,7 @@
 - `Model.get_mom` now actually returns momentum (beta_1) rather than lr
 - Added catch for infinite uncertainties being passed to `uncert_round`
 - Added catch for `plot_roc` with bootstraping when resamples data only contains one class
+- Error when attempting to plot categorical feature in `plot_1d_partial_dependence`
 
 ## Changes
 
@@ -60,12 +61,13 @@
 - Made `build_layers` in 'ClassRegMulti` private
 - Made parse methods and `build_opt` in `ModelBuilder` private
 - Made `get_folds` private
-- Changed`settings` to `plot_settings` in `rf_rank_features`
+- Changed `settings` to `plot_settings` in `rf_rank_features`
 
 ## Depreciations
 
 - Passing `eta` argument to `to_pt_eta_phi`. Will be removed in v0.3
-- `binary_class_cut` depreciated and renamed to 
+- `binary_class_cut` renamed to `binary_class_cut_by_ams`. Code added to call `binary_class_cut_by_ams`. Will be removed in v0.3
+- `plot_dendrogram` renamed to `plot_rank_order_dendrogram`. Code added to call `plot_rank_order_dendrogram`. Will be removed in v0.3
 
 ## Comments
 

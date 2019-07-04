@@ -24,6 +24,8 @@ class FoldYielder:
         >>> fy = FoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'], cat_feats=['channel'], ignore_feats=['phi'], input_pipe='input_pipe.pkl')
     '''
 
+    # TODO: Add ability to load file from string name
+
     def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
