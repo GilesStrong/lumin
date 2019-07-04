@@ -20,10 +20,10 @@ def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
     
     # XXX Remove in v0.3
     warnings.warn('''binary_class_cut has been renamed to binary_class_cut_by_ams. binary_class_cut is now depreciated and will be removed in v0.3''')
-    binary_class_cut_by_ams(df=df, top_perc=top_perc, min_pred=min_pred,
-                            wgt_factor=wgt_factor, br=br, syst_unc_b=syst_unc_b,
-                            pred_name=pred_name, targ_name=targ_name, wgt_name=wgt_name,
-                            plot_settings=plot_settings)
+    return binary_class_cut_by_ams(df=df, top_perc=top_perc, min_pred=min_pred,
+                                   wgt_factor=wgt_factor, br=br, syst_unc_b=syst_unc_b,
+                                   pred_name=pred_name, targ_name=targ_name, wgt_name=wgt_name,
+                                   plot_settings=plot_settings)
 
 
 def binary_class_cut_by_ams(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,

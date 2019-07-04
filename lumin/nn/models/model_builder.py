@@ -47,6 +47,7 @@ class ModelBuilder(object):
                 'act': string representation of internal activation functions
                 'res': whether to use residual skip connections
                 'dense': whether to use layer-wise concatination
+                'growth_rate': rate at which width of dense layers should increase with depth beyond the initial layer. Ignored if res=True. Can be negative.
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
             Currently, only ADAM (default) and SGD are available.
         cat_embedder: :class:Embedder for embedding categorical inputs
@@ -126,9 +127,9 @@ class ModelBuilder(object):
 
         if isinstance(model_builder, str):
             with open(model_builder, 'rb') as fin: model_builder = pickle.load(fin)
-        model_args = {'width': model_builder.width, 'depth': model_builder.depth,
-                      'do': model_builder.do, 'do_cat': model_builder.do_cat, 'do_cont': model_builder.do_cont,
-                      'bn': model_builder.bn, 'act': model_builder.act, 'res': model_builder.res, 'dense': model_builder.dense}
+        model_args = {'width': model_builder.width, 'depth': model_builder.depth, 'do': model_builder.do, 'do_cat': model_builder.do_cat,
+                      'do_cont': model_builder.do_cont, 'bn': model_builder.bn, 'act': model_builder.act, 'res': model_builder.res,
+                      'dense': model_builder.dense, 'growth_rate': model_builder.growth_rate}
         return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out, y_range=model_builder.y_range,
                    cat_embedder=model_builder.cat_embedder, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
                    loss=model_builder.loss if loss is None else loss, head=model_builder.head, body=model_builder.body, tail=model_builder.tail,
@@ -145,16 +146,17 @@ class ModelBuilder(object):
             self.loss = loss
 
     def _parse_model_args(self, model_args:Optional[Dict[str,Any]]=None) -> None:
-        model_args   = {k.lower(): model_args[k] for k in model_args}
-        self.width   = 100    if model_args is None or 'width'   not in model_args else model_args['width']
-        self.depth   = 4      if model_args is None or 'depth'   not in model_args else model_args['depth']
-        self.do      = 0      if model_args is None or 'do'      not in model_args else model_args['do']
-        self.do_cat  = 0      if model_args is None or 'do_cat'  not in model_args else model_args['do_cat']
-        self.do_cont = 0      if model_args is None or 'do_cont' not in model_args else model_args['do_cont']
-        self.bn      = False  if model_args is None or 'bn'      not in model_args else model_args['bn']
-        self.act     = 'relu' if model_args is None or 'act'     not in model_args else model_args['act'].lower()
-        self.res     = False  if model_args is None or 'res'     not in model_args else model_args['res']
-        self.dense   = False  if model_args is None or 'dense'   not in model_args else model_args['dense']
+        model_args       = {k.lower(): model_args[k] for k in model_args}
+        self.width       = 100    if model_args is None or 'width'       not in model_args else model_args['width']
+        self.depth       = 4      if model_args is None or 'depth'       not in model_args else model_args['depth']
+        self.do          = 0      if model_args is None or 'do'          not in model_args else model_args['do']
+        self.do_cat      = 0      if model_args is None or 'do_cat'      not in model_args else model_args['do_cat']
+        self.do_cont     = 0      if model_args is None or 'do_cont'     not in model_args else model_args['do_cont']
+        self.bn          = False  if model_args is None or 'bn'          not in model_args else model_args['bn']
+        self.act         = 'relu' if model_args is None or 'act'         not in model_args else model_args['act'].lower()
+        self.res         = False  if model_args is None or 'res'         not in model_args else model_args['res']
+        self.dense       = False  if model_args is None or 'dense'       not in model_args else model_args['dense']
+        self.growth_rate = 0      if model_args is None or 'growth_rate' not in model_args else model_args['growth_rate']
     
     def _parse_opt_args(self, opt_args:Optional[Dict[str,Any]]=None) -> None:
         if opt_args is None: opt_args = {}
@@ -182,10 +184,10 @@ class ModelBuilder(object):
             Instantiated head nn.Module
         '''
 
-        return self.head(n_cont_in=self.n_cont_in, n_out=self.width, act=self.act, do=self.do, do_cont=self.do_cont, do_cat=self.do_cat, bn=self.bn,
+        return self.head(n_cont_in=self.n_cont_in, act=self.act, do=self.do, do_cont=self.do_cont, do_cat=self.do_cat, bn=self.bn,
                          cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_head)
 
-    def get_body(self, depth:int) -> nn.Module:
+    def get_body(self, n_in:int) -> nn.Module:
         r'''
         Construct body module
 
@@ -193,8 +195,8 @@ class ModelBuilder(object):
             Instantiated body nn.Module
         '''
 
-        return self.body(depth=depth, width=self.width, do=self.do, bn=self.bn, act=self.act, res=self.res, dense=self.dense,
-                         lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body)
+        return self.body(n_in=n_in, depth=self.depth, width=self.width, do=self.do, bn=self.bn, act=self.act, res=self.res, dense=self.dense,
+                         growth_rate=self.growth_rate, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body)
 
     def get_tail(self, n_in) -> nn.Module:
         r'''
@@ -215,7 +217,12 @@ class ModelBuilder(object):
         '''
 
         head = self.get_head()
-        body = self.get_body(self.depth-1)
+        if hasattr(head, 'get_out_size'):
+            out_size = head.get_out_size()
+        else:
+            *_, last = head.parameters()
+            out_size = len(last)
+        body = self.get_body(out_size)
         if hasattr(body, 'get_out_size'):
             out_size = body.get_out_size()
         else:
