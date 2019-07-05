@@ -39,7 +39,7 @@ class FullyConnected(nn.Module):
         >>> body = FullyConnected(n_in=32, depth=6, width=50, act='prelu', bn=True, lookup_init=lookup_uniform_init)
     '''
 
-    def __init__(self, n_in:int, depth:int, width:int, do:float, bn:bool, act:str, res:bool, dense:bool, growth_rate:int,
+    def __init__(self, n_in:int, depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False, dense:bool=False, growth_rate:int=0,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
         super().__init__()

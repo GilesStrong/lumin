@@ -147,16 +147,9 @@ class ModelBuilder(object):
 
     def _parse_model_args(self, model_args:Optional[Dict[str,Any]]=None) -> None:
         model_args       = {k.lower(): model_args[k] for k in model_args}
-        self.width       = 100    if model_args is None or 'width'       not in model_args else model_args['width']
-        self.depth       = 4      if model_args is None or 'depth'       not in model_args else model_args['depth']
-        self.do          = 0      if model_args is None or 'do'          not in model_args else model_args['do']
-        self.do_cat      = 0      if model_args is None or 'do_cat'      not in model_args else model_args['do_cat']
-        self.do_cont     = 0      if model_args is None or 'do_cont'     not in model_args else model_args['do_cont']
-        self.bn          = False  if model_args is None or 'bn'          not in model_args else model_args['bn']
-        self.act         = 'relu' if model_args is None or 'act'         not in model_args else model_args['act'].lower()
-        self.res         = False  if model_args is None or 'res'         not in model_args else model_args['res']
-        self.dense       = False  if model_args is None or 'dense'       not in model_args else model_args['dense']
-        self.growth_rate = 0      if model_args is None or 'growth_rate' not in model_args else model_args['growth_rate']
+        self.head_kargs = {} if model_args is None or 'head' not in model_args else model_args['head']
+        self.body_kargs = {} if model_args is None or 'body' not in model_args else model_args['body']
+        self.tail_kargs = {} if model_args is None or 'tail' not in model_args else model_args['tail']
     
     def _parse_opt_args(self, opt_args:Optional[Dict[str,Any]]=None) -> None:
         if opt_args is None: opt_args = {}
@@ -184,8 +177,7 @@ class ModelBuilder(object):
             Instantiated head nn.Module
         '''
 
-        return self.head(n_cont_in=self.n_cont_in, do_cont=self.do_cont, do_cat=self.do_cat, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init,
-                         freeze=self.freeze_head)
+        return self.head(n_cont_in=self.n_cont_in, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
 
     def get_body(self, n_in:int) -> nn.Module:
         r'''
@@ -195,8 +187,7 @@ class ModelBuilder(object):
             Instantiated body nn.Module
         '''
 
-        return self.body(n_in=n_in, depth=self.depth, width=self.width, do=self.do, bn=self.bn, act=self.act, res=self.res, dense=self.dense,
-                         growth_rate=self.growth_rate, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body)
+        return self.body(n_in=n_in, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body, **self.body_kargs)
 
     def get_tail(self, n_in) -> nn.Module:
         r'''
@@ -206,7 +197,7 @@ class ModelBuilder(object):
             Instantiated tail nn.Module
         '''
 
-        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, y_range=self.y_range, lookup_init=self.lookup_init)
+        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, lookup_init=self.lookup_init, **self.tail_kargs)
 
     def build_model(self) -> nn.Module:
         r'''

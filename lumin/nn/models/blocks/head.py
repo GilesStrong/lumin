@@ -39,7 +39,7 @@ class CatEmbHead(nn.Module):
         >>> head = CatEmbHead(n_cont_in=25, cat_embedder=Embedder.from_fy(train_fy), lookup_init=lookup_uniform_init)
     '''
 
-    def __init__(self, n_cont_in:int, do_cont:float, do_cat:float, cat_embedder:Optional[Embedder]=None, 
+    def __init__(self, n_cont_in:int, do_cont:float=0, do_cat:float=0, cat_embedder:Optional[Embedder]=None, 
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         super().__init__()
         self.n_cont_in,self.do_cont,self.do_cat,self.cat_embedder,self.lookup_init,self.freeze = n_cont_in,do_cont,do_cat,cat_embedder,lookup_init,freeze
