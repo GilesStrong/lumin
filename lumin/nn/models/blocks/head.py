@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, Optional, List, Callable
+from typing import Dict, Optional, Callable
 from glob import glob
 from collections import OrderedDict
 from pathlib import Path
@@ -11,7 +11,6 @@ import torch
 
 from ..helpers import Embedder
 from ..initialisations import lookup_normal_init
-from ..layers.activations import lookup_act
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 
@@ -27,29 +26,23 @@ class CatEmbHead(nn.Module):
 
     Arguments:
         n_cont_in: number of continuous inputs to expect
-        act: string representation of argument to pass to lookup_act
-        do: if not None will add a dropout layer with dropout rate do after the dense layer
         do_cont: if not None will add a dropout layer with dropout rate do acting on the continuous inputs prior to concatination wih the categorical embeddings
         do_cat: if not None will add a dropout layer with dropout rate do acting on the categorical embeddings prior to concatination wih the continuous inputs
-        bn: whether to add a batch normalisation layer after the activation function
         cat_embedder: :class:Embedder providing details of how to embed categorical inputs
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
-        lookup_act: function taking choice of activation function and returning an activation function layer
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
-        >>> head = CatEmbHead(n_cont_in=30, n_out=100, act='relu')
-        >>> head = CatEmbHead(n_cont_in=25, n_out=100, act='relu',  cat_embedder=Embedder.from_fy(train_fy))
-        >>> head = CatEmbHead(n_cont_in=25, n_out=100, act='swish', cat_embedder=Embedder.from_fy(train_fy), do=0.1)
-        >>> head = CatEmbHead(n_cont_in=25, n_out=100, act='prelu', cat_embedder=Embedder.from_fy(train_fy), bn=True, lookup_init=lookup_uniform_init)
+        >>> head = CatEmbHead(n_cont_in=30)
+        >>> head = CatEmbHead(n_cont_in=25, cat_embedder=Embedder.from_fy(train_fy))
+        >>> head = CatEmbHead(n_cont_in=25, cat_embedder=Embedder.from_fy(train_fy), do_cont=0.1, do_cat=0.05)
+        >>> head = CatEmbHead(n_cont_in=25, cat_embedder=Embedder.from_fy(train_fy), lookup_init=lookup_uniform_init)
     '''
 
-    def __init__(self, n_cont_in:int, act:str, do:float, do_cont:float, do_cat:float, bn:bool, cat_embedder:Optional[Embedder]=None, 
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],nn.Module]=lookup_act, freeze:bool=False):
+    def __init__(self, n_cont_in:int, do_cont:float, do_cat:float, cat_embedder:Optional[Embedder]=None, 
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         super().__init__()
-        self.n_cont_in,self.do_cont,self.do_cat,self.bn,self.cat_embedder = n_cont_in,do_cont,do_cat,bn,cat_embedder
-        self.act,self.lookup_init,self.lookup_act,self.freeze = act,lookup_init,lookup_act,freeze
+        self.n_cont_in,self.do_cont,self.do_cat,self.cat_embedder,self.lookup_init,self.freeze = n_cont_in,do_cont,do_cat,cat_embedder,lookup_init,freeze
         if self.cat_embedder is None: self.cat_embedder = Embedder([], [])
         if self.cat_embedder.n_cat_in > 0: 
             self.embeds = nn.ModuleList([nn.Embedding(ni, no) for _, ni, no in self.cat_embedder])

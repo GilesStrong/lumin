@@ -184,8 +184,8 @@ class ModelBuilder(object):
             Instantiated head nn.Module
         '''
 
-        return self.head(n_cont_in=self.n_cont_in, act=self.act, do=self.do, do_cont=self.do_cont, do_cat=self.do_cat, bn=self.bn,
-                         cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_head)
+        return self.head(n_cont_in=self.n_cont_in, do_cont=self.do_cont, do_cat=self.do_cat, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init,
+                         freeze=self.freeze_head)
 
     def get_body(self, n_in:int) -> nn.Module:
         r'''
@@ -206,7 +206,7 @@ class ModelBuilder(object):
             Instantiated tail nn.Module
         '''
 
-        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, y_range=self.y_range,lookup_init=self.lookup_init)
+        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, y_range=self.y_range, lookup_init=self.lookup_init)
 
     def build_model(self) -> nn.Module:
         r'''
