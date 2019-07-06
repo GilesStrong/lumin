@@ -10,6 +10,9 @@
 - Changed order of arugments in `AMS` and `MultiAMS` and removed some default values
 - Removed default for `return_mean` in `RegAsProxyPull` and `RegPull`
 - Changed`settings` to `plot_settings` in `rf_rank_features`
+- Removed some default parameters for NN blocks in `ModelBuilder`
+- `ModelBuilder` `model_args` should now be a dictionary of dictionaries of keyword arguments, one for head, body, and tail blocks,
+    previously was a single dictionary of keyword arguments
 
 ## Additions
 

@@ -1,5 +1,6 @@
-from typing import Optional, Callable, Any
+from typing import Optional, Callable, Any, List, Union
 import numpy as np
+from functools import partial
 
 import torch.nn as nn
 import torch
@@ -67,14 +68,14 @@ class FullyConnected(nn.Module):
 
     def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
 
-    def freeze_layers(self):
+    def freeze_layers(self) -> None:
         r'''
         Make parameters untrainable
         '''
 
         for p in self.parameters(): p.requires_grad = False
     
-    def unfreeze_layers(self):
+    def unfreeze_layers(self) -> None:
         r'''
         Make parameters trainable
         '''
@@ -121,3 +122,49 @@ class FullyConnected(nn.Module):
         
         sz = self.width+int(self.width*(self.depth-1)*self.growth_rate)
         return sz if sz > 0 else 1
+
+
+class MultiBlock(nn.Module):
+    def __init__(self, n_in:int, blocks:List[partial], input_idxs:List[List[int]],
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
+        super().__init__()
+        self.input_idxs,self.blocks,self.n_out = input_idxs,[],0
+        for i, b in enumerate(blocks):
+            self.blocks.append(b(n_in=len(self.input_idxs[i]), lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze))
+            self.n_out += self.blocks[-1].get_out_size()
+        self.blocks = nn.ModuleList(self.blocks)
+    
+    def get_out_size(self) -> int:
+        r'''
+        Get size width of output layer
+
+        Returns:
+            Total number of outputs accross all blocks
+        '''
+        
+        return self.n_out
+
+    def __getitem__(self, key:int) -> nn.Module: return self.blocks[key]
+
+    def freeze_layers(self):
+        r'''
+        Make parameters untrainable
+        '''
+
+        for b in self.blocks(): b.freeze_layers()
+    
+    def unfreeze_layers(self):
+        r'''
+        Make parameters trainable
+        '''
+
+        for b in self.blocks(): b.unfreeze_layers()
+    
+    def forward(self, x:Tensor) -> Tensor:
+        y = None
+        for i, b in enumerate(self.blocks):
+            out = b(x[:,self.input_idxs[i]])
+            if y is None: y = out
+            else:         y = torch.cat((y, out), -1)
+        return y

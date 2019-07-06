@@ -26,28 +26,13 @@ Todo
 class ModelBuilder(object):
     r'''
     Class to build models to specified architecture on demand along with an optimiser.
-    For regression tasks, y_range can be set with per-output minima and maxima. The outputs are then adjusted according to ((y_max-y_min)*x)+self.y_min, where x
-    is the output of the network passed through a sigmoid function. Effectively allowing regression to be performed without normalising and standardising the
-    target values. Note it is safest to allow some leaway in setting the min and max, e.g. max = 1.2*max, min = 0.8*min 
-    Output activation function is automatically set according to objective and y_range.
 
     Arguments:
         objective: string representation of network objective, i.e. 'classification', 'regression', 'multiclass'
         n_cont_in: number of continuous inputs to expect
         n_out: number of outputs required
         y_range: if not None, will apply rescaling to network outputs.
-        model_args: dictionary of arguments to pass to head, body, and tail to control architrcture. Missing kargs will be filled with default values.
-            Full list is:
-                'width': numer of neurons in hidden layers
-                'depth': number of hidden layers in entire model
-                'do': Dropout rate for main Dropout layers
-                'do_cat': Dropout rate for embedded categorical features
-                'do_cont': Dropout rate for continuous features
-                'bn': whether to use batch normalisation
-                'act': string representation of internal activation functions
-                'res': whether to use residual skip connections
-                'dense': whether to use layer-wise concatination
-                'growth_rate': rate at which width of dense layers should increase with depth beyond the initial layer. Ignored if res=True. Can be negative.
+        model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
             Currently, only ADAM (default) and SGD are available.
         cat_embedder: :class:Embedder for embedding categorical inputs
@@ -63,7 +48,7 @@ class ModelBuilder(object):
         cat_args: depreciated in place of cat_embedder
 
     Examples::
-        >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1)
+        >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1, model_args={'body':{'depth':4, 'width':100}})
         >>> min_targs = np.min(targets, axis=0).reshape(targets.shape[1],1)
             max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
             min_targs[min_targs > 0] *=0.8
@@ -71,22 +56,25 @@ class ModelBuilder(object):
             max_targs[max_targs > 0] *=1.2
             max_targs[max_targs < 0] *=0.8
             y_range = np.hstack((min_targs, max_targs))
-            model_builder = ModelBuilder(objective='regression', n_cont_in=30, n_out=6, cat_embedder=Embedder.from_fy(train_fy), y_range=y_range)
-        >>> model_builder = ModelBuilder(objective='multiclassifier', n_cont_in=30, n_out=5, model_args={'depth':6, do':0.1, 'res':True})
-        >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1, opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5},
+            model_builder = ModelBuilder(objective='regression', n_cont_in=30, n_out=6, cat_embedder=Embedder.from_fy(train_fy),
+                                         model_args={'body':{'depth':4, 'width':100}, 'tail':{y_range=y_range})
+        >>> model_builder = ModelBuilder(objective='multiclassifier', n_cont_in=30, n_out=5, model_args={'body':{'width':100, depth':6, do':0.1, 'res':True}})
+        >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1, model_args={'body':{'depth':4, 'width':100}},
+                                         opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5},
                                          loss=partial(SignificanceLoss, sig_weight=sig_weight, bkg_weight=bkg_weight, func=calc_ams_torch))
     '''
 
     # TODO: Make opt use partials rather than strings
     # TODO: Classmethod from_fy
+    # TODO: Check examples
 
-    def __init__(self, objective:str, n_cont_in:int, n_out:int, y_range:Optional[Union[Tuple,np.ndarray]]=None,
-                 model_args:Optional[Dict[str,Any]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[Embedder]=None,
+    def __init__(self, objective:str, n_cont_in:int, n_out:int,
+                 model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[Embedder]=None,
                  loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False,
                  cat_args:Dict[str,Any]=None):
-        self.objective,self.n_cont_in,self.n_out,self.y_range,self.cat_embedder = objective.lower(),n_cont_in,n_out,y_range,cat_embedder
+        self.objective,self.n_cont_in,self.n_out,self.cat_embedder = objective.lower(),n_cont_in,n_out,cat_embedder
         self.head,self.body,self.tail = head,body,tail
         self.lookup_init,self.lookup_act,self.pretrain_file,self.freeze_head,self.freeze_body = lookup_init,lookup_act,pretrain_file,freeze_head,freeze_body
         self._parse_loss(loss)
@@ -127,10 +115,8 @@ class ModelBuilder(object):
 
         if isinstance(model_builder, str):
             with open(model_builder, 'rb') as fin: model_builder = pickle.load(fin)
-        model_args = {'width': model_builder.width, 'depth': model_builder.depth, 'do': model_builder.do, 'do_cat': model_builder.do_cat,
-                      'do_cont': model_builder.do_cont, 'bn': model_builder.bn, 'act': model_builder.act, 'res': model_builder.res,
-                      'dense': model_builder.dense, 'growth_rate': model_builder.growth_rate}
-        return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out, y_range=model_builder.y_range,
+        model_args = {'head': model_builder.head_kargs, 'body': model_builder.body_kargs, 'tail': model_builder.tail_kargs}
+        return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out,
                    cat_embedder=model_builder.cat_embedder, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
                    loss=model_builder.loss if loss is None else loss, head=model_builder.head, body=model_builder.body, tail=model_builder.tail,
                    pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body)

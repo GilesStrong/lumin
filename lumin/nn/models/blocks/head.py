@@ -54,14 +54,14 @@ class CatEmbHead(nn.Module):
     
     def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
 
-    def freeze_layers(self):
+    def freeze_layers(self) -> None:
         r'''
         Make parameters untrainable
         '''
 
         for p in self.parameters(): p.requires_grad = False
     
-    def unfreeze_layers(self):
+    def unfreeze_layers(self) -> None:
         r'''
         Make parameters trainable
         '''
