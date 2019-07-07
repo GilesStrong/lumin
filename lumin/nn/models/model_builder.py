@@ -1,5 +1,4 @@
 
-import numpy as np
 from typing import Dict, Union, Any, Callable, Tuple, Optional
 import pickle
 import  warnings
@@ -11,9 +10,9 @@ import torch
 
 from .layers.activations import lookup_act
 from .initialisations import lookup_normal_init
-from .helpers import Embedder
-from .blocks.body import FullyConnected
-from .blocks.head import CatEmbHead
+from .helpers import CatEmbedder
+from .blocks.body import FullyConnected, AbsBody
+from .blocks.head import CatEmbHead, AbsHead
 from .blocks.tail import ClassRegMulti
 from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 
@@ -35,7 +34,7 @@ class ModelBuilder(object):
         model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
             Currently, only ADAM (default) and SGD are available.
-        cat_embedder: :class:Embedder for embedding categorical inputs
+        cat_embedder: :class:CatEmbedder for embedding categorical inputs
         loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective
         head: uninstantiated class which can receive input data and upscale it to model width
         body: uninstantiated class which implements the main bulk of the model's hidden layers
@@ -56,7 +55,7 @@ class ModelBuilder(object):
             max_targs[max_targs > 0] *=1.2
             max_targs[max_targs < 0] *=0.8
             y_range = np.hstack((min_targs, max_targs))
-            model_builder = ModelBuilder(objective='regression', n_cont_in=30, n_out=6, cat_embedder=Embedder.from_fy(train_fy),
+            model_builder = ModelBuilder(objective='regression', n_cont_in=30, n_out=6, cat_embedder=CatEmbedder.from_fy(train_fy),
                                          model_args={'body':{'depth':4, 'width':100}, 'tail':{y_range=y_range})
         >>> model_builder = ModelBuilder(objective='multiclassifier', n_cont_in=30, n_out=5, model_args={'body':{'width':100, depth':6, do':0.1, 'res':True}})
         >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1, model_args={'body':{'depth':4, 'width':100}},
@@ -69,27 +68,29 @@ class ModelBuilder(object):
     # TODO: Check examples
 
     def __init__(self, objective:str, n_cont_in:int, n_out:int,
-                 model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[Embedder]=None,
-                 loss:Union[Any,'auto']='auto', head:nn.Module=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
+                 model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,
+                 loss:Union[Any,'auto']='auto', head:AbsHead=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False,
+                 lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
+                 freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
                  cat_args:Dict[str,Any]=None):
         self.objective,self.n_cont_in,self.n_out,self.cat_embedder = objective.lower(),n_cont_in,n_out,cat_embedder
         self.head,self.body,self.tail = head,body,tail
-        self.lookup_init,self.lookup_act,self.pretrain_file,self.freeze_head,self.freeze_body = lookup_init,lookup_act,pretrain_file,freeze_head,freeze_body
+        self.lookup_init,self.lookup_act,self.pretrain_file, = lookup_init,lookup_act,pretrain_file
+        self.freeze_head,self.freeze_body,self.freeze_tail = freeze_head,freeze_body,freeze_tail
         self._parse_loss(loss)
         self._parse_model_args(model_args)
         self._parse_opt_args(opt_args)
         # XXX Remove in v0.3
         if self.cat_embedder is None and  cat_args is not None:
             warnings.warn('''Passing cat_args (dictionary of lists for embedding categorical features) is depreciated and will be removed in v0.3.
-                             Please move to passing an Embedder class to cat_embedder''')
+                             Please move to passing an CatEmbedder class to cat_embedder''')
             cat_args = {k:cat_args[k] for k in cat_args if k != 'n_cat_in'}
             if 'emb_szs' in cat_args: cat_args['emb_szs'] = cat_args['emb_szs'][:,-1]
-            self.cat_embedder = Embedder(**cat_args)
+            self.cat_embedder = CatEmbedder(**cat_args)
 
     @classmethod
-    def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False,
+    def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
                            loss:Optional[Any]=None, opt_args:Optional[Dict[str,Any]]=None):
         r'''
         Instantiate a :class:ModelBuilder from an exisitng :class:ModelBuilder, but with options to adjust loss, optimiser, pretraining, and module freezing
@@ -99,6 +100,7 @@ class ModelBuilder(object):
             pretrain_file: if set, will load saved parameters for entire network from saved model
             freeze_head: whether to start with the head parameters set to untrainable
             freeze_body: whether to start with the body parameters set to untrainable
+            freeze_tail: whether to start with the tail parameters set to untrainable
             loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective            
             opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
                 Currently, only ADAM (default) and SGD are available.
@@ -119,7 +121,7 @@ class ModelBuilder(object):
         return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out,
                    cat_embedder=model_builder.cat_embedder, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
                    loss=model_builder.loss if loss is None else loss, head=model_builder.head, body=model_builder.body, tail=model_builder.tail,
-                   pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body)
+                   pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body, freeze_tail=freeze_tail)
             
     def _parse_loss(self, loss:Union[Any,'auto']='auto') -> None:
         if loss == 'auto':
@@ -155,7 +157,7 @@ class ModelBuilder(object):
         
         self.opt_args['lr'] = lr
 
-    def get_head(self) -> nn.Module:
+    def get_head(self) -> AbsHead:
         r'''
         Construct head module
 
@@ -165,7 +167,7 @@ class ModelBuilder(object):
 
         return self.head(n_cont_in=self.n_cont_in, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
 
-    def get_body(self, n_in:int) -> nn.Module:
+    def get_body(self, n_in:int) -> AbsBody:
         r'''
         Construct body module
 
@@ -175,7 +177,7 @@ class ModelBuilder(object):
 
         return self.body(n_in=n_in, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body, **self.body_kargs)
 
-    def get_tail(self, n_in) -> nn.Module:
+    def get_tail(self, n_in:int) -> nn.Module:
         r'''
         Construct tail module
 
@@ -183,7 +185,7 @@ class ModelBuilder(object):
             Instantiated tail nn.Module
         '''
 
-        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, lookup_init=self.lookup_init, **self.tail_kargs)
+        return self.tail(n_in=n_in, n_out=self.n_out, objective=self.objective, lookup_init=self.lookup_init, freeze=self.freeze_tail, **self.tail_kargs)
 
     def build_model(self) -> nn.Module:
         r'''
@@ -194,18 +196,8 @@ class ModelBuilder(object):
         '''
 
         head = self.get_head()
-        if hasattr(head, 'get_out_size'):
-            out_size = head.get_out_size()
-        else:
-            *_, last = head.parameters()
-            out_size = len(last)
-        body = self.get_body(out_size)
-        if hasattr(body, 'get_out_size'):
-            out_size = body.get_out_size()
-        else:
-            *_, last = body.parameters()
-            out_size = len(last)
-        tail = self.get_tail(out_size)
+        body = self.get_body(head.get_out_size())
+        tail = self.get_tail(body.get_out_size())
         return nn.Sequential(head, body, tail)
 
     def load_pretrained(self, model:nn.Module):

@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any, List, Union
+from typing import Optional, Callable, Any, List
 import numpy as np
 from functools import partial
 
@@ -8,9 +8,17 @@ from torch import Tensor
 
 from ..layers.activations import lookup_act
 from ..initialisations import lookup_normal_init
+from .abs_block import AbsBlock
+
+
+class AbsBody(AbsBlock):
+    def __init__(self, n_in:int, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
+        super().__init__(lookup_init=lookup_init, freeze=freeze)
+        self.n_in,self.lookup_act = n_in,lookup_act
     
 
-class FullyConnected(nn.Module):
+class FullyConnected(AbsBody):
     r'''
     Fully connected set of hidden layers. Designed to be passed as a 'body' to :class:ModelBuilder.
     Supports batch normalisation and dropout.
@@ -43,9 +51,8 @@ class FullyConnected(nn.Module):
     def __init__(self, n_in:int, depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False, dense:bool=False, growth_rate:int=0,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
-        super().__init__()
-        self.n_in,self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.growth_rate = n_in,depth,width,do,bn,act,res,dense,growth_rate
-        self.lookup_init,self.lookup_act,self.freeze = lookup_init,lookup_act,freeze
+        super().__init__(n_in=n_in, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+        self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.growth_rate = depth,width,do,bn,act,res,dense,growth_rate
 
         if self.res:
             self.depth = 1+int(np.floor(self.depth/2))  # One upscale layer + each subsequent block will contain 2 layers
@@ -66,22 +73,6 @@ class FullyConnected(nn.Module):
             
         if self.freeze: self.freeze_layers
 
-    def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
-
-    def freeze_layers(self) -> None:
-        r'''
-        Make parameters untrainable
-        '''
-
-        for p in self.parameters(): p.requires_grad = False
-    
-    def unfreeze_layers(self) -> None:
-        r'''
-        Make parameters trainable
-        '''
-
-        for p in self.parameters(): p.requires_grad = True
-    
     def _get_layer(self, idx:int, fan_in:Optional[int]=None, fan_out:Optional[int]=None) -> None:
         fan_in  = self.width if fan_in  is None else fan_in
         fan_out = self.width if fan_out is None else fan_out
@@ -124,14 +115,14 @@ class FullyConnected(nn.Module):
         return sz if sz > 0 else 1
 
 
-class MultiBlock(nn.Module):
+class MultiBlock(AbsBody):
     def __init__(self, n_in:int, blocks:List[partial], input_idxs:List[List[int]],
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
-        super().__init__()
+        super().__init__(n_in=n_in, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
         self.input_idxs,self.blocks,self.n_out = input_idxs,[],0
         for i, b in enumerate(blocks):
-            self.blocks.append(b(n_in=len(self.input_idxs[i]), lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze))
+            self.blocks.append(b(n_in=len(self.input_idxs[i]), lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze))
             self.n_out += self.blocks[-1].get_out_size()
         self.blocks = nn.ModuleList(self.blocks)
     
@@ -144,22 +135,6 @@ class MultiBlock(nn.Module):
         '''
         
         return self.n_out
-
-    def __getitem__(self, key:int) -> nn.Module: return self.blocks[key]
-
-    def freeze_layers(self):
-        r'''
-        Make parameters untrainable
-        '''
-
-        for b in self.blocks(): b.freeze_layers()
-    
-    def unfreeze_layers(self):
-        r'''
-        Make parameters trainable
-        '''
-
-        for b in self.blocks(): b.unfreeze_layers()
     
     def forward(self, x:Tensor) -> Tensor:
         y = None

@@ -3,12 +3,20 @@ from typing import Optional, Union, Tuple, Callable
 
 from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device
+from .abs_block import AbsBlock
 
 from torch.tensor import Tensor
 import torch.nn as nn
 
 
-class ClassRegMulti(nn.Module):
+class AbsTail(AbsBlock):
+    def __init__(self, n_in:int, n_out:int, objective:str,
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
+        super().__init__(lookup_init=lookup_init, freeze=freeze)
+        self.n_in,self.n_out,self.objective = n_in, n_out, objective
+
+
+class ClassRegMulti(AbsTail):
     r'''
     Output block for (multi(class/label)) classification or regression tasks.
     Designed to be passed as a 'tail' to :class:ModelBuilder.
@@ -41,16 +49,19 @@ class ClassRegMulti(nn.Module):
             tail = ClassRegMulti(n_in=100, n_out=6, objective='regression', y_range=y_range, lookup_init=lookup_uniform_init)
     '''
 
+    # TODO: Automate y_range calculation with adjustable leeway
+
     def __init__(self, n_in:int, n_out:int, objective:str, y_range:Optional[Union[Tuple,np.ndarray]]=None,
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init):
-        super().__init__()
-        self.n_in,self.n_out,self.objective,self.y_range,self.lookup_init = n_in,n_out,objective,y_range,lookup_init
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
+        super().__init__(n_in=n_in, n_out=n_out, objective=objective, lookup_init=lookup_init, freeze=freeze)
+        self.y_range = y_range
         if self.y_range is not None:
             if not isinstance(self.y_range, np.ndarray): self.y_range = np.array(self.y_range)
             self.y_min = np.array(np.min(self.y_range, axis=-1))
             self.y_diff = np.abs(self.y_range.take([1], axis=-1)-self.y_range.take([0], axis=-1)).ravel()
             self.y_min, self.y_diff = to_device(Tensor(self.y_min)), to_device(Tensor(self.y_diff))
         self._build_layers()
+        if self.freeze: self.freeze_layers
 
     def __getitem__(self, key:int) -> nn.Module:
         if key == 0: return self.dense

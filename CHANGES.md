@@ -13,6 +13,7 @@
 - Removed some default parameters for NN blocks in `ModelBuilder`
 - `ModelBuilder` `model_args` should now be a dictionary of dictionaries of keyword arguments, one for head, body, and tail blocks,
     previously was a single dictionary of keyword arguments
+- `Embedder.from_fy` now no longer works: change to `CatEmbedder.from_fy`
 
 ## Additions
 
@@ -31,6 +32,8 @@
 - `plot_roc` now returns aucs as dictionary
 - growth_rate scaling coefficient to `FullyConnected` to adjust layer width by depth
 - `n_in` parameter to `FullyConnected` so it works on arbitray size inputs
+- `freeze_tail` to `ModelBuilder` and `ClassRegMulti`
+- Abstract blocks for head, body, and tail
 
 ## Removals
 
@@ -44,7 +47,7 @@
 - Typing for  `cont_feats` and `savename` in `fit_input_pipe`
 - Typing for  `targ_feats` and `savename` in `fit_output_pipe`
 - Moved predictions to after callback `on_eval_begin`
-- Updated `from_model_builder` class method of `ModelBuilder`to use and `Embedder`
+- Updated `from_model_builder` class method of `ModelBuilder`to use and `CatEmbedder`
 - Hard coded savename in `Model` during save to hopefull solve occaisional permission error during save
 - Typing for `val_fold` in `SWA`
 - 'lr' to 'momentum' in `Model.set_mom`
@@ -76,6 +79,7 @@
 - Passing `eta` argument to `to_pt_eta_phi`. Will be removed in v0.3
 - `binary_class_cut` renamed to `binary_class_cut_by_ams`. Code added to call `binary_class_cut_by_ams`. Will be removed in v0.3
 - `plot_dendrogram` renamed to `plot_rank_order_dendrogram`. Code added to call `plot_rank_order_dendrogram`. Will be removed in v0.3
+- `Embedder` renamed to `CatEmbedder`. Code added to call `CatEmbedder`. Will be removed in v0.3
 
 ## Comments
 
@@ -98,7 +102,7 @@
     - In cases where an odd number of layers are specified for the body, the number of layers is increased by one
     - Batch normalisation now corrected to be after the addition step (previously was set before)
 - Dense mode in `FullyConnected` now no longer adds an extra layer to scale down to the original width, instead `get_out_size` now returns the width of the final concatinated layer and the tail of the network is expected to accept this input size
-- Initialisation arguments for `CatEmbHead` changed considerably w.r.t. embedding arguments; now expects to receive a `Embedder` class
+- Initialisation arguments for `CatEmbHead` changed considerably w.r.t. embedding arguments; now expects to receive a `CatEmbedder` class
 
 ## Additions
 
@@ -113,7 +117,7 @@
 - Added option to turn of realtime loss plots
 - Added `from_results` and `from_save` classmethods for `Ensemble`
 - Added option to `SWA` to control whether it only updates on cycle end when paired with an `AbsCyclicalCallback`
-- Added helper class `Embedder` to simplify parsing of embedding settings
+- Added helper class `CatEmbedder` to simplify parsing of embedding settings
 - Added parameters to save and configure plots to `get_nn_feat_importance`, `get_ensemble_feat_importance`, and `rf_rank_features`
 - Added classmethod for `Model` to load from save
 - Added experimental export to Tensorflow Protocol Buffer
