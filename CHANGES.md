@@ -43,7 +43,9 @@
 - `Model` and `AbsBlock` classes now have a method to compute total number of (trainable) parameters
 - `MultiBlock` body, providing possibility for multiple, parallel body blocks taking subsets of input features
 - Explicit initialisation paramater for bias in `ClassRegMulti`
-- `plot_1d_partial_dependence` now takes `pdp_isolate_kargs` and `pdp_plot_kargs` to pass to pdp_isolate and  pdp_plot, respectively 
+- `plot_1d_partial_dependence` now takes `pdp_isolate_kargs` and `pdp_plot_kargs` to pass to `pdp_isolate` and  `pdp_plot`, respectively
+- `plot_2d_partial_dependence` now takes `pdp_interact_kargs` and `pdp_interact_plot_kargs` to pass to `pdp_interact` and  `pdp_interact_plot`, respectively 
+
 
 ## Removals
 
