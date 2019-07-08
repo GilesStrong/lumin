@@ -43,6 +43,7 @@
 - `Model` and `AbsBlock` classes now have a method to compute total number of (trainable) parameters
 - `MultiBlock` body, providing possibility for multiple, parallel body blocks taking subsets of input features
 - Explicit initialisation paramater for bias in `ClassRegMulti`
+- `plot_1d_partial_dependence` now takes `pdp_isolate_kargs` and `pdp_plot_kargs` to pass to pdp_isolate and  pdp_plot, respectively 
 
 ## Removals
 
@@ -66,6 +67,7 @@
 - Error when attempting to plot categorical feature in `plot_1d_partial_dependence`
 - layer width in dense=True `FullyConnected` scaling with input size
 - Fixed `lookup_act` for linear function
+- `plot_1d_partial_dependence` not using `n_points` parameter
 
 ## Changes
 
@@ -85,6 +87,7 @@
 - Dense layer from `CatEmbHead` removed and placed in `FullyConnected`
 - Swapped order of continuous and categorical embedding concatination in `CatEmbHead` in order to match input data
 - `arr` in `plot_kdes_from_bs` changed to `x`
+- weighted partial dependencies in `plot_1d_partial_dependence` are now computed by passing the name of the weight coulmn in the dataframe and normalisation is done automatically
 
 ## Depreciations
 
