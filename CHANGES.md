@@ -4,7 +4,8 @@
 
 - `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
 - layer width in dense=True `FullyConnected` now no longer scales with input size to prevent parameter count from exploding
-- Biases in linear layers are now initialised to zero, rather that default PyTorch init
+- Biases in `FullyConnected` linear layers are now initialised to zero, rather that default PyTorch init
+- Bias in `ClassRegMulti` linear layer is now intitialised to 0.5 if sigmoid output, zero if linear output, and 1/n_out if softmax, unless a bias_init value is specified
 
 ## Breaking
 
@@ -41,6 +42,7 @@
 - body blocks now expect to be passed a dictionary mapping from named input features to the model to the outputs of the head block
 - `Model` and `AbsBlock` classes now have a method to compute total number of (trainable) parameters
 - `MultiBlock` body, providing possibility for multiple, parallel body blocks taking subsets of input features
+- Explicit initialisation paramater for bias in `ClassRegMulti`
 
 ## Removals
 

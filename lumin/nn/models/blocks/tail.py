@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Optional, Union, Tuple, Callable
+from typing import Optional, Union, Tuple, Callable, List
 
 from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device
@@ -10,10 +10,10 @@ import torch.nn as nn
 
 
 class AbsTail(AbsBlock):
-    def __init__(self, n_in:int, n_out:int, objective:str,
+    def __init__(self, n_in:int, n_out:int, objective:str, bias_init:Optional[float]=None,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
-        self.n_in,self.n_out,self.objective = n_in, n_out, objective
+        self.n_in,self.n_out,self.objective,self.bias_init = n_in,n_out,objective,bias_init
 
 
 class ClassRegMulti(AbsTail):
@@ -51,9 +51,9 @@ class ClassRegMulti(AbsTail):
 
     # TODO: Automate y_range calculation with adjustable leeway
 
-    def __init__(self, n_in:int, n_out:int, objective:str, y_range:Optional[Union[Tuple,np.ndarray]]=None,
+    def __init__(self, n_in:int, n_out:int, objective:str, y_range:Optional[Union[Tuple,np.ndarray]]=None, bias_init:Optional[float]=None,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
-        super().__init__(n_in=n_in, n_out=n_out, objective=objective, lookup_init=lookup_init, freeze=freeze)
+        super().__init__(n_in=n_in, n_out=n_out, objective=objective, bias_init=bias_init, lookup_init=lookup_init, freeze=freeze)
         self.y_range = y_range
         if self.y_range is not None:
             if not isinstance(self.y_range, np.ndarray): self.y_range = np.array(self.y_range)
@@ -74,19 +74,23 @@ class ClassRegMulti(AbsTail):
             if 'multiclass' in self.objective: 
                 self.act = nn.LogSoftmax(1)
                 init = self.lookup_init('softmax', self.n_in, self.n_out)
+                bias = 1/self.n_out if self.bias_init is None else self.bias_init
             else:
                 self.act = nn.Sigmoid()
                 init = self.lookup_init('sigmoid', self.n_in, self.n_out)
+                bias = 0.5 if self.bias_init is None else self.bias_init
         else:
             if self.y_range is None:
                 self.act = lambda x: x
                 init = self.lookup_init('linear', self.n_in, self.n_out)
+                bias = 0 if self.bias_init is None else self.bias_init
             else:
                 self.act = nn.Sigmoid()
                 init = self.lookup_init('sigmoid', self.n_in, self.n_out)
+                bias = 0.5 if self.bias_init is None else self.bias_init
         init(self.dense.weight)
-        nn.init.zeros_(self.dense.bias)
-        
+        nn.init.constant_(self.dense.bias, val=bias)
+
     def forward(self, x:Tensor) -> Tensor:
         x = self.dense(x)
         x = self.act(x)
