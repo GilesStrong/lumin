@@ -85,6 +85,7 @@ class ClassRegMulti(AbsTail):
                 self.act = nn.Sigmoid()
                 init = self.lookup_init('sigmoid', self.n_in, self.n_out)
         init(self.dense.weight)
+        nn.init.zeros_(self.dense.bias)
         
     def forward(self, x:Tensor) -> Tensor:
         x = self.dense(x)

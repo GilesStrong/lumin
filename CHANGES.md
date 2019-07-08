@@ -4,6 +4,7 @@
 
 - `norm_in` default value for `get_pre_proc_pipes` is now `True` rather than `False`
 - layer width in dense=True `FullyConnected` now no longer scales with input size to prevent parameter count from exploding
+- Biases in linear layers are now initialised to zero, rather that default PyTorch init
 
 ## Breaking
 

@@ -86,6 +86,7 @@ class FullyConnected(AbsBody):
         for i in range(2 if self.res and idx > 0 else 1):
             layers.append(nn.Linear(fan_in, fan_out))
             self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
+            nn.init.zeros_(layers[-1].bias)
             if self.act != 'linear': layers.append(self.lookup_act(self.act))
             if self.bn and i == 0:  layers.append(nn.BatchNorm1d(fan_out))  # In case of residual, BN will be added after addition
             if self.do: 
