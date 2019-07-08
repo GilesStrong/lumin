@@ -14,7 +14,10 @@ import matplotlib.pyplot as plt
 
 
 def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
-    '''Compute bootstrap statistics for a list of datasets simultaneously using multiprocessing'''
+    r'''
+    Compute bootstrap roc score for a list of datasets simultaneously using multiprocessing
+    '''
+
     out_dict,scores = {},[]
     if 'name' not in args: args['name'] = ''
     if 'n'    not in args: args['n']    = 100
@@ -31,7 +34,12 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
              labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
              n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True,
              savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> Dict[str,Union[float,Tuple[float,float]]]:
-    '''Plot receiver operating characteristic curve, optionally using booststrap resampling'''
+    r'''
+    Plot receiver operating characteristic curve, optionally using booststrap resampling
+    '''
+
+    # TODO: make plot show uncertainty bands
+    
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         if isinstance(data, pd.DataFrame): data,plot_params = [data],[plot_params]
         if labels      is None: labels      = ['' for i in range(len(data))]
