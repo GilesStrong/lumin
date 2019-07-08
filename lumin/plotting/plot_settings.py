@@ -2,7 +2,14 @@ from pathlib import Path
 
 
 class PlotSettings:
-    '''Class to provide control over plot appearances'''
+    r'''
+    Class to provide control over plot appearances. Default parameters are set automatically, and can be adjusted by passing values as keyword arguments during 
+    initialisation (or changed after instantiation)
+    
+    Arguments:
+        keyword arguments: used to set relevant plotting parameters
+    '''
+
     def __init__(self, **kargs):
         self.style       = 'whitegrid' if 'style'       not in kargs else kargs['style']
         self.cat_palette = 'tab10'     if 'cat_palette' not in kargs else kargs['cat_palette']
@@ -42,6 +49,17 @@ class PlotSettings:
         self.sample2col = None if 'sample2col' not in kargs else kargs['sample2col']
 
     def str2sz(self, sz:str, ax=str) -> float:
+        r'''
+        Used to map requested plot sizes to actual dimensions
+
+        Arguments:
+            sz: string representation of size
+            ax: axis dimension requested
+
+        Returns:
+            width of plot dimension
+        '''
+
         sz,ax = sz.lower(),ax.lower()
         if sz == 'small': return self.w_small if ax == 'x' else self.h_small
         if sz == 'mid':   return self.w_mid   if ax == 'x' else self.h_mid
