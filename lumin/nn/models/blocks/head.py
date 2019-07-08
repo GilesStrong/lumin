@@ -4,6 +4,7 @@ from glob import glob
 from collections import OrderedDict
 from pathlib import Path
 import os
+from abc import abstractmethod
 
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -23,6 +24,7 @@ class AbsHead(AbsBlock):
         self.cont_feats,self.cat_embedder = cont_feats,cat_embedder
         self.n_cont_in = len(cont_feats)
 
+    @abstractmethod
     def _map_outputs(self) -> Dict[str,List[int]]: pass
 
 

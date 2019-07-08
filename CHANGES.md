@@ -38,6 +38,8 @@
 - `cont_feats` argument to `ModelBuilder` to allow passing of list of named features, eventually allowing more advanced methods based on named outputs of head blocks.
 - `CatEmbHead` now computes a mapping from named input features to their outputs
 - body blocks now expect to be passed a dictionary mapping from named input features to the model to the outputs of the head block
+- `Model` and `AbsBlock` classes now have a method to compute total number of (trainable) parameters
+- `MultiBlock` body, providing possibility for multiple, parallel body blocks taking subsets of input features
 
 ## Removals
 
@@ -60,6 +62,7 @@
 - Added catch for `plot_roc` with bootstraping when resamples data only contains one class
 - Error when attempting to plot categorical feature in `plot_1d_partial_dependence`
 - layer width in dense=True `FullyConnected` scaling with input size
+- Fixed `lookup_act` for linear function
 
 ## Changes
 

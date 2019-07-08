@@ -1,4 +1,5 @@
 from typing import Callable, Optional
+from abc import abstractmethod
 
 from torch import Tensor
 import torch.nn as nn
@@ -13,6 +14,19 @@ class AbsBlock(nn.Module):
 
     def __getitem__(self, key:int) -> nn.Module: return self.layers[key]
 
+    def get_param_count(self, trainable:bool=True) -> int:
+        r'''
+        Return number of parameters in block.
+
+        Arguments:
+            trainable: if true (default) only count trainable parameters
+
+        Returns:
+            NUmber of (trainable) parameters in block
+        '''
+        
+        return sum(p.numel() for p in self.parameters() if p.requires_grad) 
+
     def freeze_layers(self) -> None:
         r'''
         Make parameters untrainable
@@ -26,7 +40,9 @@ class AbsBlock(nn.Module):
         '''
 
         for p in self.parameters(): p.requires_grad = True
-
+    
+    @abstractmethod
     def forward(self, x:Tensor) -> Tensor: pass
 
+    @abstractmethod
     def get_out_size(self) -> int: pass

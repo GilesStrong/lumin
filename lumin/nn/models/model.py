@@ -47,7 +47,11 @@ class Model(AbsModel):
             self.n_out = self.tail.get_out_size()
             self.parameters = self.model.parameters
 
-    def __repr__(self) -> str: return f'Model:\n{self.model.parameters}\n\nOptimiser:\n{self.opt}\n\nLoss:\n{self.loss}'
+    def __repr__(self) -> str:
+        return f'''Model:\n{self.model.parameters}
+                   \n\nNumber of trainable parameters: {self.get_param_count()}
+                   \n\nOptimiser:\n{self.opt}
+                   \n\nLoss:\n{self.loss}'''
 
     def __getitem__(self, key:Union[int,str]) -> nn.Module:
         if isinstance(key, int):
@@ -81,6 +85,19 @@ class Model(AbsModel):
         m = cls(model_builder)
         m.load(name)
         return m
+
+    def get_param_count(self, trainable:bool=True) -> int:
+        r'''
+        Return number of parameters in model.
+
+        Arguments:
+            trainable: if true (default) only count trainable parameters
+
+        Returns:
+            NUmber of (trainable) parameters in model
+        '''
+        
+        return sum(p.numel() for p in self.parameters() if p.requires_grad) 
 
     def set_input_mask(self, mask:np.ndarray) -> None:
         r'''
