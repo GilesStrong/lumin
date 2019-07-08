@@ -1,5 +1,5 @@
 
-from typing import Dict, Union, Any, Callable, Tuple, Optional
+from typing import Dict, Union, Any, Callable, Tuple, Optional, List
 import pickle
 import  warnings
 
@@ -28,9 +28,8 @@ class ModelBuilder(object):
 
     Arguments:
         objective: string representation of network objective, i.e. 'classification', 'regression', 'multiclass'
-        n_cont_in: number of continuous inputs to expect
         n_out: number of outputs required
-        y_range: if not None, will apply rescaling to network outputs.
+        cont_feats: list of names of continuous input features
         model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
             Currently, only ADAM (default) and SGD are available.
@@ -45,9 +44,11 @@ class ModelBuilder(object):
         freeze_head: whether to start with the head parameters set to untrainable
         freeze_body: whether to start with the body parameters set to untrainable
         cat_args: depreciated in place of cat_embedder
+        n_cont_in: depreciated in favour of cont_feats
+
 
     Examples::
-        >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1, model_args={'body':{'depth':4, 'width':100}})
+        >>> model_builder = ModelBuilder(objective='classifier', cont_feats=cont_feats, n_out=1, model_args={'body':{'depth':4, 'width':100}})
         >>> min_targs = np.min(targets, axis=0).reshape(targets.shape[1],1)
             max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
             min_targs[min_targs > 0] *=0.8
@@ -55,10 +56,10 @@ class ModelBuilder(object):
             max_targs[max_targs > 0] *=1.2
             max_targs[max_targs < 0] *=0.8
             y_range = np.hstack((min_targs, max_targs))
-            model_builder = ModelBuilder(objective='regression', n_cont_in=30, n_out=6, cat_embedder=CatEmbedder.from_fy(train_fy),
+            model_builder = ModelBuilder(objective='regression', cont_feats=cont_feats, n_out=6, cat_embedder=CatEmbedder.from_fy(train_fy),
                                          model_args={'body':{'depth':4, 'width':100}, 'tail':{y_range=y_range})
-        >>> model_builder = ModelBuilder(objective='multiclassifier', n_cont_in=30, n_out=5, model_args={'body':{'width':100, depth':6, do':0.1, 'res':True}})
-        >>> model_builder = ModelBuilder(objective='classifier', n_cont_in=30, n_out=1, model_args={'body':{'depth':4, 'width':100}},
+        >>> model_builder = ModelBuilder(objective='multiclassifier', cont_feats=cont_feats, n_out=5, model_args={'body':{'width':100, depth':6, do':0.1, 'res':True}})
+        >>> model_builder = ModelBuilder(objective='classifier', cont_feats=cont_feats, n_out=1, model_args={'body':{'depth':4, 'width':100}},
                                          opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5},
                                          loss=partial(SignificanceLoss, sig_weight=sig_weight, bkg_weight=bkg_weight, func=calc_ams_torch))
     '''
@@ -67,14 +68,14 @@ class ModelBuilder(object):
     # TODO: Classmethod from_fy
     # TODO: Check examples
 
-    def __init__(self, objective:str, n_cont_in:int, n_out:int,
+    def __init__(self, objective:str, n_out:int, cont_feats:Optional[List[str]]=None,
                  model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,
                  loss:Union[Any,'auto']='auto', head:AbsHead=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
                  freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
-                 cat_args:Dict[str,Any]=None):
-        self.objective,self.n_cont_in,self.n_out,self.cat_embedder = objective.lower(),n_cont_in,n_out,cat_embedder
+                 cat_args:Dict[str,Any]=None, n_cont_in:Optional[int]=None):
+        self.objective,self.cont_feats,self.n_out,self.cat_embedder = objective.lower(),cont_feats,n_out,cat_embedder
         self.head,self.body,self.tail = head,body,tail
         self.lookup_init,self.lookup_act,self.pretrain_file, = lookup_init,lookup_act,pretrain_file
         self.freeze_head,self.freeze_body,self.freeze_tail = freeze_head,freeze_body,freeze_tail
@@ -82,9 +83,16 @@ class ModelBuilder(object):
         self._parse_model_args(model_args)
         self._parse_opt_args(opt_args)
         # XXX Remove in v0.3
+        if self.cont_feats is None and n_cont_in is not None:
+            warnings.warn('''Passing n_cont_in (number of continuous input features) is depreciated and will be removed in v0.3.
+                             Please move to passing a list of names of continuous input features to cont_feats.
+                             This is necessary for using certain classes, e.g. MultiBlock body.''')
+            self.cont_feats = [str(i) for i in range(n_cont_in)]
+        self.n_cont_in = len(self.cont_feats)
+        # XXX Remove in v0.3
         if self.cat_embedder is None and  cat_args is not None:
             warnings.warn('''Passing cat_args (dictionary of lists for embedding categorical features) is depreciated and will be removed in v0.3.
-                             Please move to passing an CatEmbedder class to cat_embedder''')
+                             Please move to passing a CatEmbedder class to cat_embedder''')
             cat_args = {k:cat_args[k] for k in cat_args if k != 'n_cat_in'}
             if 'emb_szs' in cat_args: cat_args['emb_szs'] = cat_args['emb_szs'][:,-1]
             self.cat_embedder = CatEmbedder(**cat_args)
@@ -118,7 +126,7 @@ class ModelBuilder(object):
         if isinstance(model_builder, str):
             with open(model_builder, 'rb') as fin: model_builder = pickle.load(fin)
         model_args = {'head': model_builder.head_kargs, 'body': model_builder.body_kargs, 'tail': model_builder.tail_kargs}
-        return cls(objective=model_builder.objective, n_cont_in=model_builder.n_cont_in, n_out=model_builder.n_out,
+        return cls(objective=model_builder.objective, cont_feats=model_builder.cont_feats, n_out=model_builder.n_out,
                    cat_embedder=model_builder.cat_embedder, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
                    loss=model_builder.loss if loss is None else loss, head=model_builder.head, body=model_builder.body, tail=model_builder.tail,
                    pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body, freeze_tail=freeze_tail)
@@ -165,9 +173,9 @@ class ModelBuilder(object):
             Instantiated head nn.Module
         '''
 
-        return self.head(n_cont_in=self.n_cont_in, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
+        return self.head(cont_feats=self.cont_feats, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
 
-    def get_body(self, n_in:int) -> AbsBody:
+    def get_body(self, n_in:int, feat_map:List[str]) -> AbsBody:
         r'''
         Construct body module
 
@@ -175,7 +183,7 @@ class ModelBuilder(object):
             Instantiated body nn.Module
         '''
 
-        return self.body(n_in=n_in, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body, **self.body_kargs)
+        return self.body(n_in=n_in, feat_map=feat_map, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze_body, **self.body_kargs)
 
     def get_tail(self, n_in:int) -> nn.Module:
         r'''
@@ -196,7 +204,7 @@ class ModelBuilder(object):
         '''
 
         head = self.get_head()
-        body = self.get_body(head.get_out_size())
+        body = self.get_body(head.get_out_size(), head.feat_map)
         tail = self.get_tail(body.get_out_size())
         return nn.Sequential(head, body, tail)
 

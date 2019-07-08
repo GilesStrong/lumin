@@ -14,6 +14,7 @@
 - `ModelBuilder` `model_args` should now be a dictionary of dictionaries of keyword arguments, one for head, body, and tail blocks,
     previously was a single dictionary of keyword arguments
 - `Embedder.from_fy` now no longer works: change to `CatEmbedder.from_fy`
+- `CatEmbHead` now no longer has a `n_cont_in` argument, instead one should pass a list of feature names to `cont_feats`
 
 ## Additions
 
@@ -34,6 +35,9 @@
 - `n_in` parameter to `FullyConnected` so it works on arbitray size inputs
 - `freeze_tail` to `ModelBuilder` and `ClassRegMulti`
 - Abstract blocks for head, body, and tail
+- `cont_feats` argument to `ModelBuilder` to allow passing of list of named features, eventually allowing more advanced methods based on named outputs of head blocks.
+- `CatEmbHead` now computes a mapping from named input features to their outputs
+- body blocks now expect to be passed a dictionary mapping from named input features to the model to the outputs of the head block
 
 ## Removals
 
@@ -73,6 +77,7 @@
 - Made `get_folds` private
 - Changed `settings` to `plot_settings` in `rf_rank_features`
 - Dense layer from `CatEmbHead` removed and placed in `FullyConnected`
+- Swapped order of continuous and categorical embedding concatination in `CatEmbHead` in order to match input data
 
 ## Depreciations
 
@@ -80,6 +85,7 @@
 - `binary_class_cut` renamed to `binary_class_cut_by_ams`. Code added to call `binary_class_cut_by_ams`. Will be removed in v0.3
 - `plot_dendrogram` renamed to `plot_rank_order_dendrogram`. Code added to call `plot_rank_order_dendrogram`. Will be removed in v0.3
 - `Embedder` renamed to `CatEmbedder`. Code added to call `CatEmbedder`. Will be removed in v0.3
+- `n_cont_in` (number of continuous input features) argument of `ModelBuilder` depreciated in favour of `cont_feats` (list of named continuous input features). Code added to create this by encoding numbers as string. Will be removed in v0.3.
 
 ## Comments
 

@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Any, List
+from typing import Optional, Callable, Any, List, Dict
 import numpy as np
 from functools import partial
 
@@ -12,10 +12,11 @@ from .abs_block import AbsBlock
 
 
 class AbsBody(AbsBlock):
-    def __init__(self, n_in:int, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+    def __init__(self, n_in:int, feat_map:Dict[str,List[int]],
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
-        self.n_in,self.lookup_act = n_in,lookup_act
+        self.n_in,self.feat_map,self.lookup_act = n_in,feat_map,lookup_act
     
 
 class FullyConnected(AbsBody):
@@ -28,6 +29,8 @@ class FullyConnected(AbsBody):
     growth_rate parameter can be used to adjust the width of layers according to width+(width*(depth-1)*growth_rate)
 
     Arguments:
+        n_in: number of inputs to the block
+        feat_map:dictionary mapping input features to the model to outputs of head block
         depth: number of hidden layers. If res==True and depth is even, depth will be increased by one.
         width: base width of each hidden layer
         do: if not None will add dropout layers with dropout rates do
@@ -41,17 +44,17 @@ class FullyConnected(AbsBody):
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
-        >>> body = FullyConnected(n_in=32, depth=4, width=100, act='relu')
-        >>> body = FullyConnected(n_in=32, depth=4, width=200, act='relu', growth_rate=-0.3)
-        >>> body = FullyConnected(n_in=32, depth=4, width=100, act='swish', do=0.1, res=True)
-        >>> body = FullyConnected(n_in=32, depth=6, width=32, act='selu', dense=True, growth_rate=0.5)
-        >>> body = FullyConnected(n_in=32, depth=6, width=50, act='prelu', bn=True, lookup_init=lookup_uniform_init)
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=100, act='relu')
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=200, act='relu', growth_rate=-0.3)
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=100, act='swish', do=0.1, res=True)
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6, width=32, act='selu', dense=True, growth_rate=0.5)
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6, width=50, act='prelu', bn=True, lookup_init=lookup_uniform_init)
     '''
 
-    def __init__(self, n_in:int, depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False, dense:bool=False, growth_rate:int=0,
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+    def __init__(self, n_in:int, feat_map:Dict[str,List[int]], depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False,
+                 dense:bool=False, growth_rate:int=0, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
-        super().__init__(n_in=n_in, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+        super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
         self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.growth_rate = depth,width,do,bn,act,res,dense,growth_rate
 
         if self.res:
@@ -116,13 +119,15 @@ class FullyConnected(AbsBody):
 
 
 class MultiBlock(AbsBody):
-    def __init__(self, n_in:int, blocks:List[partial], input_idxs:List[List[int]],
+    def __init__(self, n_in:int, feat_map:Dict[str,List[int]], blocks:List[partial], feats_per_block:List[List[str]],
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
-        super().__init__(n_in=n_in, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
-        self.input_idxs,self.blocks,self.n_out = input_idxs,[],0
+        super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+        self.feats_per_block,self.blocks,self.n_out = feats_per_block,[],0
         for i, b in enumerate(blocks):
-            self.blocks.append(b(n_in=len(self.input_idxs[i]), lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze))
+            tmp_map = {f: feat_map[f] for f in feat_map if f in feats_per_block[i]}
+            tmp_n_in = np.sum([len(tmp_map[f]) for f in tmp_map])
+            self.blocks.append(b(n_in=tmp_n_in, feat_map=tmp_map, lookup_init=self.lookup_init, lookup_act=self.lookup_act, freeze=self.freeze))
             self.n_out += self.blocks[-1].get_out_size()
         self.blocks = nn.ModuleList(self.blocks)
     
