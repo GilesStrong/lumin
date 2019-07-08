@@ -151,6 +151,11 @@ def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotS
 def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient
+
+    Arguments:
+        df: Pandas DataFrame containing data
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
     '''
 
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
@@ -166,10 +171,22 @@ def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, set
         plt.show()
 
 
-def plot_kdes_from_bs(arr:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Dict[str,Dict[str,Any]], 
+def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,Dict[str,Any]], 
                       feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''Plot KDEs computed via bootstrap_stats'''
+    r'''
+    Plot KDEs computed via :meth:bootstrap_stats
+
+    Arguments:
+        bs_stats: (filtered) dictionary retruned by :meth: bootstrap_stats 
+        name2args: Dictionary mapping names of different distributions to arguments to pass to seaborn tsplot
+        feat: Name of feature being plotted (for axis lablels)
+        units: Optional units to show on axes
+        moments: whether to display mean and standard deviation of each distribution
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, name in enumerate(name2args):
@@ -181,7 +198,7 @@ def plot_kdes_from_bs(arr:np.ndarray, bs_stats:List[Dict[str,Any]], name2args:Di
                 mean, mean_unc = uncert_round(np.mean(bs_stats[f'{name}_mean']), np.std(bs_stats[f'{name}_mean'], ddof=1))
                 std, std_unc = uncert_round(np.mean(bs_stats[f'{name}_std']), np.std(bs_stats[f'{name}_std'], ddof=1))
                 name2args[name]['condition'] += r', $\overline{x}=' + r'{}\pm{}\ \sigma= {}\pm{}$'.format(mean, mean_unc, std, std_unc)
-            sns.tsplot(data=bs_stats[f'{name}_kde'], time=arr, **name2args[name])
+            sns.tsplot(data=bs_stats[f'{name}_kde'], time=x, **name2args[name])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         y_lbl = r'$\frac{1}{N}\ \frac{dN}{d' + feat.replace('$','') + r'}$'

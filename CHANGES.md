@@ -84,6 +84,7 @@
 - Changed `settings` to `plot_settings` in `rf_rank_features`
 - Dense layer from `CatEmbHead` removed and placed in `FullyConnected`
 - Swapped order of continuous and categorical embedding concatination in `CatEmbHead` in order to match input data
+- `arr` in `plot_kdes_from_bs` changed to `x`
 
 ## Depreciations
 

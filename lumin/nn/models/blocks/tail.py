@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Optional, Union, Tuple, Callable, List
+from typing import Optional, Union, Tuple, Callable
 
 from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device
