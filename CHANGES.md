@@ -46,7 +46,6 @@
 - `plot_1d_partial_dependence` now takes `pdp_isolate_kargs` and `pdp_plot_kargs` to pass to `pdp_isolate` and  `pdp_plot`, respectively
 - `plot_2d_partial_dependence` now takes `pdp_interact_kargs` and `pdp_interact_plot_kargs` to pass to `pdp_interact` and  `pdp_interact_plot`, respectively 
 
-
 ## Removals
 
 - `evaluate` in `Model` no longer automatically converts tensor types
