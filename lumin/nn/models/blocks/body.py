@@ -156,35 +156,35 @@ class MultiBlock(AbsBody):
     '''
 
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]], blocks:List[partial], feats_per_block:List[List[str]],
-                 use_bottleneck:bool=False, bottleneck_act:Optional[str]=None,
+                 bottleneck_sz:int=0, bottleneck_act:Optional[str]=None,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
         super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
-        self.feats_per_block,self.use_bottleneck,self.bottleneck_act = feats_per_block,use_bottleneck,bottleneck_act
-        self.blocks,self.n_out,self.masks,self.use_bottleneck_blocks = [],0,[],None
+        self.feats_per_block,self.bottleneck_sz,self.bottleneck_act = feats_per_block,bottleneck_sz,bottleneck_act
+        self.blocks,self.n_out,self.masks,self.bottleneck_blocks = [],0,[],None
         
-        if self.use_bottleneck:
-            self.use_bottleneck_blocks,self.use_bottleneck_masks = [],[]
+        if self.bottleneck_sz > 0:
+            self.bottleneck_blocks,self.bottleneck_sz_masks = [],[]
             for i, fs in enumerate(self.feats_per_block):
                 tmp_map = {f: feat_map[f] for f in feat_map if f not in feats_per_block[i]}
-                self.use_bottleneck_masks.append([i for f in tmp_map for i in tmp_map[f]])
-                self.use_bottleneck_blocks.append(self._get_bottleneck(self.use_bottleneck_masks[-1]))
-            self.use_bottleneck_blocks = nn.ModuleList(self.use_bottleneck_blocks)
+                self.bottleneck_sz_masks.append([i for f in tmp_map for i in tmp_map[f]])
+                self.bottleneck_blocks.append(self._get_bottleneck(self.bottleneck_sz_masks[-1]))
+            self.bottleneck_blocks = nn.ModuleList(self.bottleneck_blocks)
 
         for i, b in enumerate(blocks):
             tmp_map = {f: feat_map[f] for f in feat_map if f in feats_per_block[i]}
             self.masks.append([i for f in tmp_map for i in tmp_map[f]])
-            self.blocks.append(b(n_in=len(self.masks[-1])+1 if self.use_bottleneck else len(self.masks[-1]), feat_map=tmp_map, lookup_init=self.lookup_init,
+            self.blocks.append(b(n_in=len(self.masks[-1])+self.bottleneck_sz, feat_map=tmp_map, lookup_init=self.lookup_init,
                                  lookup_act=self.lookup_act, freeze=self.freeze))
             self.n_out += self.blocks[-1].get_out_size()
         self.blocks = nn.ModuleList(self.blocks)
 
     def _get_bottleneck(self, mask:List[int]) -> nn.Module:
-        layers = [nn.Linear(len(mask), 1)]
+        layers = [nn.Linear(len(mask), self.bottleneck_sz)]
         if self.bottleneck_act is None:
-            init = self.lookup_init('linear', len(mask), 1) 
+            init = self.lookup_init('linear', len(mask), self.bottleneck_sz) 
         else:
-            init = self.lookup_init(self.bottleneck_act, len(mask), 1)
+            init = self.lookup_init(self.bottleneck_act, len(mask), self.bottleneck_sz)
             layers.append(self.lookup_act(self.bottleneck_act))
         init(layers[0].weight)
         return nn.Sequential(*layers)
@@ -202,8 +202,8 @@ class MultiBlock(AbsBody):
     def forward(self, x:Tensor) -> Tensor:
         y = None
         for i, b in enumerate(self.blocks):
-            if self.use_bottleneck:
-                a = self.use_bottleneck_blocks[i](x[:,self.use_bottleneck_masks[i]])
+            if self.bottleneck_sz:
+                a = self.bottleneck_blocks[i](x[:,self.bottleneck_sz_masks[i]])
                 tmp_x = torch.cat((x[:,self.masks[i]], a), -1)
             else:
                 tmp_x = x[:,self.masks[i]]

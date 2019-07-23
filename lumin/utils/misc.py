@@ -1,14 +1,14 @@
 import numpy as np
-from typing import Union, List
+from typing import Union, List, Tuple, Optional
 import pandas as pd
 import sympy
 
 from torch.tensor import Tensor
 import torch
+import torch.nn as nn
 
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')  # TODO: make device choosable by user
-#device = torch.device('cpu')
 
 
 def to_np(x:Tensor) -> np.ndarray:
@@ -108,3 +108,32 @@ def ids2unique(ids: Union[List, np.ndarray]) -> np.ndarray:
     if not isinstance(ids, np.ndarray): ids = np.array(ids)[:,None]
     primes = np.broadcast_to(np.array([sympy.prime(i) for i in range(1, 1+ids.shape[1])]), ids.shape)
     return (primes**ids).prod(axis=-1)
+
+
+class FowardHook():
+    r'''
+    Create a hook for performing an action based on the forward pass thorugh a nn.Module
+
+    Arguments:
+        module: nn.Module to hook
+        hook_fn: Optional function to perform. Default is to record input and output of module
+
+    Examples::
+        >>> hook = ForwardHook(model.tail.dense)
+            model.predict(inputs)
+            print(hook.inputs)
+    '''
+    def __init__(self, module:nn.Module, hook_fn:Optional=None):
+        self.input,self.output = None,None
+        if hook_fn is not None: self.hook_fn = hook_fn
+        self.hook = module.register_forward_hook(self.hook_fn)
+        
+    def hook_fn(self, module, input:Union[Tensor,Tuple[Tensor]], output:Union[Tensor,Tuple[Tensor]]) -> None:
+        self.input,self.output = input,output
+        
+    def remove(self) -> None:
+        r'''
+        Call when finished to remove hook
+        '''
+
+        self.hook.remove()
