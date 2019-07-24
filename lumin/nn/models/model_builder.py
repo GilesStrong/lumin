@@ -142,7 +142,8 @@ class ModelBuilder(object):
             self.loss = loss
 
     def _parse_model_args(self, model_args:Optional[Dict[str,Any]]=None) -> None:
-        model_args       = {k.lower(): model_args[k] for k in model_args}
+        if model_args is None: model_args = {}
+        else:                  model_args = {k.lower(): model_args[k] for k in model_args}
         self.head_kargs = {} if model_args is None or 'head' not in model_args else model_args['head']
         self.body_kargs = {} if model_args is None or 'body' not in model_args else model_args['body']
         self.tail_kargs = {} if model_args is None or 'tail' not in model_args else model_args['tail']

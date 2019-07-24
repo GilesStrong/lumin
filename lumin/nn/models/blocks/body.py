@@ -64,10 +64,11 @@ class FullyConnected(AbsBody):
                                          if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
                                          for d in range(self.depth)])
         elif self.dense:
-            self.layers = nn.ModuleList([self._get_layer(idx=d,fan_in=self.n_in+(self.width*d)+np.sum([int(self.width*growth_rate*i) for i in range(d)]),
-                                                         fan_out=self.width+int(self.width*d*self.growth_rate))
-                                         if d > 0 else self._get_layer(d, self.n_in, self.width)
-                                         for d in range(self.depth)]) 
+            self.layers = []
+            for d in range(self.depth):
+                self.layers.append(self._get_layer(idx=d, fan_in=self.n_in if d == 0 else self.n_in+np.sum([l[0].out_features for l in self.layers]),
+                                   fan_out=max(1,self.width+int(self.width*d*self.growth_rate))))
+            self.layers = nn.ModuleList(self.layers)
         else:
             self.layers = nn.ModuleList([self._get_layer(idx=d, fan_in=self.width+int(self.width*(d-1)*self.growth_rate),
                                                          fan_out=self.width+int(self.width*d*self.growth_rate))
@@ -115,8 +116,7 @@ class FullyConnected(AbsBody):
             Width of output layer
         '''
         
-        sz = self.width+int(self.width*(self.depth-1)*self.growth_rate) if self.res is False else self.width
-        return sz if sz > 0 else 1
+        return self.layers[-1][0].out_features
 
 
 class MultiBlock(AbsBody):

@@ -1,17 +1,23 @@
 import numpy as np
-from typing import Optional, Any, Tuple, List, Dict
+from typing import Optional, Any, Tuple, List, Dict, Union
 import pandas as pd
 from collections import OrderedDict
 from pdpbox import pdp
 from pdpbox.pdp import PDPIsolate, PDPInteract
 from sklearn.pipeline import Pipeline
 
-from .plot_settings import PlotSettings
-from ..utils.misc import to_np
-from ..utils.mod_ver import check_pdpbox
-
 import seaborn as sns
 import matplotlib.pyplot as plt
+
+import torch
+from torch import Tensor
+
+from .plot_settings import PlotSettings
+from ..utils.misc import to_np, FowardHook
+from ..utils.mod_ver import check_pdpbox
+from ..nn.models.abs_model import AbsModel
+
+
 
 
 def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty',
@@ -194,3 +200,48 @@ def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tup
         x = np.broadcast_to(x[:,None], (x.shape[0], in_sz))
         x = input_pipe.inverse_transform(x)[:,feat_id]
         interact.feature_grids[i] = x
+
+
+def plot_multibody_weighted_outputs(model:AbsModel, inputs:Union[np.ndarray,Tensor], block_names:Optional[List[str]]=None, use_mean:bool=False,
+                                    savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    Interpret how a model relies on the outputs of each block in a :class:MultiBlock by plotting the outputs of each block as weighted by the tail block.
+    This function currently only supports models whose tail block contains a single neuron in the first dense layer.
+    Input data is passed through the model and the absolute sums of the weighted block outputs are computed per datum, and optionally averaged over the number
+    of block outputs.
+
+    Arguments:
+        model: model to interpret
+        inputs: input data to use for interpretation
+        block_names: names for each block to use when plotting
+        use_mean: if True, will average the weighted outputs over the number of output neurons in each block
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
+    assert model.tail[0].weight.shape[0] == 1, 'This function currently only supports models whose tail block contains a single neuron in the first dense layer'
+    if block_names is not None:
+        assert len(block_names) == len(model.body.blocks), 'block_names passed, but number of names does not match number of blocks'
+    else:
+        block_names = [f'{i}' for i in range(len(model.body.blocks))]
+    
+    hook = FowardHook(model.tail[0])
+    model.predict(inputs)
+    
+    y, itr = [], 0
+    for b in model.body.blocks:
+        o = hook.input[0][:,itr:itr+b.get_out_size()]
+        w = model.tail[0].weight[0][itr:itr+b.get_out_size()]
+        y.append(to_np(torch.abs(o@w)/b.get_out_size()) if use_mean else to_np(torch.abs(o@w)))
+        itr += b.get_out_size()
+    
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+        plt.figure(figsize=(settings.w_mid, settings.h_mid))
+        sns.boxplot(x=block_names, y=y)
+        plt.xlabel("Block", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.ylabel(r"Mean $|\bar{w}\cdot\bar{x}|$" if use_mean else r"$|\bar{w}\cdot\bar{x}|$", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
+        plt.show() 
