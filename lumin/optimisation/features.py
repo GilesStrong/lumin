@@ -9,13 +9,11 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
 from ..plotting.plot_settings import PlotSettings
-from ..utils.mod_ver import check_rfpimp
 
 
 def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
     r'''
     Compute feature importance for a Random Forest model using rfpimp.
-    This requires a bleeding edge installation of rfpimp, which is not available from PIP.
 
     Arguments:
         rf: trained Random Forest model
@@ -23,7 +21,6 @@ def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.n
         targets: target data as Numpy array
         weights: Optional data weights as Numpy array
     '''
-    check_rfpimp(); from rfpimp import importances
     return importances(rf, inputs, targets, features=inputs.columns, sample_weights=weights).reset_index()
 
 

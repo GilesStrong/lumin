@@ -1,17 +1,6 @@
 import pkg_resources
 
 
-def check_rfpimp():
-    try:
-        ver = pkg_resources.get_distribution("rfpimp").version
-        assert ver > '1.3.0', f'''You have version {ver} of rfpimp. Use of this function requires rfpimp>1.3.0, which is not currently available from pypi. 
-                                  Please install from source via:\n
-                                  `git clone https://github.com/parrt/random-forest-importances.git && cd random-forest-importances/src && pip install .`'''
-    except pkg_resources.DistributionNotFound:
-        print('''Use of this function requires rfpimp>1.3.0, which is not currently available from pypi. Please install from source via:\n
-                `git clone https://github.com/parrt/random-forest-importances.git && cd random-forest-importances/src && pip install .`''')
-
-
 def check_pdpbox():
     try:
         ver = pkg_resources.get_distribution("pdpbox").version
