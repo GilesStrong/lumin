@@ -71,6 +71,7 @@
 - layer width in dense=True `FullyConnected` scaling with input size
 - Fixed `lookup_act` for linear function
 - `plot_1d_partial_dependence` not using `n_points` parameter
+- Errors in `plot_rocs` when passing non-lists and when requesting plot_params and bootsrapping
 
 ## Changes
 
@@ -91,6 +92,7 @@
 - Swapped order of continuous and categorical embedding concatination in `CatEmbHead` in order to match input data
 - `arr` in `plot_kdes_from_bs` changed to `x`
 - weighted partial dependencies in `plot_1d_partial_dependence` are now computed by passing the name of the weight coulmn in the dataframe and normalisation is done automatically
+- `data` argument for `plot_binary_class_pred` renamed to `df`
 
 ## Depreciations
 

@@ -115,16 +115,32 @@ def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
     return [x[0] for x in np.array(sorted(zip(samples, weights), key=lambda x: x[1]))]
 
 
-def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name=None, wgt_scale:float=1,
+def plot_binary_class_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_target', wgt_name:str=None, wgt_scale:float=1,
                            log_y:bool=False, lim_x:Tuple[float,float]=(0,1), density=True, 
                            savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''Basic plotter for prediction distirbution in a binary class problem'''
+    r'''
+    Basic plotter for prediction distribution in a binary classification problem.
+    Note that labels are set using the settings.targ2class dictionary, which by default is {0: 'Background', 1: 'Signal'}.
+
+    Arguments:
+        df: DataFrame with targets and predictions
+        pred_name: name of column to use as predictions
+        targ_name: name of column to use as targets
+        wgt_name: optional name of column to use as sample weights
+        wgt_scale: applies a global multiplicative rescaling to sample weights. Default 1 = no rescaling
+        log_y: whether to use a log scale for the y-axis
+        lim_x: limit for plotting on the x-axis
+        density: whether to normalise each distribution to one, or keep set to sum of weights / datapoints
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
-        for targ in sorted(set(data[targ_name])):
-            cut = data[targ_name] == targ
-            hist_kws = {} if wgt_name is None else {'weights': wgt_scale*data.loc[cut, wgt_name]}
-            sns.distplot(data.loc[cut, pred_name], label=settings.targ2class[targ], hist_kws=hist_kws, norm_hist=density, kde=False)
+        for targ in sorted(set(df[targ_name])):
+            cut = df[targ_name] == targ
+            hist_kws = {} if wgt_name is None else {'weights': wgt_scale*df.loc[cut, wgt_name]}
+            sns.distplot(df.loc[cut, pred_name], label=settings.targ2class[targ], hist_kws=hist_kws, norm_hist=density, kde=False)
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xlabel("Class prediction", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xlim(lim_x)
@@ -141,13 +157,32 @@ def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='g
         plt.show() 
 
 
-def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name='gen_weight', sample_name='gen_sample',
+def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight', sample_name:str='gen_sample',
                      wgt_scale:float=1, bins:Union[int,List[int]]=35, log_y:bool=True, lim_x:Tuple[float,float]=(0,1),
                      density=False, zoom_args:Optional[Dict[str,Any]]=None,
                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''More advanceed plotter for prediction distirbution in a binary class problem with stacked distributions for backgrounds
-    Can also zoom in to specified parts of plot, e.g.:
-   zoom_args={'x':(0.4,0.45), 'y':(0.2, 1500), 'anchor':(0,0.25,0.95,1), 'width_scale':1, 'width_zoom':4, 'height_zoom':3}'''
+    r'''
+    More advanceed plotter for prediction distirbution in a binary class problem with stacked distributions for backgrounds and user-defined binning
+    Can also zoom in to specified parts of plot
+    Note that plotting colours can be controled by seeting the settings.sample2col dictionary
+    
+    Arguments:
+        df: DataFrame with targets and predictions
+        pred_name: name of column to use as predictions
+        targ_name: name of column to use as targets
+        wgt_name: name of column to use as sample weights
+        sample_name: name of column to use as process names
+        wgt_scale: applies a global multiplicative rescaling to sample weights. Default 1 = no rescaling        
+        bins: either the number of bins to use for a uniform binning, or a list of bin edges for a variable-width binning
+        log_y: whether to use a log scale for the y-axis
+        lim_x: limit for plotting on the x-axis
+        density: whether to normalise each distribution to one, or keep set to sum of weights / datapoints
+        zoom_args: arguments to control the optional zoomed in section,
+            e.g. {'x':(0.4,0.45), 'y':(0.2, 1500), 'anchor':(0,0.25,0.95,1), 'width_scale':1, 'width_zoom':4, 'height_zoom':3}
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+    
     hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)
