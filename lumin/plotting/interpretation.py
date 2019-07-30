@@ -18,8 +18,6 @@ from ..utils.mod_ver import check_pdpbox
 from ..nn.models.abs_model import AbsModel
 
 
-
-
 def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty',
                     savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''

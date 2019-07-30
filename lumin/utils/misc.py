@@ -9,7 +9,7 @@ import torch.nn as nn
 
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')  # TODO: make device choosable by user
-#device = torch.device('cpu')
+
 
 def to_np(x:Tensor) -> np.ndarray:
     r'''

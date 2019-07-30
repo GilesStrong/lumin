@@ -31,19 +31,38 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
 
 
 def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', wgt_name:Optional[str]=None, 
-             labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
+             labels:Optional[Union[str,List[str]]]=None, plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, 
              n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True,
              savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> Dict[str,Union[float,Tuple[float,float]]]:
     r'''
-    Plot receiver operating characteristic curve, optionally using booststrap resampling
+    Plot receiver operating characteristic curve(s), optionally using booststrap resampling
+
+    Arguments:
+        data: (list of) DataFrame(s) from which to draw predictions and targets 
+        pred_name: name of column to use as predictions
+        targ_name: name of column to use as targets
+        wgt_name: optional name of column to use as sample weights
+        labels: (list of) label(s) for plot legend
+        plot_params: (list of) dictionar[y/ies] of argument(s) to pass to line plot
+        n_bootstrap: if greater than 0, will bootstrap resample the data that many times when computing the ROC AUC. Currently, this does not affect the shape
+            of the lines, which are based on computing the ROC for the entire dataset as is.
+        log_x: whether to use a log scale for plotting the x-axis, useful for high AUC line
+        plot_baseline: whether to plot a dotted line for AUC=0.5. Currently incompatable with log_x=True
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+
+    Returns:
+        Dictionary mapping data labels to aucs (and uncertainties if n_bootstrap > 0)
     '''
 
     # TODO: make plot show uncertainty bands
     
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
-        if isinstance(data, pd.DataFrame): data,plot_params = [data],[plot_params]
-        if labels      is None: labels      = ['' for i in range(len(data))]
-        if plot_params is None: plot_params = [{} for i in range(len(data))]
+        if isinstance(data, pd.DataFrame):
+            data = [data]
+        if labels      is None:             labels      = [f'{i}' for i in range(len(data))] if len(data) > 1 else ['' for i in range(len(data))]
+        if plot_params is None:             plot_params = [{} for i in range(len(data))]
+        elif isinstance(plot_params, dict): plot_params = [plot_params for i in range(len(data))]
 
         curves,mean_scores = [],[]
         if n_bootstrap > 1:
@@ -69,7 +88,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
             aucs[labels[i]] = mean_scores[i]
             if n_bootstrap > 0:
                 mean_score = uncert_round(*mean_scores[i])
-                plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_score[0]}±{mean_score[1]}')
+                plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_score[0]}±{mean_score[1]}', **plot_params[i])
             else:
                 plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_scores[i]:.3f}', **plot_params[i])
         
