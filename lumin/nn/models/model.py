@@ -165,6 +165,7 @@ class Model(AbsModel):
         for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
         if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
         y_pred = self.model(to_device(inputs.float()))
+        if 'multiclass' in self.objective and not isinstance(targets, torch.LongTensor): targets = targets.long().squeeze()
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
@@ -236,7 +237,6 @@ class Model(AbsModel):
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
-
         if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np)
         self.predict_folds(inputs, pred_name)
 
@@ -341,7 +341,7 @@ class Model(AbsModel):
         warnings.warn("""ONNX export of LUMIN models has not been fully explored or sufficiently tested yet.
                          Please use with caution, and report any trouble""")
         if '.onnx' not in name: name += '.onnx'
-        dummy_input = torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.cat_embedder.n_cat_in)
+        dummy_input = to_device(torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.cat_embedder.n_cat_in))
         torch.onnx.export(self.model, dummy_input, name)
     
     def export2tfpb(self, name:str, bs:int=1) -> None:

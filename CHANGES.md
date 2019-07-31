@@ -50,7 +50,6 @@
 
 ## Removals
 
-- `evaluate` in `Model` no longer automatically converts tensor types
 - Some default values of arugments in `AMS` and `MultiAMS`
 - Default for `return_mean` in `RegAsProxyPull` and `RegPull`
 
@@ -72,6 +71,7 @@
 - Fixed `lookup_act` for linear function
 - `plot_1d_partial_dependence` not using `n_points` parameter
 - Errors in `plot_rocs` when passing non-lists and when requesting plot_params and bootsrapping
+- Missing `to_device` call when exporting to ONNX on a CUDA device
 
 ## Changes
 
@@ -93,6 +93,7 @@
 - `arr` in `plot_kdes_from_bs` changed to `x`
 - weighted partial dependencies in `plot_1d_partial_dependence` are now computed by passing the name of the weight coulmn in the dataframe and normalisation is done automatically
 - `data` argument for `plot_binary_class_pred` renamed to `df`
+- `plot_1d_partial_dependence` and `plot_2d_partial_dependence` both now expect to be passed a list on training features, rather than expecteing the DataFrame to only contain the trainign features
 
 ## Depreciations
 

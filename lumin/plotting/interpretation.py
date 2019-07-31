@@ -67,7 +67,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
         plt.show()
 
     
-def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feats:Optional[List[str]]=None, input_pipe:Pipeline=None, 
+def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats:List[str], ignore_feats:Optional[List[str]]=None, input_pipe:Pipeline=None, 
                                sample_sz:Optional[int]=None, wgt_name:Optional[str]=None,  n_clusters:Optional[int]=10, n_points:int=20,
                                pdp_isolate_kargs:Optional[Dict[str,Any]]=None, pdp_plot_kargs:Optional[Dict[str,Any]]=None,
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
@@ -79,6 +79,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feat
         model: any trained model with a .predict method
         df: DataFrame containing training data
         feat: feature for which to evaluate the partial dependence of the model
+        train_feats: list of all training features including ones which were later ignored, i.e. input features considered when input_pipe was fitted
         ignore_feats: features present in training data which were not used to train the model (necessary to correctly deprocess feature using input_pipe)
         input_pipe: SK-Learn Pipeline which was used to process the training data
         sample_sz: if set, will only compute partial dependence on a random sample with replacement of the training data, sampled according to weights (if set).
@@ -96,17 +97,19 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feat
     if pdp_plot_kargs    is None: pdp_plot_kargs    = {}
 
     if sample_sz is not None:
-        if wgt_name is not None:
-            weights = df[wgt_name].values.as_type('float64')
+        if wgt_name is None:
+            weights = None
+        else:
+            weights = df[wgt_name].values.astype('float64')
             weights *= 1/np.sum(weights)
         df = df.sample(sample_sz, weights=weights)
     elif sample_sz is None and wgt_name is not None:
         print('''A wgt_name has been specified, but sample_sz is None. Weights will be ignored.
                  Please set sample_sz if you wish to compute weighted partical dependcies''')
 
-    iso = pdp.pdp_isolate(model, df, [f for f in df.columns if ignore_feats is None or f not in ignore_feats], feat, num_grid_points=n_points,
+    iso = pdp.pdp_isolate(model, df, [f for f in train_feats if ignore_feats is None or f not in ignore_feats], feat, num_grid_points=n_points,
                           **pdp_isolate_kargs)
-    if input_pipe is not None: _deprocess_iso(iso, input_pipe, feat, df.columns)
+    if input_pipe is not None: _deprocess_iso(iso, input_pipe, feat, train_feats)
 
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = pdp.pdp_plot(iso, feat, center=False,  plot_lines=True, cluster=n_clusters is not None, n_cluster_centers=n_clusters,
@@ -121,8 +124,8 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, ignore_feat
         plt.show()
 
 
-def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], ignore_feats:Optional[List[str]]=None, input_pipe:Pipeline=None,
-                               sample_sz:Optional[int]=None, wgt_name:Optional[str]=None, n_points:Tuple[int,int]=[20,20],
+def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str], train_feats:List[str], ignore_feats:Optional[List[str]]=None,
+                               input_pipe:Pipeline=None, sample_sz:Optional[int]=None, wgt_name:Optional[str]=None, n_points:Tuple[int,int]=[20,20],
                                pdp_interact_kargs:Optional[Dict[str,Any]]=None, pdp_interact_plot_kargs:Optional[Dict[str,Any]]=None,
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
@@ -133,6 +136,7 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
         model: any trained model with a .predict method
         df: DataFrame containing training data
         feats: pair of features for which to evaluate the partial dependence of the model
+        train_feats: list of all training features including ones which were later ignored, i.e. input features considered when input_pipe was fitted
         ignore_feats: features present in training data which were not used to train the model (necessary to correctly deprocess feature using input_pipe)
         input_pipe: SK-Learn Pipeline which was used to process the training data
         sample_sz: if set, will only compute partial dependence on a random sample with replacement of the training data, sampled according to weights (if set).
@@ -151,17 +155,19 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
     if pdp_interact_plot_kargs is None: pdp_interact_plot_kargs = {}
 
     if sample_sz is not None:
-        if wgt_name is not None:
-            weights = df[wgt_name].values.as_type('float64')
+        if wgt_name is None:
+            weights = None
+        else:
+            weights = df[wgt_name].values.astype('float64')
             weights *= 1/np.sum(weights)
         df = df.sample(sample_sz, weights=weights)
     elif sample_sz is None and wgt_name is not None:
         print('''A wgt_name has been specified, but sample_sz is None. Weights will be ignored.
                  Please set sample_sz if you wish to compute weighted partical dependcies''')
 
-    interact = pdp.pdp_interact(model, df, [f for f in df.columns if ignore_feats is None or f not in ignore_feats], feats, num_grid_points=n_points,
+    interact = pdp.pdp_interact(model, df, [f for f in train_feats if ignore_feats is None or f not in ignore_feats], feats, num_grid_points=n_points,
                                 **pdp_interact_kargs)
-    if input_pipe is not None: _deprocess_interact(interact, input_pipe, feats, df.columns)
+    if input_pipe is not None: _deprocess_interact(interact, input_pipe, feats, train_feats)
             
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = pdp.pdp_interact_plot(interact, feats, figsize=(settings.h_large, settings.h_large),
@@ -176,7 +182,8 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
         plt.show()
 
 
-def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str]) -> None:
+def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:Union[np.ndarray,List[str]]) -> None:
+    if not isinstance(feats, np.ndarray): feats = np.array(feats)
     feat_id = np.argwhere(feats == feat)[0][0]
     try:               in_sz = input_pipe.steps[0][1].n_samples_seen_.shape[0]
     except IndexError: in_sz = input_pipe.steps[0][1].mean_.shape[0]
@@ -188,7 +195,8 @@ def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:List[str
     iso.ice_lines.columns = x
 
 
-def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tuple[str,str], feats:List[str]) -> None:
+def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tuple[str,str], feats:Union[np.ndarray,List[str]]) -> None:
+    if not isinstance(feats, np.ndarray): feats = np.array(feats)
     for i, feat in enumerate(feat_pair):
         feat_id = np.argwhere(feats == feat)[0][0]
         try:               in_sz = input_pipe.steps[0][1].n_samples_seen_.shape[0]

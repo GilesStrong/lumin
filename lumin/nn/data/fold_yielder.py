@@ -35,7 +35,7 @@ class FoldYielder:
         self.set_foldfile(foldfile)
         if isinstance(self.input_pipe, str): self.add_input_pipe_from_file(self.input_pipe)
         if isinstance(self.output_pipe, str): self.add_output_pipe_from_file(self.output_pipe)
-        if ignore_feats is not None: self.set_ignore(ignore_feats)
+        if ignore_feats is not None: self.add_ignore(ignore_feats)
 
     def __repr__(self) -> str: return f'FoldYielder with {self.n_folds} folds, containing {[k for k in self.foldfile["fold_0"].keys()]}'
     

@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from typing import List, Optional
 from fastprogress import progress_bar
+from rfpimp import importances
 
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
@@ -33,7 +34,6 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
     A reduced set of 'important features' is obtained by cutting on relative importance and a new model is trained and evaluated on this reduced set.
     RFs will have their hyper-parameters roughly optimised, both when training on all features and once when training on important features.
     Relative importances may be computed multiple times (via n_rfs) and averaged. In which case the standard error is also computed.
-    Currently, this requires a bleeding edge installation of rfpimp, which is not available from PIP.
 
     Arguments:
         train_df: training data as Pandas DataFrame

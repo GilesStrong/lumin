@@ -13,7 +13,7 @@ from .initialisations import lookup_normal_init
 from .helpers import CatEmbedder
 from .blocks.body import FullyConnected, AbsBody
 from .blocks.head import CatEmbHead, AbsHead
-from .blocks.tail import ClassRegMulti
+from .blocks.tail import ClassRegMulti, AbsTail
 from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 
 '''
@@ -70,7 +70,7 @@ class ModelBuilder(object):
 
     def __init__(self, objective:str, n_out:int, cont_feats:Optional[List[str]]=None,
                  model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,
-                 loss:Union[Any,'auto']='auto', head:AbsHead=CatEmbHead, body:nn.Module=FullyConnected, tail:nn.Module=ClassRegMulti,
+                 loss:Union[Any,'auto']='auto', head:AbsHead=CatEmbHead, body:AbsBody=FullyConnected, tail:AbsTail=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
                  freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
