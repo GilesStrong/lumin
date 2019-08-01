@@ -1,4 +1,22 @@
-# Targeting V0.3
+# Targeting V0.3.1
+
+## Important changes
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# V0.3 Tears in Rain
 
 ## Important changes
 
