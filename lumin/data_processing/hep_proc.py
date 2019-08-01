@@ -47,9 +47,9 @@ def to_pt_eta_phi(df:pd.DataFrame, vec:str, eta:Optional[bool]=None, drop:bool=F
             drop: Whether to remove original columns and just keep the new ones
     '''
 
-    # XXX Remove in v0.3
+    # XXX Remove in v0.4
     if eta is not None: warnings.warn('''Passing eta is now no longer required, it is infered from DF.
-                                         The eta argument is now depreciated and will be removed in v0.3''')
+                                         The eta argument is now depreciated and will be removed in v0.4''')
 
     eta = f'{vec}_pz' in df.columns
     px = df[f"{vec}_px"]

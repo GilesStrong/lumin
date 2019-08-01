@@ -1,4 +1,4 @@
-# Targeting V0.2.1
+# Targeting V0.3
 
 ## Important changes
 
@@ -44,9 +44,10 @@
 - `MultiBlock` body, providing possibility for multiple, parallel body blocks taking subsets of input features
 - Explicit initialisation paramater for bias in `ClassRegMulti`
 - `plot_1d_partial_dependence` now takes `pdp_isolate_kargs` and `pdp_plot_kargs` to pass to `pdp_isolate` and  `pdp_plot`, respectively
-- `plot_2d_partial_dependence` now takes `pdp_interact_kargs` and `pdp_interact_plot_kargs` to pass to `pdp_interact` and  `pdp_interact_plot`, respectively 
+- `plot_2d_partial_dependence` now takes `pdp_interact_kargs` and `pdp_interact_plot_kargs` to pass to `pdp_interact` and  `pdp_interact_plot`, respectively
 - `ForwardHook` class
 - `plot_multibody_weighted_outputs` an interpration plot for `MultiBlock` models
+- Better documentation for methods and classes
 
 ## Removals
 
@@ -94,14 +95,15 @@
 - weighted partial dependencies in `plot_1d_partial_dependence` are now computed by passing the name of the weight coulmn in the dataframe and normalisation is done automatically
 - `data` argument for `plot_binary_class_pred` renamed to `df`
 - `plot_1d_partial_dependence` and `plot_2d_partial_dependence` both now expect to be passed a list on training features, rather than expecteing the DataFrame to only contain the trainign features
+- rfpimp package nolonger requires manual installation
 
 ## Depreciations
 
-- Passing `eta` argument to `to_pt_eta_phi`. Will be removed in v0.3
-- `binary_class_cut` renamed to `binary_class_cut_by_ams`. Code added to call `binary_class_cut_by_ams`. Will be removed in v0.3
-- `plot_dendrogram` renamed to `plot_rank_order_dendrogram`. Code added to call `plot_rank_order_dendrogram`. Will be removed in v0.3
-- `Embedder` renamed to `CatEmbedder`. Code added to call `CatEmbedder`. Will be removed in v0.3
-- `n_cont_in` (number of continuous input features) argument of `ModelBuilder` depreciated in favour of `cont_feats` (list of named continuous input features). Code added to create this by encoding numbers as string. Will be removed in v0.3.
+- Passing `eta` argument to `to_pt_eta_phi`. Will be removed in v0.4
+- `binary_class_cut` renamed to `binary_class_cut_by_ams`. Code added to call `binary_class_cut_by_ams`. Will be removed in v0.4
+- `plot_dendrogram` renamed to `plot_rank_order_dendrogram`. Code added to call `plot_rank_order_dendrogram`. Will be removed in v0.4
+- `Embedder` renamed to `CatEmbedder`. Code added to call `CatEmbedder`. Will be removed in v0.4
+- `n_cont_in` (number of continuous input features) argument of `ModelBuilder` depreciated in favour of `cont_feats` (list of named continuous input features). Code added to create this by encoding numbers as string. Will be removed in v0.4.
 
 ## Comments
 
@@ -170,12 +172,12 @@
 
 - Callbacks:
     - Added `callback_partials` parameter (a list of partials that yield a Callback object) in `fold_train_ensemble` to eventually replace `callback_args`; Neater appearance than previous Dict of object and kargs
-    - `callback_args` now depreciated, to be removed in v0.3
-    - Currently `callback_args` are converted to `callback_partials`, code will also be removed in v0.3
+    - `callback_args` now depreciated, to be removed in v0.4
+    - Currently `callback_args` are converted to `callback_partials`, code will also be removed in v0.4
 - Embeddings:
     - Added `cat_embedder` parameter to `ModelBuilder` to eventuall replace `cat_args`
-    - `cat_args` now depreciated to be removed in v0.3
-    - Currently `cat_args` are converted to an `Embedder`, code will also be removed in v0.3
+    - `cat_args` now depreciated to be removed in v0.4
+    - Currently `cat_args` are converted to an `Embedder`, code will also be removed in v0.4
 
 ## Comments
 

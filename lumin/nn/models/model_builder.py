@@ -82,16 +82,16 @@ class ModelBuilder(object):
         self._parse_loss(loss)
         self._parse_model_args(model_args)
         self._parse_opt_args(opt_args)
-        # XXX Remove in v0.3
+        # XXX Remove in v0.4
         if self.cont_feats is None and n_cont_in is not None:
-            warnings.warn('''Passing n_cont_in (number of continuous input features) is depreciated and will be removed in v0.3.
+            warnings.warn('''Passing n_cont_in (number of continuous input features) is depreciated and will be removed in v0.4.
                              Please move to passing a list of names of continuous input features to cont_feats.
                              This is necessary for using certain classes, e.g. MultiBlock body.''')
             self.cont_feats = [str(i) for i in range(n_cont_in)]
         self.n_cont_in = len(self.cont_feats)
-        # XXX Remove in v0.3
+        # XXX Remove in v0.4
         if self.cat_embedder is None and  cat_args is not None:
-            warnings.warn('''Passing cat_args (dictionary of lists for embedding categorical features) is depreciated and will be removed in v0.3.
+            warnings.warn('''Passing cat_args (dictionary of lists for embedding categorical features) is depreciated and will be removed in v0.4.
                              Please move to passing a CatEmbedder class to cat_embedder''')
             cat_args = {k:cat_args[k] for k in cat_args if k != 'n_cat_in'}
             if 'emb_szs' in cat_args: cat_args['emb_szs'] = cat_args['emb_szs'][:,-1]
