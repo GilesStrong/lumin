@@ -115,9 +115,8 @@ Optionally, run pip install with `-e` flag for development installation. Full fu
 
 ### Additional modules
 
-Full use of LUMIN requires the latest versions of rfpimp and PDPbox, but these are not released yet on PyPI, so you'll need to install them from source, too:
+Full use of LUMIN requires the latest version of PDPbox, but this is not released yet on PyPI, so you'll need to install it from source, too:
 
-- `git clone https://github.com/parrt/random-forest-importances.git && cd random-forest-importances/src && pip install .`
 - `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install -e .` note the `-e` flag to make sure the version number gets set properly.
 
 ## Notes
