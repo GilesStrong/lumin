@@ -24,12 +24,31 @@ import matplotlib.pyplot as plt
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
-                      params=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
-                      verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
-    '''Uses a guided grid search to roughly optimise random forest parameters'''
+                      params:OrderedDict=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
+                      n_estimators:int=40, verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
+    r'''
+    Use an ordered parameter-scan to roughly optimise Random Forest hyper-parameters.
+
+    Arguments:
+        x_trn: training input data
+        y_trn: training target data
+        x_val: validation input data
+        y_val: validation target data
+        objective: string representation of objective: either 'classification' or 'regression'
+        w_trn: training weights
+        w_val: validation weights
+        params: ordered dictionary mapping parameters to optimise to list of values to cosnider
+        n_estimators: number of trees to use in each forest
+        verbose: Print extra information and show a live plot of model performance
+
+    Returns:
+        params: dictionary mapping parameters to their optimised values
+        rf: best performing Random Forest
+    '''
+
     rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
     
-    best_params = {'n_estimators': 40, 'n_jobs': -1, 'max_features':'sqrt'}
+    best_params = {'n_estimators': n_estimators, 'n_jobs': -1, 'max_features':'sqrt'}
     best_scores = []
     scores = []
     mb = master_bar(params)
@@ -60,7 +79,25 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
                  callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
-    '''Wrapper function for running Smith LR range tests (https://arxiv.org/abs/1803.09820) using folds in FoldYielder'''
+    r'''
+    Wrapper function for training using :class:LRFinder which runs a Smith LR range test (https://arxiv.org/abs/1803.09820) using folds in :class:FoldYielder.
+    Trains models for 1 fold, interpolating LR between set bounds. This repeats for each fold in :class:FoldYielder, and loss evolution is averaged.
+
+    Arguments:
+        fy: :class:FoldYielder providing training data
+        model_builder: :class:ModelBuilder providing networks and optimisers
+        bs: batch size
+        train_on_weights: If weights are present, whether to use them for training
+        shuffle_fold: whether to shuffle data in folds
+        n_folds: if >= 1, will only train n_folds number of models, otherwise will train one model per fold
+        lr_bounds: starting and ending LR values
+        callback_partials: optional list of functools.partial, each of which will a instantiate :class:Callback when called        
+        plot_settings: :class:PlotSettings class to control figure appearance
+
+    Returns:
+        List of :class:LRFinder which were used for each model trained
+    '''
+
     if callback_partials is None: callback_partials = []
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
     lr_finders = []

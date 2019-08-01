@@ -14,31 +14,55 @@ import matplotlib.pyplot as plt
 
 
 def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
-    '''Compute bootstrap statistics for a list of datasets simultaneously using multiprocessing'''
+    r'''
+    Compute bootstrap roc score for a list of datasets simultaneously using multiprocessing
+    '''
+
     out_dict,scores = {},[]
     if 'name' not in args: args['name'] = ''
     if 'n'    not in args: args['n']    = 100
     np.random.seed()
-    if 'weights' in args: 
-        for i in range(args['n']):
-            points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
-            scores.append(roc_auc_score(args['labels'].loc[points].values, args['preds'].loc[points].values, sample_weight=args['weights'].loc[points].values))
-    else:
-        for i in range(args['n']):
-            points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
-            scores.append(roc_auc_score(args['labels'].loc[points].values, args['preds'].loc[points].values))
+    for i in range(args['n']):
+        points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
+        if len(set(args['labels'].loc[points])) == 2: scores.append(roc_auc_score(args['labels'].loc[points], args['preds'].loc[points],
+                                                                                  sample_weight=args['weights'].loc[points] if 'weights' in args else None))
     out_dict[f"{args['name']}_score"] = scores
     out_q.put(out_dict)
 
 
 def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', targ_name:str='gen_target', wgt_name:Optional[str]=None, 
-             labels:Optional[List[str]]=None, plot_params:Optional[List[Dict[str,Any]]]=None, 
-             n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''Plot receiver operating characteristic curve, optionally using booststrap resampling'''
+             labels:Optional[Union[str,List[str]]]=None, plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, 
+             n_bootstrap:int=0, log_x:bool=False, plot_baseline:bool=True,
+             savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> Dict[str,Union[float,Tuple[float,float]]]:
+    r'''
+    Plot receiver operating characteristic curve(s), optionally using booststrap resampling
+
+    Arguments:
+        data: (list of) DataFrame(s) from which to draw predictions and targets 
+        pred_name: name of column to use as predictions
+        targ_name: name of column to use as targets
+        wgt_name: optional name of column to use as sample weights
+        labels: (list of) label(s) for plot legend
+        plot_params: (list of) dictionar[y/ies] of argument(s) to pass to line plot
+        n_bootstrap: if greater than 0, will bootstrap resample the data that many times when computing the ROC AUC. Currently, this does not affect the shape
+            of the lines, which are based on computing the ROC for the entire dataset as is.
+        log_x: whether to use a log scale for plotting the x-axis, useful for high AUC line
+        plot_baseline: whether to plot a dotted line for AUC=0.5. Currently incompatable with log_x=True
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+
+    Returns:
+        Dictionary mapping data labels to aucs (and uncertainties if n_bootstrap > 0)
+    '''
+
+    # TODO: make plot show uncertainty bands
+    
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
-        if isinstance(data, pd.DataFrame): data,plot_params = [data],[plot_params]
-        if labels      is None: labels      = ['' for i in range(len(data))]
-        if plot_params is None: plot_params = [{} for i in range(len(data))]
+        if isinstance(data, pd.DataFrame):
+            data = [data]
+        if labels      is None:             labels      = [f'{i}' for i in range(len(data))] if len(data) > 1 else ['' for i in range(len(data))]
+        if plot_params is None:             plot_params = [{} for i in range(len(data))]
+        elif isinstance(plot_params, dict): plot_params = [plot_params for i in range(len(data))]
 
         curves,mean_scores = [],[]
         if n_bootstrap > 1:
@@ -58,11 +82,13 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
             if wgt_name is None: curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values)[:2])
             else:                   curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values, sample_weight=data[i][wgt_name].values)[:2])
 
+        aucs = {}
         plt.figure(figsize=(settings.h_mid, settings.h_mid))
         for i in range(len(data)):
+            aucs[labels[i]] = mean_scores[i]
             if n_bootstrap > 0:
                 mean_score = uncert_round(*mean_scores[i])
-                plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_score[0]}±{mean_score[1]}')
+                plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_score[0]}±{mean_score[1]}', **plot_params[i])
             else:
                 plt.plot(*curves[i], label=f'{labels[i]} AUC = {mean_scores[i]:.3f}', **plot_params[i])
         
@@ -79,6 +105,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
+        return aucs
 
 
 def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
@@ -88,16 +115,32 @@ def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
     return [x[0] for x in np.array(sorted(zip(samples, weights), key=lambda x: x[1]))]
 
 
-def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name=None, wgt_scale:float=1,
+def plot_binary_class_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_target', wgt_name:str=None, wgt_scale:float=1,
                            log_y:bool=False, lim_x:Tuple[float,float]=(0,1), density=True, 
                            savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''Basic plotter for prediction distirbution in a binary class problem'''
+    r'''
+    Basic plotter for prediction distribution in a binary classification problem.
+    Note that labels are set using the settings.targ2class dictionary, which by default is {0: 'Background', 1: 'Signal'}.
+
+    Arguments:
+        df: DataFrame with targets and predictions
+        pred_name: name of column to use as predictions
+        targ_name: name of column to use as targets
+        wgt_name: optional name of column to use as sample weights
+        wgt_scale: applies a global multiplicative rescaling to sample weights. Default 1 = no rescaling
+        log_y: whether to use a log scale for the y-axis
+        lim_x: limit for plotting on the x-axis
+        density: whether to normalise each distribution to one, or keep set to sum of weights / datapoints
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
-        for targ in sorted(set(data[targ_name])):
-            cut = data[targ_name] == targ
-            hist_kws = {} if wgt_name is None else {'weights': wgt_scale*data.loc[cut, wgt_name]}
-            sns.distplot(data.loc[cut, pred_name], label=settings.targ2class[targ], hist_kws=hist_kws, norm_hist=density, kde=False)
+        for targ in sorted(set(df[targ_name])):
+            cut = df[targ_name] == targ
+            hist_kws = {} if wgt_name is None else {'weights': wgt_scale*df.loc[cut, wgt_name]}
+            sns.distplot(df.loc[cut, pred_name], label=settings.targ2class[targ], hist_kws=hist_kws, norm_hist=density, kde=False)
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xlabel("Class prediction", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xlim(lim_x)
@@ -114,13 +157,32 @@ def plot_binary_class_pred(data:pd.DataFrame, pred_name='pred', targ_name:str='g
         plt.show() 
 
 
-def plot_sample_pred(df:pd.DataFrame, pred_name='pred', targ_name:str='gen_target', wgt_name='gen_weight', sample_name='gen_sample',
+def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight', sample_name:str='gen_sample',
                      wgt_scale:float=1, bins:Union[int,List[int]]=35, log_y:bool=True, lim_x:Tuple[float,float]=(0,1),
                      density=False, zoom_args:Optional[Dict[str,Any]]=None,
                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    '''More advanceed plotter for prediction distirbution in a binary class problem with stacked distributions for backgrounds
-    Can also zoom in to specified parts of plot, e.g.:
-   zoom_args={'x':(0.4,0.45), 'y':(0.2, 1500), 'anchor':(0,0.25,0.95,1), 'width_scale':1, 'width_zoom':4, 'height_zoom':3}'''
+    r'''
+    More advanceed plotter for prediction distirbution in a binary class problem with stacked distributions for backgrounds and user-defined binning
+    Can also zoom in to specified parts of plot
+    Note that plotting colours can be controled by seeting the settings.sample2col dictionary
+    
+    Arguments:
+        df: DataFrame with targets and predictions
+        pred_name: name of column to use as predictions
+        targ_name: name of column to use as targets
+        wgt_name: name of column to use as sample weights
+        sample_name: name of column to use as process names
+        wgt_scale: applies a global multiplicative rescaling to sample weights. Default 1 = no rescaling        
+        bins: either the number of bins to use for a uniform binning, or a list of bin edges for a variable-width binning
+        log_y: whether to use a log scale for the y-axis
+        lim_x: limit for plotting on the x-axis
+        density: whether to normalise each distribution to one, or keep set to sum of weights / datapoints
+        zoom_args: arguments to control the optional zoomed in section,
+            e.g. {'x':(0.4,0.45), 'y':(0.2, 1500), 'anchor':(0,0.25,0.95,1), 'width_scale':1, 'width_zoom':4, 'height_zoom':3}
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+    
     hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)

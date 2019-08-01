@@ -8,8 +8,19 @@ from torch import Tensor
 
 
 def calc_ams(s:float, b:float, br:float=0, unc_b:float=0) -> float:
-    '''Compute Approximate Median Significance for signal (background) weight s (b),
-    fractional systemtatic uncertainty unc_b, and offset br'''
+    r'''
+    Compute Approximate Median Significance (https://arxiv.org/abs/1007.1727)
+
+    Arguments:
+        s: signal weight
+        b: background weight
+        br: background offset bias
+        unc_b: fractional systemtatic uncertainty on background
+
+    Returns:
+        Approximate Median Significance if b > 0 else -1
+    '''
+
     if b == 0: return -1
     if not unc_b:
         radicand = 2*((s+b+br)*np.log(1.0+s/(b+br))-s)
@@ -20,6 +31,19 @@ def calc_ams(s:float, b:float, br:float=0, unc_b:float=0) -> float:
 
 
 def calc_ams_torch(s:Tensor, b:Tensor, br:float=0, unc_b:float=0) -> Tensor:
+    r'''
+    Compute Approximate Median Significance (https://arxiv.org/abs/1007.1727) using Tensor inputs
+
+    Arguments:
+        s: signal weight
+        b: background weight
+        br: background offset bias
+        unc_b: fractional systemtatic uncertainty on background
+
+    Returns:
+        Approximate Median Significance if b > 0 else 1e-18 * s
+    '''
+
     '''Compute Approximate Median Significance with torch for signal (background) weight s (b),
     fractional systemtatic uncertainty unc_b, and offset br'''
     if b == 0: return 1e-18*s
@@ -33,9 +57,24 @@ def calc_ams_torch(s:Tensor, b:Tensor, br:float=0, unc_b:float=0) -> Tensor:
 
 def ams_scan_quick(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:float=0,
                    pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight') -> Tuple[float,float]:
-    '''Determine optimum calc_ams and cut,
-    wgt_factor used rescale weights to get comparable calc_amss
-    sufferes from float precison - not recommended for final evaluation'''
+    r'''
+    Scan accross a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
+    Note that whilst this method is quicker than :meth:ams_scan_slow, it sufferes from float precison - not recommended for final evaluation.
+    
+    Arguments:
+        df: DataFrame containing prediction data
+        wgt_factor: factor to reweight signal and background weights
+        br: background offset bias
+        syst_unc_b: fractional systemtatic uncertainty on background
+        pred_name: column to use as predictions
+        targ_name: column to use as truth labels for signal and background
+        wgt_name: column to use as weights for signal and background events
+
+    Returns:
+        maximum AMS
+        prediction threshold corresponding to maximum AMS
+    '''
+
     max_ams, threshold = 0, 0.0
     df = df.sort_values(by=[pred_name])
     s = np.sum(df.loc[(df[targ_name] == 1), wgt_name])
@@ -52,9 +91,29 @@ def ams_scan_quick(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:f
 def ams_scan_slow(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:float=0, 
                   use_stat_unc:bool=False, start_cut:float=0.9, min_events:int=10,
                   pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight', show_prog:bool=True) -> Tuple[float,float]:
-    '''Determine optimum calc_ams and cut,
-    wgt_factor used rescale weights to get comparable calc_amss
-    slower than ams_scan_quick, but doesn't suffer from float precision'''
+    r'''
+    Scan accross a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
+    Note that whilst this method is slower than :meth:ams_scan_quick, it does not suffer as much from float precison.
+    Additionally it allows one to account for statistical uncertainty in AMS calculation.
+    
+    Arguments:
+        df: DataFrame containing prediction data
+        wgt_factor: factor to reweight signal and background weights
+        br: background offset bias
+        syst_unc_b: fractional systemtatic uncertainty on background
+        use_stat_unc: whether to account for the statistical uncertainty on the background
+        start_cut: minimum prediction to consider; useful for speeding up scan
+        min_events: minimum number of background unscaled events required to pass threshold
+        pred_name: column to use as predictions
+        targ_name: column to use as truth labels for signal and background
+        wgt_name: column to use as weights for signal and background events
+        show_prog: whether to display progress and ETA of scan
+
+    Returns:
+        maximum AMS
+        prediction threshold corresponding to maximum AMS
+    '''
+    
     max_ams, threshold = 0, 0.0
     sig, bkg = df[df[targ_name] == 1], df[df[targ_name] == 0]
     syst_unc_b2 = np.square(syst_unc_b)

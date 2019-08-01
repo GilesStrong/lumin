@@ -11,7 +11,16 @@ import matplotlib.pyplot as plt
 
 
 class LRFinder(Callback):
-    '''Callback class for Smith lr range test https://arxiv.org/abs/1803.09820'''
+    r'''
+    Callback class for Smith learning-rate range test (https://arxiv.org/abs/1803.09820)
+
+    Arguments:
+        nb: number of batches in a (sub-)epoch
+        lr_bounds: tuple of initial and final LR
+        model: :class:`Model` to alter, alternatively call :meth:`set_model`
+        plot_settings: :class:`PlotSettings` class to control figure appearance
+    '''
+
     def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.lr_bounds = lr_bounds
@@ -24,7 +33,16 @@ class LRFinder(Callback):
         
     def calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
-    def plot(self, n_skip=0, n_max:Optional[int]=None, lim_y=None):
+    def plot(self, n_skip:int=0, n_max:Optional[int]=None, lim_y:Optional[Tuple[float,float]]=None):
+        r'''
+        Plot the loss as a function of the LR.
+
+        Arguments:
+            n_skip: Number of initial iterations to skip in plotting
+            n_max: Maximum iteration number to plot
+            lim_y: y-range for plotting
+        '''
+
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
             plt.plot(self.history['lr'][n_skip:n_max], self.history['loss'][n_skip:n_max], label='Training loss', color='g')
@@ -39,6 +57,10 @@ class LRFinder(Callback):
             plt.show()
         
     def plot_lr(self):
+        r'''
+        Plot the LR as a function of iterations.
+        '''
+
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             plt.figure(figsize=(self.plot_settings.h_small, self.plot_settings.h_small))
             plt.plot(range(len(self.history['lr'])), self.history['lr'])

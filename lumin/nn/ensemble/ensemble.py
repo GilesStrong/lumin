@@ -22,7 +22,28 @@ from ...utils.statistics import uncert_round
 
 
 class Ensemble(AbsEnsemble):
-    '''Standard class for building an ensemble object'''
+    r'''
+    Standard class for building an ensemble of collection of trained networks producedd by :meth:fold_train_ensemble
+    Input and output pipelines can be added. to provide easy saving and loaded of exported ensembles.
+    Currently, the input pipeline is not used, so input data is expected to be preprocessed.
+    However the output pipeline will be used to deprocess model predictions.
+
+
+    Once instanciated, :meth:build_ensemble or :meth:load should be called. Alternatively, class_methods :meth:from_save or :meth:from_results may be used.
+
+    Arguments:
+        input_pipe: Optional input pipeline, alternatively call :meth:add_input_pipe
+        output_pipe: Optional output pipeline, alternatively call :meth:add_input_pipe
+        model_builder: Optional :class:ModelBuilder for constructing models from saved weights.
+
+    Examples::
+        >>> ensemble = Ensemble()
+        >>> ensemble = Ensemble(input_pipe, output_pipe, model_builder)
+    '''
+
+    # TODO: check whether model_builder is necessary here
+    # TODO: Standardise pipeline treatment: currently inputs not processed, but outputs are
+
     def __init__(self, input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None, model_builder:Optional[ModelBuilder]=None):
         super().__init__()
         self.input_pipe,self.output_pipe,self.model_builder = input_pipe,output_pipe,model_builder
@@ -45,6 +66,19 @@ class Ensemble(AbsEnsemble):
 
     @classmethod
     def from_save(cls, name:str) -> AbsEnsemble:
+        r'''
+        Instantiate :class:Ensemble from a saved :class:Ensemble
+
+        Arguments:
+            name: base filename of ensemble
+
+        Returns:
+            Loaded :class:Ensemble
+
+        Examples::
+            >>> ensemble = Ensemble.from_save('weights/ensemble')
+        '''
+
         ensemble = cls()
         ensemble.load(name)
         return ensemble
@@ -53,6 +87,42 @@ class Ensemble(AbsEnsemble):
     def from_results(cls,  results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
                      metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None,
                      location:Path=Path('train_weights'), verbose:bool=True) -> AbsEnsemble:
+        r'''
+        Instantiate :class:Ensemble from a outputs of :meth:fold_train_ensemble.
+        If cycle models are loaded, then only uniform weighting between models is supported.
+
+        Arguments:
+            results: results saved/returned by :meth:fold_train_ensemble
+            size: number of models to load as ranked by metric
+            model_builder: :class:ModelBuilder used for building :class:Model from saved models
+            metric: metric name listed in results to use for ranking and weighting trained models
+            weighting: 'reciprocal' or 'uniform' how to weight model predictions during predicition.
+                'reciprocal' = models weighted by 1/metric
+                'uniform' = models treated with equal weighting
+            higher_metric_better: whether metric should be maximised or minimised
+            snapshot_args: Dictionary potentially containing:
+                'cycle_losses': returned/save by :meth:fold_train_ensemble when using an :class:AbsCyclicCallback
+                'patience': patience value that was passed to :meth:fold_train_ensemble
+                'n_cycles': number of cycles to load per model
+                'load_cycles_only': whether to only load cycles, or also the best performing model
+                'weighting_pwr': weight cycles according to (n+1)**weighting_pwr, where n is the number of cycles loaded so far.
+                    Models are loaded youngest to oldest
+            location: Path to save location passed to :meth:fold_train_ensemble
+            verbose: whether to print out information of models loaded
+
+        Returns:
+            Built :class:Ensemble
+
+        Examples::
+            >>> ensemble = Ensemble.from_results(results, 10, model_builder, location=Path('train_weights'))
+            >>> ensemble = Ensemble.from_results(results, 1,  model_builder, location=Path('train_weights'),
+                                                 snapshot_args={'cycle_losses':cycle_losses,
+                                                                'patience':patience,
+                                                                'n_cycles':8,
+                                                                'load_cycles_only':True,
+                                                                'weighting_pwr':0})
+        '''
+
         ensemble = cls()
         ensemble.build_ensemble(results=results, size=size, model_builder=model_builder,
                                 metric=metric, weighting=weighting, higher_metric_better=higher_metric_better, snapshot_args=snapshot_args,
@@ -62,6 +132,38 @@ class Ensemble(AbsEnsemble):
     def build_ensemble(self, results:List[Dict[str,float]], size:int, model_builder:ModelBuilder,
                        metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None,
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
+        r'''
+        Load up an instantiated :class:Ensemble with outputs of :meth:fold_train_ensemble
+
+        Arguments:
+            results: results saved/returned by :meth:fold_train_ensemble
+            size: number of models to load as ranked by metric
+            model_builder: :class:ModelBuilder used for building :class:Model from saved models
+            metric: metric name listed in results to use for ranking and weighting trained models
+            weighting: 'reciprocal' or 'uniform' how to weight model predictions during predicition.
+                'reciprocal' = models weighted by 1/metric
+                'uniform' = models treated with equal weighting
+            higher_metric_better: whether metric should be maximised or minimised
+            snapshot_args: Dictionary potentially containing:
+                'cycle_losses': returned/save by :meth:fold_train_ensemble when using an :class:AbsCyclicCallback
+                'patience': patience value that was passed to :meth:fold_train_ensemble
+                'n_cycles': number of cycles to load per model
+                'load_cycles_only': whether to only load cycles, or also the best performing model
+                'weighting_pwr': weight cycles according to (n+1)**weighting_pwr, where n is the number of cycles loaded so far.
+                    Models are loaded youngest to oldest
+            location: Path to save location passed to :meth:fold_train_ensemble
+            verbose: whether to print out information of models loaded
+
+        Examples::
+            >>> ensemble.build_ensemble(results, 10, model_builder, location=Path('train_weights'))
+            >>> ensemble.build_ensemble(results, 1,  model_builder, location=Path('train_weights'),
+                                        snapshot_args={'cycle_losses':cycle_losses,
+                                                       'patience':patience,
+                                                       'n_cycles':8,
+                                                       'load_cycles_only':True,
+                                                       'weighting_pwr':0})
+        '''
+
         self.model_builder = model_builder
         cycle_losses     = None if snapshot_args is None or 'cycle_losses'     not in snapshot_args else snapshot_args['cycle_losses']
         n_cycles         = None if snapshot_args is None or 'n_cycles'         not in snapshot_args else snapshot_args['n_cycles']
@@ -104,22 +206,55 @@ class Ensemble(AbsEnsemble):
         self.n_out = self.models[0].get_out_size()
         self.results = results
         
-    def predict_array(self, arr:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None) -> np.ndarray:
+    def predict_array(self, arr:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None, display:bool=True) -> np.ndarray:
+        r'''
+        Apply ensemble to Numpy array and get predictions. If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
+        Inputs are expected to be preprocessed; i.e. any input pipe added to the ensemble is not used.
+
+        Arguments:
+            arr: input data
+            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:Ensemble.
+                By default, entire ensemble is used.
+            parent_bar: not used when calling the method directly
+            display: whether to display a progress bar for model evaluations
+
+        Returns:
+            Numpy array of predictions
+
+        Examples::
+            >>> preds = ensemble.predict_array(inputs)
+        '''
+
         pred = np.zeros((len(arr), self.n_out))
-        
         n_models = len(self.models) if n_models is None else n_models
         models = self.models[:n_models]
         weights = self.weights[:n_models]
         weights = weights/weights.sum()
         
         arr = Tensor(arr)
-        for i, m in enumerate(progress_bar(models, parent=parent_bar, display=bool(parent_bar))):
+        for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
             tmp_pred = m.predict(arr)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred
     
     def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
+        r'''
+        Apply ensemble to data accessed by a :class:FoldYielder and save predictions as a new group per fold in the foldfile.
+        If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
+        Inputs are expected to be preprocessed; i.e. any input pipe added to the ensemble is not used.
+        If foldyielder has test-time augmentation, then predictions will be averaged over all augmentated forms of the data.
+
+        Arguments:
+            fy: :class:FoldYielder interfacing with the input data
+            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:Ensemble.
+                By default, entire ensemble is used.
+            pred_name: name for new group of predictions
+
+        Examples::
+            >>> ensemble.predict_array(test_fy, pred_name='pred_tta')
+        '''
+
         n_models = len(self.models) if n_models is None else n_models
         times = []
         mb = master_bar(range(len(fy.foldfile)))
@@ -127,13 +262,13 @@ class Ensemble(AbsEnsemble):
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold, n_models, mb)
+                pred = self.predict_array(fold, n_models, mb, display=True)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold, n_models))
+                    tmpPred.append(self.predict_array(fold, n_models, display=False))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
@@ -143,10 +278,41 @@ class Ensemble(AbsEnsemble):
         print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None,np.ndarray]:
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models)
+        r'''
+        Compatability method for predicting data contained in either a Numpy array or a :class:FoldYielder
+        Will either pass inputs to :meth:predict_array or :meth:predict_folds.
+
+        Arguments:
+            inputs: either a :class:FoldYielder interfacing with the input data, or the input data as an array
+            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:Ensemble.
+                By default, entire ensemble is used.
+            pred_name: name for new group of predictions if passed a :class:FoldYielder
+
+        Returns:
+            If passed a Numpy array will return predictions.
+
+        Examples::
+            >>> preds = ensemble.predict(input_array)
+            >>> ensemble.predict(test_fy)
+        '''
+        
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models, display=True)
         self.predict_folds(inputs, n_models, pred_name)
     
-    def save(self, name:str, feats:Any=None, overwrite:bool=False) -> None:
+    def save(self, name:str, feats:Optional[Any]=None, overwrite:bool=False) -> None:
+        r'''
+        Save ensemble and associated objects
+
+        Arguments:
+            name: base name for saved objects
+            feats: optional list of input features
+            overwrite: if existing objects are found, whether to overwrite them
+        
+        Examples::
+            >>> ensemble.save('weights/ensemble')
+            >>> ensemble.save('weights/ensemble', ['pt','eta','phi'])
+        '''
+
         if (len(glob.glob(f"{name}*.json")) or len(glob.glob(f"{name}*.h5")) or len(glob.glob(f"{name}*.pkl"))) and not overwrite:
             raise FileExistsError("Ensemble already exists with that name, call with overwrite=True to force save")
         else:
@@ -164,6 +330,16 @@ class Ensemble(AbsEnsemble):
                 with open(f'{name}_feats.pkl', 'wb')       as fout: pickle.dump(feats, fout)
                     
     def load(self, name:str) -> None:
+        r'''
+        Load an instantiated :class:Ensemble with weights and :class:Model from save.
+
+        Arguments;
+            name: base name for saved objects
+
+        Examples::
+            >>> ensemble.load('weights/ensemble') 
+        '''
+
         with open(f'{name}_builder.pkl', 'rb') as fin: self.model_builder = pickle.load(fin)
         names = glob.glob(f'{name}_*.h5')
         self.models = []
@@ -185,10 +361,36 @@ class Ensemble(AbsEnsemble):
         except FileNotFoundError: pass
 
     def export2onnx(self, base_name:str, bs:int=1) -> None:
+        r'''
+        Export all :class:Model contained in :class:Ensemble to ONNX format.
+        Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
+
+        Arguments:
+            base_name: Exported models will be called {base_name}_{model_num}.onnx
+            bs: batch size for exported models
+        '''
+        
         for i, m in enumerate(self.models): m.export2onnx(f'{base_name}_{i}', bs)
 
     def export2tfpb(self, base_name:str, bs:int=1) -> None:
+        r'''
+        Export all :class:Model contained in :class:Ensemble to Tensorflow ProtocolBuffer format, via ONNX.
+        Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
+
+        Arguments:
+            base_name: Exported models will be called {base_name}_{model_num}.pb
+            bs: batch size for exported models
+        '''
+
         for i, m in enumerate(self.models): m.export2tfpb(f'{base_name}_{i}', bs)
 
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+        r'''
+        Call :meth:get_ensemble_feat_importance passing this :class:Ensemble and provided arguments
+
+        Arguments:
+            fy: :class:FoldYielder interfacing to data on which to evaluate importance
+            eval_metric: Optional :class:EvalMetric to use for quantifying performance
+        '''
+        
         return get_ensemble_feat_importance(self, fy, eval_metric)

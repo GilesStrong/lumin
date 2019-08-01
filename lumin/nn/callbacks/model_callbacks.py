@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Optional
+from typing import Optional, Dict
 from abc import abstractmethod
 import copy
 
@@ -31,10 +31,42 @@ class AbsModelCallback(Callback):
 
 
 class SWA(AbsModelCallback):
-    '''Track weight-avergaed model during training using Stochastic Weight Averaging https://arxiv.org/abs/1803.05407'''
-    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fold:Optional[np.ndarray]=None,
+    r'''
+    Callback providing Stochastic Weight Averaging based on (https://arxiv.org/abs/1803.05407)
+    This adapted version allows the tracking of a pair of average models in order to avoid having to hardcode a specific start point for averaging:
+        1. Model average *x0* will begin to be tracked start_epoch (sub-)epochs/cycles after training begins.
+        1. cycle_since_replacement is set to 1
+        1. renewal_period (sub-)epochs/cycles later, a second average *x1* will be tracked.
+        1. At the next renewal period, the performance of x0 and x1 will be compared on data contained in val_fold.
+            - If x0 is better than x1:
+                - x1 is replaced by a copy of the current model
+                - cycle_since_replacement is increased by 1
+                - renewal_period is multiplied by cycle_since_replacement
+            - Else:
+                - x0 is replaced by x1
+                - x1 is replaced by a copy of the current model
+                - cycle_since_replacement is set to 1
+                 - renewal_period is set back to its original value
+
+    Additonally, will optionally (default True) lock-in to any cyclical callbacks to only update at the end of a cycle.
+
+    Arguments:
+        start_epoch: (sub-)epoch/cycle to begin averaging
+        renewal_period: How often to check performance of averages, and renew tracking of least performant
+        model: :class:Model to provide parameters, alternatively call :meth:set_model
+        val_fold: Dictionary containing inputs, targets, and weights (or None) as Numpy arrays
+        cyclic_callback: Optional for any cyclical callback which is running
+        update_on_cycle_end: Whether to lock in to the cyclic callback and only update at the end of a cycle. Default yes, if cyclic callback present.
+        verbose: Whether to print out update information for testing and operation confirmation
+        plot_settings: :class:PlotSettings class to control figure appearance
+
+    Examples::
+        >>> swa = SWA(start_epoch=5, renewal_period=5)
+    '''
+
+    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None, val_fold:Optional[Dict[str,np.ndarray]]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, update_on_cycle_end:Optional[bool]=None,
-                 verbose=False, plot_settings:PlotSettings=PlotSettings()):
+                 verbose:bool=False, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, val_fold=val_fold, cyclic_callback=cyclic_callback, update_on_cycle_end=update_on_cycle_end, plot_settings=plot_settings)
         self.start_epoch,self.renewal_period,self.verbose = start_epoch,renewal_period,verbose
         self.weights,self.loss = None,None
