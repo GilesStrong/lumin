@@ -111,7 +111,7 @@ cd lumin
 pip install .
 ```
 
-Optionally, run pip install with `-e` flag for development installation. Full functionality requires two additional packages as described below.
+Optionally, run pip install with `-e` flag for development installation. Full functionality requires an additional package as described below.
 
 ### Additional modules
 
