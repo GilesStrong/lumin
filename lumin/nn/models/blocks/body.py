@@ -164,11 +164,11 @@ class MultiBlock(AbsBody):
         self.blocks,self.n_out,self.masks,self.bottleneck_blocks = [],0,[],None
         
         if self.bottleneck_sz > 0:
-            self.bottleneck_blocks,self.bottleneck_sz_masks = [],[]
+            self.bottleneck_blocks,self.bottleneck_masks = [],[]
             for i, fs in enumerate(self.feats_per_block):
                 tmp_map = {f: feat_map[f] for f in feat_map if f not in feats_per_block[i]}
-                self.bottleneck_sz_masks.append([i for f in tmp_map for i in tmp_map[f]])
-                self.bottleneck_blocks.append(self._get_bottleneck(self.bottleneck_sz_masks[-1]))
+                self.bottleneck_masks.append([i for f in tmp_map for i in tmp_map[f]])
+                self.bottleneck_blocks.append(self._get_bottleneck(self.bottleneck_masks[-1]))
             self.bottleneck_blocks = nn.ModuleList(self.bottleneck_blocks)
 
         for i, b in enumerate(blocks):
@@ -203,7 +203,7 @@ class MultiBlock(AbsBody):
         y = None
         for i, b in enumerate(self.blocks):
             if self.bottleneck_sz:
-                a = self.bottleneck_blocks[i](x[:,self.bottleneck_sz_masks[i]])
+                a = self.bottleneck_blocks[i](x[:,self.bottleneck_masks[i]])
                 tmp_x = torch.cat((x[:,self.masks[i]], a), -1)
             else:
                 tmp_x = x[:,self.masks[i]]

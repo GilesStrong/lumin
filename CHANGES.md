@@ -6,9 +6,17 @@
 
 ## Additions
 
+- `bin_binary_class_pred`
+-   Ability to only consider classes rather than samples when computing bin edges 
+-   Ability to add pure signal bins if normalisation uncertainty would be below some value 
+- `plot_bottleneck_weighted_inputs` method for intterpretting bottleneck blocks in `MultiBlock`
+
 ## Removals
 
 ## Fixes
+
+- `CatEmbedder.from_fy` using features ignored by `FoldYielder`
+- `bottleneck_sz_masks` to `bottleneck_masks` in `MultiBlock`
 
 ## Changes
 

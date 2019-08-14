@@ -251,3 +251,55 @@ def plot_multibody_weighted_outputs(model:AbsModel, inputs:Union[np.ndarray,Tens
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show() 
+
+
+def plot_bottleneck_weighted_inputs(model:AbsModel, bottleneck_idx:int, inputs:Union[np.ndarray,Tensor], log_y:bool=True,
+                                    savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    Interpret how a single-neuron bottleneck in a :class:MultiBlock relies on input features by plotting the absolute values of the features times their
+    associated weight for a given set of input data.
+
+    Arguments:
+        model: model to interpret
+        bottleneck_idx: index of the bottleneck to interpret, i.e. model.body.bottleneck_blocks[bottleneck_idx]
+        inputs: input data to use for interpretation
+        log_y: whether to plot a log scale for the y-axis
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:PlotSettings class to control figure appearance
+    '''
+
+    body = model.body
+    bn = body.bottleneck_blocks[bottleneck_idx]
+    assert bn[0].weight.shape[0] == 1, 'This function currently only supports bottlenecks whose width is one neuron'
+    
+    hook = FowardHook(bn[0])
+    model.predict(inputs)
+    
+    weighted_input = to_np(torch.abs(hook.input[0]*bn[0].weight[0]))
+    rfm = {}
+    for f in model.head.feat_map:
+        if len(model.head.feat_map[f]) == 1:
+            rfm[model.head.feat_map[f][0]] = f
+        else:
+            for i, idx in enumerate(model.head.feat_map[f]): rfm[idx] = f'{f}_{i}'
+    y, x = [], []
+    for i, f in enumerate(model.body.bottleneck_masks[bottleneck_idx]):
+        x.append(rfm[f])
+        y.append(weighted_input[:, i])
+        
+    x,y = np.array(x),np.array(y)
+    order = np.argsort(y.mean(axis=1))
+    x,y = list(x[order]),list(y[order])
+    
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+        plt.figure(figsize=(settings.w_mid, settings.h_mid))
+        sns.boxplot(x=x, y=y)
+        plt.xlabel("Features", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.ylabel(r"$|w_i\times x_i|$", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        if log_y: plt.yscale('log', nonposy='clip')
+        plt.xticks(rotation=70)
+        plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
+        plt.show() 
