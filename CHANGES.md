@@ -10,6 +10,7 @@
 -   Ability to only consider classes rather than samples when computing bin edges 
 -   Ability to add pure signal bins if normalisation uncertainty would be below some value 
 - `plot_bottleneck_weighted_inputs` method for intterpretting bottleneck blocks in `MultiBlock`
+- Added RAdam optimiser https://github.com/LiyuanLucasLiu/RAdam
 
 ## Removals
 
