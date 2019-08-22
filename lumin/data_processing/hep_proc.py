@@ -300,7 +300,7 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
 
 def calc_pair_mass(df:pd.DataFrame, masses:Union[Tuple[float,float],Tuple[np.ndarray,np.ndarray]], feat_map:Dict[str,str]) -> np.ndarray:
     r'''
-    Vectorised computation of invarient mass of pair of particles with given masses, using 4-momenta. Only works for vectors defined in Cartesian coordinates.
+    Vectorised computation of invarient mass of pair of particles with given masses, using 3-momenta. Only works for vectors defined in Cartesian coordinates.
 
     Arguments:
         df: DataFrame vector components

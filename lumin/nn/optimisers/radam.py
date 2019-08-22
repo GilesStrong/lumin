@@ -4,6 +4,8 @@ from torch.optim.optimizer import Optimizer, required
 
 r'''
 File copied from https://github.com/LiyuanLucasLiu/RAdam which is distibuted under Apache 2.0 licence
+https://github.com/LiyuanLucasLiu/RAdam/blob/master/LICENSE
+
 If used, please cite:
 Liyuan Liu, Haoming Jiang, Pengcheng He, Weizhu Chen, Xiaodong Liu, Jianfeng Gao, and Jiawei Han. "On the Variance of the Adaptive Learning Rate and Beyond."
 arXiv preprint arXiv:1908.03265 (2019).
