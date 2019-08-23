@@ -111,13 +111,12 @@ cd lumin
 pip install .
 ```
 
-Optionally, run pip install with `-e` flag for development installation. Full functionality requires two additional packages as described below.
+Optionally, run pip install with `-e` flag for development installation. Full functionality requires an additional package as described below.
 
 ### Additional modules
 
-Full use of LUMIN requires the latest versions of rfpimp and PDPbox, but these are not released yet on PyPI, so you'll need to install them from source, too:
+Full use of LUMIN requires the latest version of PDPbox, but this is not released yet on PyPI, so you'll need to install it from source, too:
 
-- `git clone https://github.com/parrt/random-forest-importances.git && cd random-forest-importances/src && pip install .`
 - `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install -e .` note the `-e` flag to make sure the version number gets set properly.
 
 ## Notes
@@ -162,6 +161,14 @@ Certainly more developers and contributors are welcome to join and help out!
 
 ### Reference
 
-If you have used LUMIN in your analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), http://doi.org/10.5281/zenodo.2601858, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
+If you have used LUMIN in your analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), https://doi.org/10.5281/zenodo.2601857, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
 
-[Bibtex export](https://zenodo.org/record/2601858/export/hx)
+@misc{giles_chatham_strong_2019_2601857,  
+  author       = {Giles Chatham Strong},  
+  title        = {LUMIN},  
+  month        = mar,  
+  year         = 2019,  
+  note         = {{Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors}},  
+  doi          = {10.5281/zenodo.2601857},  
+  url          = {https://doi.org/10.5281/zenodo.2601857}  
+}
