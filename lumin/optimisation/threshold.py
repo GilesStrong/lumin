@@ -44,7 +44,7 @@ def binary_class_cut_by_ams(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=
         pred_name: column to use as predictions
         targ_name: column to use as truth labels for signal and background
         wgt_name: column to use as weights for signal and background events
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
         Optimised cut

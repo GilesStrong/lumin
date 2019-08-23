@@ -59,7 +59,8 @@ def ams_scan_quick(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:f
                    pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight') -> Tuple[float,float]:
     r'''
     Scan accross a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
-    Note that whilst this method is quicker than :meth:ams_scan_slow, it sufferes from float precison - not recommended for final evaluation.
+    Note that whilst this method is quicker than :meth:`~lumin.evaluation.ams.ams_scan_slow`, it sufferes from float precison.
+    Not recommended for final evaluation.
     
     Arguments:
         df: DataFrame containing prediction data
@@ -93,7 +94,7 @@ def ams_scan_slow(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:fl
                   pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight', show_prog:bool=True) -> Tuple[float,float]:
     r'''
     Scan accross a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
-    Note that whilst this method is slower than :meth:ams_scan_quick, it does not suffer as much from float precison.
+    Note that whilst this method is slower than :meth:`~lumin.evaluation.ams.ams_scan_quick`, it does not suffer as much from float precison.
     Additionally it allows one to account for statistical uncertainty in AMS calculation.
     
     Arguments:

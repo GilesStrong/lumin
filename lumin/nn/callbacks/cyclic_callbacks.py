@@ -73,9 +73,9 @@ class CycleLR(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the LR (effectively reverses lr_range order), 'auto' selects according to interp
         scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:Model to alter, alternatively call :meth:set_model.
+        model: :class:`~lumin.nn.models.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`.
         nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
         >>> cosine_lr   = CycleLR(lr_range=(0,    2e-3), cycle_mult=2, scale=1, interp='cosine', nb=100)
@@ -109,9 +109,9 @@ class CycleMom(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the momentum (effectively reverses mom_range order), 'auto' selects according to interp
         scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:Model to alter, alternatively call :meth:set_model
+        model: :class:`~lumin.nn.models.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
         >>> cyclical_mom = CycleMom(mom_range=(0.85 0.95), cycle_mult=1, scale=5, interp='linear', nb=100)
@@ -142,9 +142,9 @@ class OneCycle(AbsCyclicCallback):
         lr_range: tuple of initial and final LRs
         mom_range: tuple of initial and final momenta
         interp: 'cosine' or 'linear' interpolation
-        model: :class:Model to alter, alternatively call :meth:set_model
+        model: :class:`~lumin.nn.models.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
         >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2], mom_range=(0.85, 0.95), interp='cosine', nb=100)

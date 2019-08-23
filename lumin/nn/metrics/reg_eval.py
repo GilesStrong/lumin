@@ -59,7 +59,7 @@ class RegPull(EvalMetric):
         Compute statisitic on fold using provided predictions.
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             idx: fold index corresponding to fold for which y_pred was computed
             y_pred: predictions for fold
 
@@ -107,7 +107,7 @@ class RegAsProxyPull(RegPull):
         Compute statisitic on fold using provided predictions.
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             idx: fold index corresponding to fold for which y_pred was computed
             y_pred: predictions for fold
 

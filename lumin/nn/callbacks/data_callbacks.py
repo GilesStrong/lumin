@@ -52,7 +52,7 @@ class SequentialReweight(Callback):
     Arguments:
         reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
         scale: multiplicative factor for rescaling returned tensor of reweight_func
-        model: :class:Model to provide predictions, alternatively call :meth:set_model
+        model: :class:`~lumin.nn.models.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
         >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
@@ -77,14 +77,14 @@ class SequentialReweight(Callback):
 class SequentialReweightClasses(SequentialReweight):
     r'''
     **Experiemntal proceedure**
-    Version of :class:SequentialReweight designed for classification, which renormalises class weights to original weight-sum after reweighting
+    Version of :class:`~lumin.nn.callbacks.data_callbacks.SequentialReweight` designed for classification, which renormalises class weights to original weight-sum after reweighting
     During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
     Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
 
     Arguments:
         reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
         scale: multiplicative factor for rescaling returned tensor of reweight_func
-        model: :class:Model to provide predictions, alternatively call :meth:set_model
+        model: :class:`~lumin.nn.models.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
         >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
@@ -106,7 +106,7 @@ class BootstrapResample(Callback):
     Callback for bootstrap sampling new training datasets from original training data during (ensemble) training.
 
     Arguments:
-        n_folds: the number of folds present in training :class:FoldYielder
+        n_folds: the number of folds present in training :class:`~lumin.nn.data.fold_yielder.FoldYielder`
         bag_each_time: whether to sample a new set for each sub-epoch or to use the same sample each time
         reweight: whether to reweight the sampleed data to mathch the weight sum (per class) of the original data
         model: not used, only for compatability
@@ -163,11 +163,11 @@ class FeatureSubsample(Callback):
     r'''
     Callback for training a model on a random sub-sample of the range of possible input features.
     Only sub-samples continuous features. Number of continuous inputs infered from model.
-    Associated :class:Model will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
+    Associated :class:`~lumin.nn.models.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
 
     Arguments:
         cont_feats: list of all continuous features in input data. Order must match.
-        model: :class:Model being trained, alternatively call :meth:set_model        
+        model: :class:`~lumin.nn.models.Model` being trained, alternatively call :meth:`~lumin.nn.models.Model.set_model`        
 
     Examples::
         >>> feat_subsample = FeatureSubsample(cont_feats=['pT', 'eta', 'phi'])

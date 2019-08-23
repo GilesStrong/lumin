@@ -34,7 +34,7 @@ class ModelBuilder(object):
         model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
             Currently, only ADAM (default) and SGD are available.
-        cat_embedder: :class:CatEmbedder for embedding categorical inputs
+        cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` for embedding categorical inputs
         loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective
         head: uninstantiated class which can receive input data and upscale it to model width
         body: uninstantiated class which implements the main bulk of the model's hidden layers
@@ -102,10 +102,10 @@ class ModelBuilder(object):
     def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
                            loss:Optional[Any]=None, opt_args:Optional[Dict[str,Any]]=None):
         r'''
-        Instantiate a :class:ModelBuilder from an exisitng :class:ModelBuilder, but with options to adjust loss, optimiser, pretraining, and module freezing
+        Instantiate a :class:`~lumin.nn.models.ModelBuilder` from an exisitng :class:`~lumin.nn.models.ModelBuilder`, but with options to adjust loss, optimiser, pretraining, and module freezing
 
         Arguments:
-            model_builder: existing :class:ModelBuilder or filename for a pickled :class:ModelBuilder 
+            model_builder: existing :class:`~lumin.nn.models.ModelBuilder` or filename for a pickled :class:`~lumin.nn.models.ModelBuilder` 
             pretrain_file: if set, will load saved parameters for entire network from saved model
             freeze_head: whether to start with the head parameters set to untrainable
             freeze_body: whether to start with the body parameters set to untrainable
@@ -115,7 +115,7 @@ class ModelBuilder(object):
                 Currently, only ADAM (default) and SGD are available.
 
         Returns:
-            Instantiated :class:ModelBuilder
+            Instantiated :class:`~lumin.nn.models.ModelBuilder`
             
         Examples::
             >>> new_model_builder = ModelBuilder.from_model_builder(ModelBuidler)
@@ -216,7 +216,7 @@ class ModelBuilder(object):
         Load model weights from pretrained file
 
         Arguments:
-            model: instantiated model, i.e. return of :meth:build_model
+            model: instantiated model, i.e. return of :meth:`~lumin.nn.models.model_builder.ModelBuilder.build_model`
 
         Returns:
             model with weights loaded

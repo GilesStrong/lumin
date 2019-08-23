@@ -20,17 +20,18 @@ from torch import Tensor
 def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
                            plot:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     r'''
-    Compute permutation importance of features used by a :class:Model on provided data using either loss or an :class:EvalMetric to quantify performance.
+    Compute permutation importance of features used by a :class:`~lumin.nn.models.Model` on provided data using either loss or an 
+    :class:`~lumin.nn.metric.eval_metric.EvalMetric` to quantify performance.
     Returns bootstrapped mean importance from sample constructed by computing importance for each fold in fy.
 
     Arguments:
-        model: :class:Model to use to evaluate feature importance
-        fy: :class:FoldYielder interfacing to data used to train model
-        eval_metric: Optional :class:EvalMetric to use to quantify performance in place of loss
+        model: :class:`~lumin.nn.models.Model` to use to evaluate feature importance
+        fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data used to train model
+        eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
         pb_parent: Not used if calling method directly
         plot: whetehr to plot resulting feature importances
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
         Pandas DataFrame containing mean importance and associated uncertainty for each feature
@@ -79,15 +80,16 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
 def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None,
                                  savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     r'''
-    Compute permutation importance of features used by an :class:Ensemble on provided data using either loss or an :class:EvalMetric to quantify performance.
-    Returns bootstrapped mean importance from sample constructed by computing importance for each :class:Model in ensemble.
+    Compute permutation importance of features used by an :class:`~lumin.nn.ensemble.ensemble.Ensemble` on provided data using either loss or an
+    :class:`~lumin.nn.metric.eval_metric.EvalMetric` to quantify performance.
+    Returns bootstrapped mean importance from sample constructed by computing importance for each :class:`~lumin.nn.models.Model` in ensemble.
 
     Arguments:
-        ensemble: :class:Ensemble to use to evaluate feature importance
-        fy: :class:FoldYielder interfacing to data used to train models in ensemble
-        eval_metric: Optional :class:EvalMetric to use to quantify performance in place of loss
+        ensemble: :class:`~lumin.nn.ensemble.ensemble.Ensemble` to use to evaluate feature importance
+        fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data used to train models in ensemble
+        eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
         Pandas DataFrame containing mean importance and associated uncertainty for each feature
@@ -113,9 +115,10 @@ def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metr
     bs_mean = mp_run([{'data': mean_fi[:,i], 'mean': True, 'name': i, 'n':100} for i in range(len(feats))], bootstrap_stats)
     bs_std  = mp_run([{'data': std_fi[:,i],  'mean': True, 'name': i, 'n':100} for i in range(len(feats))], bootstrap_stats)
     
-    fi = pd.DataFrame({'Feature':feats, 
-                       'Importance':  [np.mean(bs_mean[f'{i}_mean']) for i in range(len(feats))], 
-                       'Uncertainty': [np.mean(bs_std[f'{i}_mean'])  for i in range(len(feats))]}).sort_values('Importance', ascending=False).reset_index(drop=True)
+    fi = pd.DataFrame({
+        'Feature':feats,
+        'Importance':  [np.mean(bs_mean[f'{i}_mean']) for i in range(len(feats))],
+        'Uncertainty': [np.mean(bs_std[f'{i}_mean'])  for i in range(len(feats))]}).sort_values('Importance', ascending=False).reset_index(drop=True)
     print("Top ten most important features:\n", fi[:min(len(fi), 10)])
     plot_importance(fi, savename=savename, settings=settings)
     return fi

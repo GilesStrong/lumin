@@ -29,7 +29,7 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
         imp_name: column name for importances
         unc_name: column name for uncertainties (if present)
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
@@ -52,7 +52,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
         embed: state_dict of trained nn.Embedding
         feat: name of feature embedded
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     with sns.axes_style(settings.style):
@@ -90,7 +90,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats
         pdp_isolate_kargs: optional dictionary of keyword arguments to pass to pdp_isolate
         pdp_plot_kargs: optional dictionary of keyword arguments to pass to pdp_plot
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     if pdp_isolate_kargs is None: pdp_isolate_kargs = {}
@@ -147,7 +147,7 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
         pdp_isolate_kargs: optional dictionary of keyword arguments to pass to pdp_isolate
         pdp_plot_kargs: optional dictionary of keyword arguments to pass to pdp_plot
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''    
     
     check_pdpbox()
@@ -222,7 +222,7 @@ def plot_multibody_weighted_outputs(model:AbsModel, inputs:Union[np.ndarray,Tens
         block_names: names for each block to use when plotting
         use_mean: if True, will average the weighted outputs over the number of output neurons in each block
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     assert model.tail[0].weight.shape[0] == 1, 'This function currently only supports models whose tail block contains a single neuron in the first dense layer'
@@ -265,7 +265,7 @@ def plot_bottleneck_weighted_inputs(model:AbsModel, bottleneck_idx:int, inputs:U
         inputs: input data to use for interpretation
         log_y: whether to plot a log scale for the y-axis
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     body = model.body

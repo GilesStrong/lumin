@@ -23,18 +23,18 @@ from ...utils.statistics import uncert_round
 
 class Ensemble(AbsEnsemble):
     r'''
-    Standard class for building an ensemble of collection of trained networks producedd by :meth:fold_train_ensemble
+    Standard class for building an ensemble of collection of trained networks producedd by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
     Input and output pipelines can be added. to provide easy saving and loaded of exported ensembles.
     Currently, the input pipeline is not used, so input data is expected to be preprocessed.
     However the output pipeline will be used to deprocess model predictions.
 
 
-    Once instanciated, :meth:build_ensemble or :meth:load should be called. Alternatively, class_methods :meth:from_save or :meth:from_results may be used.
+    Once instanciated, :meth:`lumin.nn.ensemble.ensemble.Ensemble.build_ensemble` or :meth:load should be called. Alternatively, class_methods :meth:`lumin.nn.ensemble.ensemble.Ensemble.from_save` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.from_results` may be used.
 
     Arguments:
-        input_pipe: Optional input pipeline, alternatively call :meth:add_input_pipe
-        output_pipe: Optional output pipeline, alternatively call :meth:add_input_pipe
-        model_builder: Optional :class:ModelBuilder for constructing models from saved weights.
+        input_pipe: Optional input pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_input_pipe`
+        output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_ouput_pipe`
+        model_builder: Optional :class:`~lumin.nn.models.ModelBuilder` for constructing models from saved weights.
 
     Examples::
         >>> ensemble = Ensemble()
@@ -67,13 +67,13 @@ class Ensemble(AbsEnsemble):
     @classmethod
     def from_save(cls, name:str) -> AbsEnsemble:
         r'''
-        Instantiate :class:Ensemble from a saved :class:Ensemble
+        Instantiate :class:`~lumin.nn.ensemble.ensemble.Ensemble` from a saved :class:`~lumin.nn.ensemble.ensemble.Ensemble`
 
         Arguments:
             name: base filename of ensemble
 
         Returns:
-            Loaded :class:Ensemble
+            Loaded :class:`~lumin.nn.ensemble.ensemble.Ensemble`
 
         Examples::
             >>> ensemble = Ensemble.from_save('weights/ensemble')
@@ -88,30 +88,30 @@ class Ensemble(AbsEnsemble):
                      metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None,
                      location:Path=Path('train_weights'), verbose:bool=True) -> AbsEnsemble:
         r'''
-        Instantiate :class:Ensemble from a outputs of :meth:fold_train_ensemble.
+        Instantiate :class:`~lumin.nn.ensemble.ensemble.Ensemble` from a outputs of :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`.
         If cycle models are loaded, then only uniform weighting between models is supported.
 
         Arguments:
-            results: results saved/returned by :meth:fold_train_ensemble
+            results: results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             size: number of models to load as ranked by metric
-            model_builder: :class:ModelBuilder used for building :class:Model from saved models
+            model_builder: :class:`~lumin.nn.models.ModelBuilder` used for building :class:`~lumin.nn.models.Model` from saved models
             metric: metric name listed in results to use for ranking and weighting trained models
             weighting: 'reciprocal' or 'uniform' how to weight model predictions during predicition.
                 'reciprocal' = models weighted by 1/metric
                 'uniform' = models treated with equal weighting
             higher_metric_better: whether metric should be maximised or minimised
             snapshot_args: Dictionary potentially containing:
-                'cycle_losses': returned/save by :meth:fold_train_ensemble when using an :class:AbsCyclicCallback
-                'patience': patience value that was passed to :meth:fold_train_ensemble
+                'cycle_losses': returned/save by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` when using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`
+                'patience': patience value that was passed to :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
                 'n_cycles': number of cycles to load per model
                 'load_cycles_only': whether to only load cycles, or also the best performing model
                 'weighting_pwr': weight cycles according to (n+1)**weighting_pwr, where n is the number of cycles loaded so far.
                     Models are loaded youngest to oldest
-            location: Path to save location passed to :meth:fold_train_ensemble
+            location: Path to save location passed to :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             verbose: whether to print out information of models loaded
 
         Returns:
-            Built :class:Ensemble
+            Built :class:`~lumin.nn.ensemble.ensemble.Ensemble`
 
         Examples::
             >>> ensemble = Ensemble.from_results(results, 10, model_builder, location=Path('train_weights'))
@@ -133,25 +133,25 @@ class Ensemble(AbsEnsemble):
                        metric:str='loss', weighting:str='reciprocal', higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None,
                        location:Path=Path('train_weights'), verbose:bool=True) -> None:
         r'''
-        Load up an instantiated :class:Ensemble with outputs of :meth:fold_train_ensemble
+        Load up an instantiated :class:`~lumin.nn.ensemble.ensemble.Ensemble` with outputs of :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
 
         Arguments:
-            results: results saved/returned by :meth:fold_train_ensemble
+            results: results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             size: number of models to load as ranked by metric
-            model_builder: :class:ModelBuilder used for building :class:Model from saved models
+            model_builder: :class:`~lumin.nn.models.ModelBuilder` used for building :class:`~lumin.nn.models.Model` from saved models
             metric: metric name listed in results to use for ranking and weighting trained models
             weighting: 'reciprocal' or 'uniform' how to weight model predictions during predicition.
                 'reciprocal' = models weighted by 1/metric
                 'uniform' = models treated with equal weighting
             higher_metric_better: whether metric should be maximised or minimised
             snapshot_args: Dictionary potentially containing:
-                'cycle_losses': returned/save by :meth:fold_train_ensemble when using an :class:AbsCyclicCallback
-                'patience': patience value that was passed to :meth:fold_train_ensemble
+                'cycle_losses': returned/save by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` when using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`
+                'patience': patience value that was passed to :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
                 'n_cycles': number of cycles to load per model
                 'load_cycles_only': whether to only load cycles, or also the best performing model
                 'weighting_pwr': weight cycles according to (n+1)**weighting_pwr, where n is the number of cycles loaded so far.
                     Models are loaded youngest to oldest
-            location: Path to save location passed to :meth:fold_train_ensemble
+            location: Path to save location passed to :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             verbose: whether to print out information of models loaded
 
         Examples::
@@ -213,7 +213,7 @@ class Ensemble(AbsEnsemble):
 
         Arguments:
             arr: input data
-            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:Ensemble.
+            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
                 By default, entire ensemble is used.
             parent_bar: not used when calling the method directly
             display: whether to display a progress bar for model evaluations
@@ -240,14 +240,14 @@ class Ensemble(AbsEnsemble):
     
     def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
         r'''
-        Apply ensemble to data accessed by a :class:FoldYielder and save predictions as a new group per fold in the foldfile.
+        Apply ensemble to data accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as a new group per fold in the foldfile.
         If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
         Inputs are expected to be preprocessed; i.e. any input pipe added to the ensemble is not used.
         If foldyielder has test-time augmentation, then predictions will be averaged over all augmentated forms of the data.
 
         Arguments:
-            fy: :class:FoldYielder interfacing with the input data
-            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:Ensemble.
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing with the input data
+            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
                 By default, entire ensemble is used.
             pred_name: name for new group of predictions
 
@@ -279,14 +279,15 @@ class Ensemble(AbsEnsemble):
 
     def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None,np.ndarray]:
         r'''
-        Compatability method for predicting data contained in either a Numpy array or a :class:FoldYielder
-        Will either pass inputs to :meth:predict_array or :meth:predict_folds.
+        Compatability method for predicting data contained in either a Numpy array or a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
+        Will either pass inputs to :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_array` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_folds`.
 
         Arguments:
-            inputs: either a :class:FoldYielder interfacing with the input data, or the input data as an array
-            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:Ensemble.
+            inputs: either a :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing with the input data, or the input data as an array
+            n_models: number of models to use in predictions as ranked by the metric which was used when constructing the 
+                :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
                 By default, entire ensemble is used.
-            pred_name: name for new group of predictions if passed a :class:FoldYielder
+            pred_name: name for new group of predictions if passed a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
 
         Returns:
             If passed a Numpy array will return predictions.
@@ -331,7 +332,7 @@ class Ensemble(AbsEnsemble):
                     
     def load(self, name:str) -> None:
         r'''
-        Load an instantiated :class:Ensemble with weights and :class:Model from save.
+        Load an instantiated :class:`~lumin.nn.ensemble.ensemble.Ensemble` with weights and :class:`~lumin.nn.models.Model` from save.
 
         Arguments;
             name: base name for saved objects
@@ -362,7 +363,7 @@ class Ensemble(AbsEnsemble):
 
     def export2onnx(self, base_name:str, bs:int=1) -> None:
         r'''
-        Export all :class:Model contained in :class:Ensemble to ONNX format.
+        Export all :class:`~lumin.nn.models.Model` contained in :class:`~lumin.nn.ensemble.ensemble.Ensemble` to ONNX format.
         Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
 
         Arguments:
@@ -374,7 +375,7 @@ class Ensemble(AbsEnsemble):
 
     def export2tfpb(self, base_name:str, bs:int=1) -> None:
         r'''
-        Export all :class:Model contained in :class:Ensemble to Tensorflow ProtocolBuffer format, via ONNX.
+        Export all :class:`~lumin.nn.models.Model` contained in :class:`~lumin.nn.ensemble.ensemble.Ensemble` to Tensorflow ProtocolBuffer format, via ONNX.
         Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
 
         Arguments:
@@ -386,11 +387,12 @@ class Ensemble(AbsEnsemble):
 
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         r'''
-        Call :meth:get_ensemble_feat_importance passing this :class:Ensemble and provided arguments
+        Call :meth:`~lumin.nn.interpretation.features.get_ensemble_feat_importance`,
+        passing this :class:`~lumin.nn.ensemble.ensemble.Ensemble` and provided arguments
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data on which to evaluate importance
-            eval_metric: Optional :class:EvalMetric to use for quantifying performance
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance
+            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use for quantifying performance
         '''
         
         return get_ensemble_feat_importance(self, fy, eval_metric)

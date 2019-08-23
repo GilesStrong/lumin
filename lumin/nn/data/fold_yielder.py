@@ -204,7 +204,7 @@ class FoldYielder:
 
 class HEPAugFoldYielder(FoldYielder):
     r'''
-    Specialaised version of :class:FoldYielder providing HEP specific data augmetation at train and test time.
+    Specialaised version of :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing HEP specific data augmetation at train and test time.
 
     Arguments:
         foldfile: filename of hdf5 file

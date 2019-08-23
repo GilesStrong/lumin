@@ -35,11 +35,11 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         plot_bulk: whether to plot the [1,99] percentile of the data, or all of it
         n_samples: if plotting weighted distributions, how many samples to use
         plot_params: optional list of of arguments to pass to Seaborn Distplot for each KDE+hist
-        size: string to pass to :meth:PlotSettings.str2sz to determin size of plot
+        size: string to pass to :meth:`~lumin.plotting.plot_settings.PlotSettings.str2sz` to determin size of plot
         show_moments: whether to compute and display the mean and standard deviation
         ax_labels: dictionary of x and y axes labels
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     if not isinstance(labels, list): labels = [labels]
@@ -155,7 +155,7 @@ def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, set
     Arguments:
         df: Pandas DataFrame containing data
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
@@ -175,16 +175,16 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
                       feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    Plot KDEs computed via :meth:bootstrap_stats
+    Plot KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
 
     Arguments:
-        bs_stats: (filtered) dictionary retruned by :meth: bootstrap_stats 
+        bs_stats: (filtered) dictionary retruned by :meth:`~lumin.utils.statistics.bootstrap_stats`
         name2args: Dictionary mapping names of different distributions to arguments to pass to seaborn tsplot
         feat: Name of feature being plotted (for axis lablels)
         units: Optional units to show on axes
         moments: whether to display mean and standard deviation of each distribution
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:

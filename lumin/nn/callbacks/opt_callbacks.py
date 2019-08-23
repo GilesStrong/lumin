@@ -17,8 +17,8 @@ class LRFinder(Callback):
     Arguments:
         nb: number of batches in a (sub-)epoch
         lr_bounds: tuple of initial and final LR
-        model: :class:`Model` to alter, alternatively call :meth:`set_model`
-        plot_settings: :class:`PlotSettings` class to control figure appearance
+        model: :class:`~limin.nn.models.Model` to alter, alternatively call :meth:`set_model`
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     def __init__(self, nb:int, lr_bounds:Tuple[float,float]=[1e-7, 10], model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):

@@ -19,15 +19,16 @@ def Embedder(cat_names:List[str], cat_szs:List[int], emb_szs:Optional[List[int]]
 
 class CatEmbedder():
     r'''
-    Helper class for embedding categorical features. Designed to be passed to :class:ModelBuilder.
-    Note that the classmethod :meth:from_fy may be used to instantiate an :class:CatEmbedder from a :class:FoldYielder.
+    Helper class for embedding categorical features. Designed to be passed to :class:`~lumin.nn.models.ModelBuilder`.
+    Note that the classmethod :meth:`~lumin.nn.models.helpers.CatEmbedder.from_fy` may be used to instantiate an :class:`~lumin.nn.models.helpers.CatEmbedder`
+    from a :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
 
     Arguments:
         cat_names: list of names of catgorical features in order in which they will be passed as inputs columns
         cat_szs: list of cardinalities (number of unique elements) for each feature
         emb_szs: Optional list of embedding sizes for each feature.  If None, will use min(max_emb_sz, (1+sz)//2)
         max_emb_sz: Maximum size of embedding if emb_szs is None
-        emb_load_path: if not None, will cause :class:ModelBuilder to attempt to load pretrained embeddings from path
+        emb_load_path: if not None, will cause :class:`~lumin.nn.models.ModelBuilder` to attempt to load pretrained embeddings from path
 
     Examples::
         >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'], cat_szs=[5, 3])
@@ -62,16 +63,17 @@ class CatEmbedder():
     @classmethod
     def from_fy(cls, fy:FoldYielder,  emb_szs:Optional[List[int]]=None, max_emb_sz:int=50, emb_load_path:Optional[Union[Path,str]]=None):
         r'''
-        Instantiate an :class:CatEmbedder from a :class:FoldYielder, i.e. avoid having to pass cat_names and cat_szs.
+        Instantiate an :class:`~lumin.nn.models.helpers.CatEmbedder` from a :class:`~lumin.nn.data.fold_yielder.FoldYielder`, i.e. avoid having to pass
+        cat_names and cat_szs.
         
         Arguments:
-            fy: :class:FoldYielder with training data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` with training data
             emb_szs: Optional list of embedding sizes for each feature.  If None, will use min(max_emb_sz, (1+sz)//2)
             max_emb_sz: Maximum size of embedding if emb_szs is None
-            emb_load_path: if not None, will cause :class:ModelBuilder to attempt to load pretrained embeddings from path
+            emb_load_path: if not None, will cause :class:`~lumin.nn.models.ModelBuilder` to attempt to load pretrained embeddings from path
 
         Returns:
-            :class:CatEmbedder
+            :class:`~lumin.nn.models.helpers.CatEmbedder`
 
         Examples::
             >>> cat_embedder = CatEmbedder.from_fy(train_fy)
@@ -90,4 +92,10 @@ class CatEmbedder():
         cat_szs = list(1+cat_szs)  # zero-ordered, therefore cardinality is 1+max
         return cls(cat_names=cat_names, cat_szs=cat_szs, emb_szs=emb_szs, max_emb_sz=max_emb_sz, emb_load_path=emb_load_path)
             
-    def calc_emb_szs(self) -> None: self.emb_szs = [min(self.max_emb_sz, (1+sz)//2) for sz in self.cat_szs]
+    def calc_emb_szs(self) -> None:
+        r'''
+        Method used to set sizes of embeddings for each categorical feature when no embedding sizes are explicitly passed
+        Uses rule of thumb of min(50, (1+cardinality)/2)
+        '''
+        
+        self.emb_szs = [min(self.max_emb_sz, (1+sz)//2) for sz in self.cat_szs]

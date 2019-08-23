@@ -11,7 +11,8 @@ class AMS(EvalMetric):
     r'''
     Class to compute maximum Approximate Median Significance (https://arxiv.org/abs/1007.1727) using classifier which directly predicts the class of data in a
     binary classifiaction problem.
-    AMS is computed on a single fold of data provided by a :class:FoldYielder and automatically reweights data by event multiplicity to account missing weights.
+    AMS is computed on a single fold of data provided by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and automatically reweights data by event
+    multiplicity to account missing weights.
 
     Arguments:
         n_total:total number of events in entire data set
@@ -19,8 +20,8 @@ class AMS(EvalMetric):
         targ_name: name of target group in fold file
         br: constant bias offset for background yield
         syst_unc_b: fractional systematic uncertainty on background yield
-        use_quick_scan: whether to optimise AMS by the :meth:ams_scan_quick method (fast but suffers floating point precision)
-            if False use :meth:ams_scan_slow (slower but more accurate)
+        use_quick_scan: whether to optimise AMS by the :meth:`~lumin.evaluation.ams.ams_scan_quick` method (fast but suffers floating point precision)
+            if False use :meth:`~lumin.evaluation.ams.ams_scan_slow` (slower but more accurate)
 
     Examples::
         >>> ams_metric = AMS(n_total=250000, br=10, wgt_name='gen_orig_weight')
@@ -36,7 +37,7 @@ class AMS(EvalMetric):
         Compute maximum AMS on fold using provided predictions.
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             idx: fold index corresponding to fold for which y_pred was computed
             y_pred: predictions for fold
 
@@ -57,7 +58,8 @@ class MultiAMS(AMS):
     r'''
     Class to compute maximum Approximate Median Significance (https://arxiv.org/abs/1007.1727) using classifier which predicts the class of data in a multiclass
     classifiaction problem which can be reduced to a binary classification problem
-    AMS is computed on a single fold of data provided by a :class:FoldYielder and automatically reweights data by event multiplicity to account missing weights.
+    AMS is computed on a single fold of data provided by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and automatically reweights data by event
+    multiplicity to account missing weights.
 
     Arguments:
         n_total:total number of events in entire data set
@@ -67,8 +69,8 @@ class MultiAMS(AMS):
         one_preds: list of predicted classes which correspond to class 1 in the form pred_[i], where i is a NN output index 
         br: constant bias offset for background yield
         syst_unc_b: fractional systematic uncertainty on background yield
-        use_quick_scan: whether to optimise AMS by the :meth:ams_scan_quick method (fast but suffers floating point precision)
-            if False use :meth:ams_scan_slow (slower but more accurate)
+        use_quick_scan: whether to optimise AMS by the :meth:`~lumin.evaluation.ams.ams_scan_quick` method (fast but suffers floating point precision)
+            if False use :meth:`~lumin.evaluation.ams.ams_scan_slow` (slower but more accurate)
 
     Examples::
         >>> ams_metric = MultiAMS(n_total=250000, br=10, targ_name='gen_target', wgt_name='gen_orig_weight',
@@ -87,7 +89,7 @@ class MultiAMS(AMS):
         Compute maximum AMS on fold using provided predictions.
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             idx: fold index corresponding to fold for which y_pred was computed
             y_pred: predictions for fold
 

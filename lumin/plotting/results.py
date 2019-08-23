@@ -49,7 +49,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
         log_x: whether to use a log scale for plotting the x-axis, useful for high AUC line
         plot_baseline: whether to plot a dotted line for AUC=0.5. Currently incompatable with log_x=True
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
         Dictionary mapping data labels to aucs (and uncertainties if n_bootstrap > 0)
@@ -132,7 +132,7 @@ def plot_binary_class_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str=
         lim_x: limit for plotting on the x-axis
         density: whether to normalise each distribution to one, or keep set to sum of weights / datapoints
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
     with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
@@ -180,7 +180,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
         zoom_args: arguments to control the optional zoomed in section,
             e.g. {'x':(0.4,0.45), 'y':(0.2, 1500), 'anchor':(0,0.25,0.95,1), 'width_scale':1, 'width_zoom':4, 'height_zoom':3}
         savename: Optional name of file to which to save the plot of feature importances
-        settings: :class:PlotSettings class to control figure appearance
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
     
     hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
