@@ -18,6 +18,7 @@
 
 - `CatEmbedder.from_fy` using features ignored by `FoldYielder`
 - `bottleneck_sz_masks` to `bottleneck_masks` in `MultiBlock`
+- SWA crahsing when evaluating targets of type long, when loss expects a float (model.evaluate now converts to float when objective is not multiclass classification)
 
 ## Changes
 
@@ -229,6 +230,7 @@
 - Correct name of internal embedding dropout layer in `CatEmbHead`: emd_do -> emb_do
 - Adding missing settings for activations and initialisations to body and tail
 - Corrected plot annotation for percentage in `binary_class_cut`
+- loss history plot not being saved correctly
 
 ## Changes
 

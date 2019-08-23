@@ -39,8 +39,8 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.xlabel("Epoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if savename is not None: plt.savefig(f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
-        if savename is not None: plt.savefig(savename, bbox_inches='tight')
 
 
 def plot_lr_finders(lr_finders:List[LRFinder], loss='loss', cut=-10, settings:PlotSettings=PlotSettings()) -> None:

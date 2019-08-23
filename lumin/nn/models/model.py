@@ -165,7 +165,12 @@ class Model(AbsModel):
         for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
         if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
         y_pred = self.model(to_device(inputs.float()))
-        if 'multiclass' in self.objective and not isinstance(targets, torch.LongTensor): targets = targets.long().squeeze()
+
+        if 'multiclass' in self.objective and not isinstance(targets, torch.LongTensor):
+            targets = targets.long().squeeze()
+        elif not isinstance(targets, torch.FloatTensor):
+            targets = targets.float()
+
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()

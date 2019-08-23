@@ -215,7 +215,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     print("\n______________________________________")
     print("Training finished")
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
-    if 'history' in plots: plot_train_history(histories, savepath/'loss_history.png', settings=plot_settings)
+    if 'history' in plots: plot_train_history(histories, savepath/'loss_history', settings=plot_settings)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
