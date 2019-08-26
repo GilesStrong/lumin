@@ -12,7 +12,7 @@ class GradClip(Callback):
 
     Arguments:
         clip: value to clip at
-        clip_norm: whether to clip according to norm (nn.utils.clip_grad_norm_) or value (nn.utils.clip_grad_value_)
+        clip_norm: whether to clip according to norm (`torch.nn.utils.clip_grad_norm_`) or value (`torch.nn.utils.clip_grad_value_`)
          model: :class:`~lumin.nn.models.Model` with parameters to clip gradients, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
