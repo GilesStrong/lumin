@@ -11,6 +11,7 @@
 -   Ability to add pure signal bins if normalisation uncertainty would be below some value 
 - `plot_bottleneck_weighted_inputs` method for intterpretting bottleneck blocks in `MultiBlock`
 - Added RAdam optimiser https://github.com/LiyuanLucasLiu/RAdam
+- Added Ranger optimsier https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer
 
 ## Removals
 

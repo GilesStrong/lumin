@@ -33,6 +33,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
     - Learning Rate Finders, [Smith, 2015](https://arxiv.org/abs/1506.01186)
     - Entity embedding of categorical features, [Guo & Berkhahn, 2016](https://arxiv.org/abs/1604.06737)
     - Label smoothing [Szegedy et al., 2015](https://arxiv.org/abs/1512.00567)
+    - State-of-the-art optimisers, e.g. RAdam ([Liu et al. 2019](https://arxiv.org/abs/1908.03265v1)), LookAhead ([Zhang et al., 2019](https://arxiv.org/abs/1907.08610)) (as [Ranger](https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer)): 
 - Flexible architecture construction:
     - `ModelBuilder` takes parameters and modules to yield networks on-demand
     - Networks constructed from modular blocks:

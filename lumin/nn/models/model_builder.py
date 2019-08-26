@@ -16,6 +16,7 @@ from .blocks.head import CatEmbHead, AbsHead
 from .blocks.tail import ClassRegMulti, AbsTail
 from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 from ..optimisers.radam import RAdam
+from ..optimisers.ranger import Ranger
 
 '''
 Todo
@@ -158,6 +159,7 @@ class ModelBuilder(object):
     def _build_opt(self, model:nn.Module) -> optim.Optimizer:
         if   self.opt == 'adam':      return optim.Adam(model.parameters(), **self.opt_args)
         elif self.opt == 'radam':     return RAdam(model.parameters(),  **self.opt_args)
+        elif self.opt == 'ranger':    return Ranger(model.parameters(),  **self.opt_args)
         elif self.opt == 'sgd':       return optim.SGD(model.parameters(),  **self.opt_args)
         else: raise ValueError(f"Optimiser {self.opt} not currently available")
 

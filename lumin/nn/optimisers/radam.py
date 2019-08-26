@@ -1,6 +1,6 @@
 import math
 import torch
-from torch.optim.optimizer import Optimizer, required
+from torch.optim.optimizer import Optimizer
 
 r'''
 File copied from https://github.com/LiyuanLucasLiu/RAdam which is distibuted under Apache 2.0 licence
