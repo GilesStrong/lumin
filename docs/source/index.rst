@@ -9,7 +9,13 @@ Lumin Unifies Many Improvements for Networks
    :maxdepth: 2
    :caption: Package Reference
 
+   lumin.data_processing
+   lumin.evaluation
+   lumin.inference
    lumin.nn
+   lumin.optimisation
+   lumin.plotting
+   lumin.utils
 
 Indices and tables
 ==================
