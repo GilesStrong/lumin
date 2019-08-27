@@ -9,6 +9,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set_style("whitegrid")
 
+__all__ = ['CycleLR', 'CycleMom', 'OneCycle']
+
 
 class AbsCyclicCallback(Callback):
     '''Abstract class for callbacks affecting lr or mom'''

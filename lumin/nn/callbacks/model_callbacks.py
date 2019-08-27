@@ -11,6 +11,8 @@ from .cyclic_callbacks import AbsCyclicCallback
 from ...utils.misc import to_tensor
 from ...plotting.plot_settings import PlotSettings
 
+__all__ = ['SWA']
+
 
 class AbsModelCallback(Callback):
     '''Abstract class for callbacks which provide alternative models during training'''

@@ -4,7 +4,7 @@ from .abs_callback import AbsCallback
 from ..models.abs_model import AbsModel
 from ...plotting.plot_settings import PlotSettings
 
-__all__ = ['Callback']
+__all__ = []
 
 
 class Callback(AbsCallback):

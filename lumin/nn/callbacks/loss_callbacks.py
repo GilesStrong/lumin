@@ -5,6 +5,8 @@ import torch.nn as nn
 from .callback import Callback
 from ..models.abs_model import AbsModel
 
+__all__ = ['GradClip']
+
 
 class GradClip(Callback):
     r'''
