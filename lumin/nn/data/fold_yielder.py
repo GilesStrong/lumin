@@ -7,6 +7,9 @@ import warnings
 
 from sklearn.pipeline import Pipeline
 
+__all__ = ['FoldYielder', 'HEPAugFoldYielder']
+
+
 class FoldYielder:
     r'''
     Interface class for accessing data from foldfiles created by :meth:`~lumin.data_processing.file_proc.df2foldfile`
