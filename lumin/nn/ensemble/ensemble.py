@@ -20,6 +20,8 @@ from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.statistics import uncert_round
 
+__all__ = ['Ensemble']
+
 
 class Ensemble(AbsEnsemble):
     r'''
