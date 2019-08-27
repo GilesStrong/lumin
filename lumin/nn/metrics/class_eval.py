@@ -6,6 +6,8 @@ from ..data.fold_yielder import FoldYielder
 from ...evaluation.ams import ams_scan_quick, ams_scan_slow
 from ...utils.misc import to_binary_class
 
+__all__ = ['AMS', 'MultiAMS']
+
 
 class AMS(EvalMetric):
     r'''
