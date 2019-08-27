@@ -41,10 +41,13 @@ Michael R. Zhang, James Lucas, Geoffrey E. Hinton, and Jimmy Ba. "Lookahead Opti
   biburl    = {https://dblp.org/rec/bib/journals/corr/abs-1907-08610},
   bibsource = {dblp computer science bibliography, https://dblp.org}
 }
-'''
 
 # credit - Lookahead implementation from LonePatient - https://github.com/lonePatient/lookahead_pytorch/blob/master/optimizer.py
 # credit2 - RAdam code by https://github.com/LiyuanLucasLiu/RAdam/blob/master/radam.py
+
+'''
+
+__all__ = ['Ranger']
 
 
 class Ranger(Optimizer):
