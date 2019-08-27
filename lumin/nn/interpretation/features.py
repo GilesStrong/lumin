@@ -16,6 +16,8 @@ from ...plotting.plot_settings import PlotSettings
 
 from torch import Tensor
 
+__all__ = ['get_nn_feat_importance', 'get_ensemble_feat_importance']
+
 
 def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
                            plot:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
