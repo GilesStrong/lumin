@@ -5,6 +5,8 @@ import math
 
 from statsmodels.nonparametric.kde import KDEUnivariate
 
+__all__ = ['bootstrap_stats', 'get_moments', 'uncert_round']
+
 
 def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[str,Any]]:
     '''Compute statistics and KDEs of data via sampling with replacement'''
