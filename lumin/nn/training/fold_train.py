@@ -28,6 +28,8 @@ from ...plotting.plot_settings import PlotSettings
 
 import matplotlib.pyplot as plt
 
+__all__ = ['fold_train_ensemble']
+
 
 def _get_folds(val_idx, n_folds, shuffle_folds:bool=True):
     r'''
