@@ -11,6 +11,8 @@ from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
 from ..plotting.plot_settings import PlotSettings
 
+__all__ = ['get_rf_feat_importance', 'rf_rank_features']
+
 
 def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
     r'''

@@ -21,6 +21,8 @@ from ..plotting.plot_settings import PlotSettings
 
 import matplotlib.pyplot as plt
 
+__all__ = ['get_opt_rf_params', 'fold_lr_find']
+
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,

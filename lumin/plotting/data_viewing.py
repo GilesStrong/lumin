@@ -12,6 +12,8 @@ from ..utils.statistics import uncert_round, get_moments
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+__all__ = ['plot_feat', 'compare_events', 'plot_rank_order_dendrogram', 'plot_kdes_from_bs']
+
 
 def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,

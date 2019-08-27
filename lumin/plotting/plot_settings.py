@@ -1,5 +1,7 @@
 from pathlib import Path
 
+__all__ = ['PlotSettings']
+
 
 class PlotSettings:
     r'''
