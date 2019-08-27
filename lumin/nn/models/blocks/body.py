@@ -10,6 +10,8 @@ from ..layers.activations import lookup_act
 from ..initialisations import lookup_normal_init
 from .abs_block import AbsBlock
 
+__all__ = ['FullyConnected', 'MultiBlock']
+
 
 class AbsBody(AbsBlock):
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]],

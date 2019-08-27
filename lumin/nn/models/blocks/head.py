@@ -16,6 +16,8 @@ from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
 
+__all__ = ['CatEmbHead']
+
 
 class AbsHead(AbsBlock):
     def __init__(self, cont_feats:List[str], cat_embedder:Optional[CatEmbedder]=None, 

@@ -8,6 +8,8 @@ from .abs_block import AbsBlock
 from torch.tensor import Tensor
 import torch.nn as nn
 
+__all__ = ['ClassRegMulti']
+
 
 class AbsTail(AbsBlock):
     def __init__(self, n_in:int, n_out:int, objective:str, bias_init:Optional[float]=None,
