@@ -7,10 +7,9 @@ import warnings
 
 from sklearn.pipeline import Pipeline
 
-
 class FoldYielder:
     r'''
-    Interface class for accessing data from foldfiles created by :meth:df2foldfile
+    Interface class for accessing data from foldfiles created by :meth:`~lumin.data_processing.file_proc.df2foldfile`
 
     Arguments:
         foldfile: filename of hdf5 file
@@ -204,7 +203,7 @@ class FoldYielder:
 
 class HEPAugFoldYielder(FoldYielder):
     r'''
-    Specialaised version of :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing HEP specific data augmetation at train and test time.
+    Specialised version of :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing HEP specific data augmetation at train and test time.
 
     Arguments:
         foldfile: filename of hdf5 file
