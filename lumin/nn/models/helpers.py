@@ -5,6 +5,8 @@ import warnings
 
 from ..data.fold_yielder import FoldYielder
 
+__all__ = ['CatEmbedder']
+
 
 def Embedder(cat_names:List[str], cat_szs:List[int], emb_szs:Optional[List[int]]=None, max_emb_sz:int=50,
              emb_load_path:Optional[Union[Path,str]]=None):

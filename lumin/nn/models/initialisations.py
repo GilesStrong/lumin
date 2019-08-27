@@ -5,6 +5,8 @@ from functools import partial
 from torch import Tensor
 import torch.nn as nn
 
+__all__ = ['lookup_normal_init', 'lookup_uniform_init']
+
 
 def lookup_normal_init(act:str, fan_in:Optional[int]=None, fan_out:Optional[int]=None) -> Callable[[Tensor],None]:
     r'''

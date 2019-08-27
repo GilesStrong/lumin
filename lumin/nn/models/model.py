@@ -21,6 +21,8 @@ from ..metrics.eval_metric import EvalMetric
 from ...utils.misc import to_device
 from ...utils.statistics import uncert_round
 
+__all__ = ['Model']
+
 
 class Model(AbsModel):
     r'''

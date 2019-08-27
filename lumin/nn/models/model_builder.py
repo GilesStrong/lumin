@@ -18,6 +18,8 @@ from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 from ..optimisers.radam import RAdam
 from ..optimisers.ranger import Ranger
 
+__all__ = ['ModelBuilder']
+
 '''
 Todo
 - Better typing for nn._WeightedLoss
