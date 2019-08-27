@@ -46,7 +46,7 @@ class SWA(AbsModelCallback):
                 - x0 is replaced by x1
                 - x1 is replaced by a copy of the current model
                 - cycle_since_replacement is set to 1
-                 - renewal_period is set back to its original value
+                - renewal_period is set back to its original value
 
     Additonally, will optionally (default True) lock-in to any cyclical callbacks to only update at the end of a cycle.
 
