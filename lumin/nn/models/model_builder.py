@@ -52,20 +52,42 @@ class ModelBuilder(object):
 
 
     Examples::
-        >>> model_builder = ModelBuilder(objective='classifier', cont_feats=cont_feats, n_out=1, model_args={'body':{'depth':4, 'width':100}})
+        >>> model_builder = ModelBuilder(objective='classifier',
+        >>>                              cont_feats=cont_feats, n_out=1,
+        >>>                              model_args={'body':{'depth':4,
+        >>>                                                  'width':100}})
+        >>>
         >>> min_targs = np.min(targets, axis=0).reshape(targets.shape[1],1)
-            max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
-            min_targs[min_targs > 0] *=0.8
-            min_targs[min_targs < 0] *=1.2
-            max_targs[max_targs > 0] *=1.2
-            max_targs[max_targs < 0] *=0.8
-            y_range = np.hstack((min_targs, max_targs))
-            model_builder = ModelBuilder(objective='regression', cont_feats=cont_feats, n_out=6, cat_embedder=CatEmbedder.from_fy(train_fy),
-                                         model_args={'body':{'depth':4, 'width':100}, 'tail':{y_range=y_range})
-        >>> model_builder = ModelBuilder(objective='multiclassifier', cont_feats=cont_feats, n_out=5, model_args={'body':{'width':100, depth':6, do':0.1, 'res':True}})
-        >>> model_builder = ModelBuilder(objective='classifier', cont_feats=cont_feats, n_out=1, model_args={'body':{'depth':4, 'width':100}},
-                                         opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5},
-                                         loss=partial(SignificanceLoss, sig_weight=sig_weight, bkg_weight=bkg_weight, func=calc_ams_torch))
+        >>> max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
+        >>> min_targs[min_targs > 0] *=0.8
+        >>> min_targs[min_targs < 0] *=1.2
+        >>> max_targs[max_targs > 0] *=1.2
+        >>> max_targs[max_targs < 0] *=0.8
+        >>> y_range = np.hstack((min_targs, max_targs))
+        >>> model_builder = ModelBuilder(
+        >>>     objective='regression', cont_feats=cont_feats, n_out=6,
+        >>>     cat_embedder=CatEmbedder.from_fy(train_fy),
+        >>>     model_args={'body':{'depth':4, 'width':100},
+        >>>                 'tail':{y_range=y_range})
+        >>>
+        >>> model_builder = ModelBuilder(objective='multiclassifier',
+        >>>                              cont_feats=cont_feats, n_out=5,
+        >>>                              model_args={'body':{'width':100,
+        >>>                                                  'depth':6,
+        >>>                                                  'do':0.1,
+        >>>                                                  'res':True}})
+        >>>
+        >>> model_builder = ModelBuilder(objective='classifier',
+        >>>                              cont_feats=cont_feats, n_out=1,
+        >>>                              model_args={'body':{'depth':4,
+        >>>                                                  'width':100}},
+        >>>                              opt_args={'opt':'sgd',
+        >>>                                        'momentum':0.8,
+        >>>                                        'weight_decay':1e-5},
+        >>>                              loss=partial(SignificanceLoss,
+        >>>                                           sig_weight=sig_weight,
+        >>>                                           bkg_weight=bkg_weight,
+        >>>                                           func=calc_ams_torch))
     '''
 
     # TODO: Make opt use partials rather than strings
@@ -121,10 +143,17 @@ class ModelBuilder(object):
             Instantiated :class:`~lumin.nn.models.model_builder.ModelBuilder`
             
         Examples::
-            >>> new_model_builder = ModelBuilder.from_model_builder(ModelBuidler)
-            >>> new_model_builder = ModelBuilder.from_model_builder(ModelBuidler, loss=partial(SignificanceLoss, sig_weight=sig_weight,
-                                                                                               bkg_weight=bkg_weight, func=calc_ams_torch))
-            >>> new_model_builder = ModelBuilder.from_model_builder('weights/model_builder.pkl', opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5})
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     ModelBuidler)
+            >>>
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     ModelBuidler, loss=partial(
+            >>>         SignificanceLoss, sig_weight=sig_weight,
+            >>>         bkg_weight=bkg_weight, func=calc_ams_torch))
+            >>>
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     'weights/model_builder.pkl',
+            >>>     opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5})
         '''
 
         if isinstance(model_builder, str):

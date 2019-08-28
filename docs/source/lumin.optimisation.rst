@@ -9,24 +9,24 @@ lumin.optimisation.features module
 
 .. automodule:: lumin.optimisation.features
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.optimisation.hyper\_param module
 --------------------------------------
 
 .. automodule:: lumin.optimisation.hyper_param
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.optimisation.threshold module
 -----------------------------------
 
 .. automodule:: lumin.optimisation.threshold
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -34,5 +34,5 @@ Module contents
 
 .. automodule:: lumin.optimisation
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

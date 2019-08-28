@@ -25,6 +25,7 @@ class BinaryLabelSmooth(Callback):
 
     Examples::
         >>> lbl_smooth = BinaryLabelSmooth(0.1)
+        >>>
         >>> lbl_smooth = BinaryLabelSmooth((0.1, 0.02))
     '''
 
@@ -63,7 +64,8 @@ class SequentialReweight(Callback):
         model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
-        >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
+        >>> seq_reweight = SequentialReweight(
+        ...     reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
     '''
 
     def __init__(self, reweight_func:Callable[[Tensor,Tensor], Tensor], scale:float=1e-1, model:Optional[AbsModel]=None):
@@ -104,7 +106,8 @@ class SequentialReweightClasses(SequentialReweight):
         model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
-        >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
+        >>> seq_reweight = SequentialReweight(
+        ...     reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
     '''
 
     def _reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:

@@ -1,6 +1,7 @@
 from typing import Optional, Callable, Any, List, Dict
 import numpy as np
 from functools import partial
+from abc import abstractmethod
 
 import torch.nn as nn
 import torch
@@ -19,6 +20,20 @@ class AbsBody(AbsBlock):
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.feat_map,self.lookup_act = n_in,feat_map,lookup_act
+
+    @abstractmethod
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through body
+
+        Arguments:
+            x: incoming tensor
+        
+        Returns
+            Resulting tensor
+        '''
+
+        pass
     
 
 class FullyConnected(AbsBody):
@@ -46,11 +61,22 @@ class FullyConnected(AbsBody):
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=100, act='relu')
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=200, act='relu', growth_rate=-0.3)
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=100, act='swish', do=0.1, res=True)
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6, width=32, act='selu', dense=True, growth_rate=0.5)
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6, width=50, act='prelu', bn=True, lookup_init=lookup_uniform_init)
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
+        ...                       width=100, act='relu')
+        >>>
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
+        ...                       width=200, act='relu', growth_rate=-0.3)
+        >>>                                  
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
+        ...                       width=100, act='swish', do=0.1, res=True)
+        >>>                                  
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6,
+        ...                       width=32, act='selu', dense=True,
+        ...                       growth_rate=0.5)
+        >>>                                  
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6,
+        ...                       width=50, act='prelu', bn=True,
+        ...                       lookup_init=lookup_uniform_init)
     '''
 
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]], depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False,
@@ -144,17 +170,28 @@ class MultiBlock(AbsBody):
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
-        >>> body = MultiBlock(blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
-                                      partial(FullyConnected, depth=6, width=55, act='swish', dense=True, growth_rate=-0.1)],
-                              feats_per_block=[[f for f in train_feats if 'DER_' in f], [f for f in train_feats if 'PRI_' in f]])
-        >>> body = MultiBlock(blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
-                                      partial(FullyConnected, depth=6, width=55, act='swish', dense=True, growth_rate=-0.1)],
-                              feats_per_block=[[f for f in train_feats if 'DER_' in f], [f for f in train_feats if 'PRI_' in f]]
-                              bottleneck=True)
-        >>> body = MultiBlock(blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
-                                      partial(FullyConnected, depth=6, width=55, act='swish', dense=True, growth_rate=-0.1)],
-                              feats_per_block=[[f for f in train_feats if 'DER_' in f], [f for f in train_feats if 'PRI_' in f]]
-                              bottleneck=True, bottleneck_act='swish')
+        >>> body = MultiBlock(
+        ...     blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
+        ...             partial(FullyConnected, depth=6, width=55, act='swish',
+        ...                     dense=True, growth_rate=-0.1)],
+        ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
+        ...                      [f for f in train_feats if 'PRI_' in f]])
+        >>>
+        >>> body = MultiBlock(
+        ...     blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
+        ...     partial(FullyConnected, depth=6, width=55, act='swish',
+        ...             dense=True, growth_rate=-0.1)],
+        ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
+        ...                      [f for f in train_feats if 'PRI_' in f]],
+        ...     bottleneck=True)
+        >>>
+        >>> body = MultiBlock(
+        ...     blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
+        ...             partial(FullyConnected, depth=6, width=55, act='swish',
+        ...                     dense=True, growth_rate=-0.1)],
+        ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
+        ...                      [f for f in train_feats if 'PRI_' in f]],
+        ...     bottleneck=True, bottleneck_act='swish')
     '''
 
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]], blocks:List[partial], feats_per_block:List[List[str]],

@@ -33,9 +33,15 @@ class CatEmbedder():
         emb_load_path: if not None, will cause :class:`~lumin.nn.models.model_builder.ModelBuilder` to attempt to load pretrained embeddings from path
 
     Examples::
-        >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'], cat_szs=[5, 3])
-        >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'], cat_szs=[5, 3], emb_szs=[2, 2])
-        >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'], cat_szs=[5, 3], emb_szs=[2, 2], emb_load_path=Path('weights'))
+        >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'],
+                                       cat_szs=[5, 3])
+        >>>
+        >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'],
+                                       cat_szs=[5, 3], emb_szs=[2, 2])
+        >>>
+        >>> cat_embedder = CatEmbedder(cat_names=['n_jets', 'channel'],
+                                       cat_szs=[5, 3], emb_szs=[2, 2], 
+                                       emb_load_path=Path('weights'))
     '''
 
     # TODO: load pretrained embeddings to check sizes
@@ -79,8 +85,12 @@ class CatEmbedder():
 
         Examples::
             >>> cat_embedder = CatEmbedder.from_fy(train_fy)
+            >>>
             >>> cat_embedder = CatEmbedder.from_fy(train_fy, emb_szs=[2, 2])
-            >>> cat_embedder = CatEmbedder.from_fy(train_fy, emb_szs=[2, 2], emb_load_path=Path('weights'))
+            >>>
+            >>> cat_embedder = CatEmbedder.from_fy(
+                    train_fy, emb_szs=[2, 2],
+                    emb_load_path=Path('weights'))
         '''
 
         cat_names = [f for f in fy.cat_feats if f not in fy.get_ignore()]

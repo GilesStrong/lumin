@@ -124,8 +124,11 @@ class CycleLR(AbsCyclicCallback):
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
-        >>> cosine_lr   = CycleLR(lr_range=(0,    2e-3), cycle_mult=2, scale=1, interp='cosine', nb=100)
-        >>> cyclical_lr = CycleLR(lr_range=(2e-4, 2e-3), cycle_mult=1, scale=5, interp='linear', nb=100)
+        >>> cosine_lr = CycleLR(lr_range=(0, 2e-3), cycle_mult=2, scale=1,
+        ...                     interp='cosine', nb=100)
+        >>>
+        >>> cyclical_lr = CycleLR(lr_range=(2e-4, 2e-3), cycle_mult=1, scale=5,
+                                  interp='linear', nb=100)
     '''
 
     # TODO sort lr-range or remove decrease_param
@@ -164,7 +167,8 @@ class CycleMom(AbsCyclicCallback):
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
-        >>> cyclical_mom = CycleMom(mom_range=(0.85 0.95), cycle_mult=1, scale=5, interp='linear', nb=100)
+        >>> cyclical_mom = CycleMom(mom_range=(0.85 0.95), cycle_mult=1,
+        ...                         scale=5, interp='linear', nb=100)
     '''
 
     # TODO sort lr-range or remove decrease_param
@@ -201,7 +205,8 @@ class OneCycle(AbsCyclicCallback):
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
-        >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2], mom_range=(0.85, 0.95), interp='cosine', nb=100)
+        >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2],
+        ...                     mom_range=(0.85, 0.95), interp='cosine', nb=100)
     '''
 
     def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',

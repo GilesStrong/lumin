@@ -9,8 +9,8 @@ lumin.evaluation.ams module
 
 .. automodule:: lumin.evaluation.ams
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -18,5 +18,5 @@ Module contents
 
 .. automodule:: lumin.evaluation
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

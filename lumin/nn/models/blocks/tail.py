@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional, Union, Tuple, Callable
+from abc import abstractmethod
 
 from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device
@@ -16,6 +17,20 @@ class AbsTail(AbsBlock):
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.n_out,self.objective,self.bias_init = n_in,n_out,objective,bias_init
+
+    @abstractmethod
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through tail
+
+        Arguments:
+            x: incoming tensor
+        
+        Returns
+            Resulting tensor of model outputs
+        '''
+
+        pass
 
 
 class ClassRegMulti(AbsTail):
@@ -38,17 +53,23 @@ class ClassRegMulti(AbsTail):
 
     Examples::
         >>> tail = ClassRegMulti(n_in=100, n_out=1, objective='classification')
+        >>>
         >>> tail = ClassRegMulti(n_in=100, n_out=5, objective='multiclass')
+        >>>
         >>> y_range = (0.8*targets.min(), 1.2*targets.max())
-            tail = ClassRegMulti(n_in=100, n_out=1, objective='regression', y_range=y_range)
+        >>> tail = ClassRegMulti(n_in=100, n_out=1, objective='regression',
+        ...                      y_range=y_range)
+        >>>
         >>> min_targs = np.min(targets, axis=0).reshape(targets.shape[1],1)
-            max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
-            min_targs[min_targs > 0] *=0.8
-            min_targs[min_targs < 0] *=1.2
-            max_targs[max_targs > 0] *=1.2
-            max_targs[max_targs < 0] *=0.8
-            y_range = np.hstack((min_targs, max_targs))
-            tail = ClassRegMulti(n_in=100, n_out=6, objective='regression', y_range=y_range, lookup_init=lookup_uniform_init)
+        >>> max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
+        >>> min_targs[min_targs > 0] *=0.8
+        >>> min_targs[min_targs < 0] *=1.2
+        >>> max_targs[max_targs > 0] *=1.2
+        >>> max_targs[max_targs < 0] *=0.8
+        >>> y_range = np.hstack((min_targs, max_targs))
+        >>> tail = ClassRegMulti(n_in=100, n_out=6, objective='regression',
+        ...                      y_range=y_range,
+        ...                      lookup_init=lookup_uniform_init)
     '''
 
     # TODO: Automate y_range calculation with adjustable leeway

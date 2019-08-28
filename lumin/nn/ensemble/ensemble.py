@@ -40,6 +40,7 @@ class Ensemble(AbsEnsemble):
 
     Examples::
         >>> ensemble = Ensemble()
+        >>>
         >>> ensemble = Ensemble(input_pipe, output_pipe, model_builder)
     '''
 
@@ -50,12 +51,40 @@ class Ensemble(AbsEnsemble):
         super().__init__()
         self.input_pipe,self.output_pipe,self.model_builder = input_pipe,output_pipe,model_builder
         
-    def add_input_pipe(self, pipe:Pipeline) -> None: self.input_pipe = pipe
+    def add_input_pipe(self, pipe:Pipeline) -> None:
+        r'''
+        Add input pipeline for saving
 
-    def add_output_pipe(self, pipe:Pipeline) -> None: self.output_pipe = pipe
+        Arguments:
+            pipe: pipeline used for preprocessing input data
+        '''
+        
+        self.input_pipe = pipe
+
+    def add_output_pipe(self, pipe:Pipeline) -> None:
+        r'''
+        Add output pipeline for saving
+
+        Arguments:
+            pipe: pipeline used for preprocessing target data
+        '''
+        
+        self.output_pipe = pipe
     
     @staticmethod
-    def load_trained_model(model_idx:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model: 
+    def load_trained_model(model_idx:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model:
+        r'''
+        Load trained model from save file of the form `{name}{model_idx}.h5`
+
+        Arguments
+            model_idx: index of model to load
+            model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` used to build the model
+            name: base name of file from which to load model
+
+        Returns:
+            Model loaded from save
+        '''
+
         model = Model(model_builder)
         model.load(f'{name}{model_idx}.h5')
         return model
@@ -116,13 +145,17 @@ class Ensemble(AbsEnsemble):
             Built :class:`~lumin.nn.ensemble.ensemble.Ensemble`
 
         Examples::
-            >>> ensemble = Ensemble.from_results(results, 10, model_builder, location=Path('train_weights'))
-            >>> ensemble = Ensemble.from_results(results, 1,  model_builder, location=Path('train_weights'),
-                                                 snapshot_args={'cycle_losses':cycle_losses,
-                                                                'patience':patience,
-                                                                'n_cycles':8,
-                                                                'load_cycles_only':True,
-                                                                'weighting_pwr':0})
+            >>> ensemble = Ensemble.from_results(results, 10, model_builder,
+            ...                                  location=Path('train_weights'))
+            >>>
+            >>> ensemble = Ensemble.from_results(
+            ...     results, 1,  model_builder,
+            ...     location=Path('train_weights'),
+            ...     snapshot_args={'cycle_losses':cycle_losses,
+            ...                    'patience':patience,
+            ...                    'n_cycles':8,
+            ...                    'load_cycles_only':True,
+            ...                    'weighting_pwr':0})
         '''
 
         ensemble = cls()
@@ -157,13 +190,17 @@ class Ensemble(AbsEnsemble):
             verbose: whether to print out information of models loaded
 
         Examples::
-            >>> ensemble.build_ensemble(results, 10, model_builder, location=Path('train_weights'))
-            >>> ensemble.build_ensemble(results, 1,  model_builder, location=Path('train_weights'),
-                                        snapshot_args={'cycle_losses':cycle_losses,
-                                                       'patience':patience,
-                                                       'n_cycles':8,
-                                                       'load_cycles_only':True,
-                                                       'weighting_pwr':0})
+            >>> ensemble.build_ensemble(results, 10, model_builder,
+            ...                         location=Path('train_weights'))
+            >>>
+            >>> ensemble.build_ensemble(
+            ...     results, 1,  model_builder,
+            ...     location=Path('train_weights'),
+            ...     snapshot_args={'cycle_losses':cycle_losses,
+            ...                    'patience':patience,
+            ...                    'n_cycles':8,
+            ...                    'load_cycles_only':True,
+            ...                    'weighting_pwr':0})
         '''
 
         self.model_builder = model_builder
@@ -296,6 +333,7 @@ class Ensemble(AbsEnsemble):
 
         Examples::
             >>> preds = ensemble.predict(input_array)
+            >>>
             >>> ensemble.predict(test_fy)
         '''
         
@@ -313,6 +351,7 @@ class Ensemble(AbsEnsemble):
         
         Examples::
             >>> ensemble.save('weights/ensemble')
+            >>>
             >>> ensemble.save('weights/ensemble', ['pt','eta','phi'])
         '''
 

@@ -27,7 +27,9 @@ class AMS(EvalMetric):
 
     Examples::
         >>> ams_metric = AMS(n_total=250000, br=10, wgt_name='gen_orig_weight')
-        >>> ams_metric = AMS(n_total=250000, syst_unc_b=0.1, wgt_name='gen_orig_weight', use_quick_scan=False)
+        >>>
+        >>> ams_metric = AMS(n_total=250000, syst_unc_b=0.1,
+        ...                  wgt_name='gen_orig_weight', use_quick_scan=False)
     '''
 
     def __init__(self, n_total:int, wgt_name:str, targ_name:str='targets', br:float=0, syst_unc_b:float=0, use_quick_scan:bool=True):
@@ -75,10 +77,17 @@ class MultiAMS(AMS):
             if False use :meth:`~lumin.evaluation.ams.ams_scan_slow` (slower but more accurate)
 
     Examples::
-        >>> ams_metric = MultiAMS(n_total=250000, br=10, targ_name='gen_target', wgt_name='gen_orig_weight',
-                                  zero_preds=['pred_0', 'pred_1', 'pred_2'], one_preds=['pred_3'])
-        >>> ams_metric = MultiAMS(n_total=250000, syst_unc_b=0.1, targ_name='gen_target', wgt_name='gen_orig_weight', use_quick_scan=False,
-                                  zero_preds=['pred_0', 'pred_1', 'pred_2'], one_preds=['pred_3'])
+        >>> ams_metric = MultiAMS(n_total=250000, br=10, targ_name='gen_target',
+        ...                       wgt_name='gen_orig_weight',
+        ...                       zero_preds=['pred_0', 'pred_1', 'pred_2'],
+        ...                       one_preds=['pred_3'])
+        >>>
+        >>> ams_metric = MultiAMS(n_total=250000, syst_unc_b=0.1,
+        ...                       targ_name='gen_target',
+        ...                       wgt_name='gen_orig_weight',
+        ...                       use_quick_scan=False,
+        ...                       zero_preds=['pred_0', 'pred_1', 'pred_2'],
+        ...                       one_preds=['pred_3'])
     '''
 
     def __init__(self, n_total:int, wgt_name:str, targ_name:str, zero_preds:List[str], one_preds:List[str], br:float=0, syst_unc_b:float=0,

@@ -19,6 +19,7 @@ class WeightedMSE(nn.MSELoss):
 
     Examples::
         >>> loss = WeightedMSE()
+        >>>
         >>> loss = WeightedMSE(weights)
     '''
 
@@ -27,7 +28,18 @@ class WeightedMSE(nn.MSELoss):
         self.weights = weight
         
     @weak_script_method
-    def forward(self, input:Tensor, target:Tensor):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
         else:                        return super().forward(input, target)
 
@@ -43,6 +55,7 @@ class WeightedMAE(nn.L1Loss):
 
     Examples::
         >>> loss = WeightedMAE()
+        >>>
         >>> loss = WeightedMAE(weights)
     '''
     
@@ -51,7 +64,18 @@ class WeightedMAE(nn.L1Loss):
         self.weights = weight
         
     @weak_script_method
-    def forward(self, input:Tensor, target:Tensor):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
         else:                        return super().forward(input, target)
 
@@ -67,6 +91,7 @@ class WeightedCCE(nn.NLLLoss):
 
     Examples::
         >>> loss = WeightedCCE()
+        >>>
         >>> loss = WeightedCCE(weights)
     '''
 
@@ -75,6 +100,17 @@ class WeightedCCE(nn.NLLLoss):
         self.weights = weight
         
     @weak_script_method
-    def forward(self, input:Tensor, target:Tensor):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
         else:                        return super().forward(input, target)

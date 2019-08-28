@@ -92,7 +92,7 @@ def to_binary_class(df:pd.DataFrame, zero_preds:List[str], one_preds:List[str]) 
     df['pred'] = preds
 
 
-def ids2unique(ids: Union[List, np.ndarray]) -> np.ndarray:
+def ids2unique(ids: Union[List[int], np.ndarray]) -> np.ndarray:
     r'''
     Map a permutaion of integers to a unique number, or a 2D array of integers to unique numbers by row.
     Returned numbers are unique for a given permutation of integers.
@@ -100,10 +100,10 @@ def ids2unique(ids: Union[List, np.ndarray]) -> np.ndarray:
     too large to be stored if many (large) integers are passed.
 
     Arguments:
-        ids: (array of ) permutation(s) of integers to map
+        ids: (array of) permutation(s) of integers to map
 
     Returns:
-        (Array of ) unique id(s) for given permutation(s)
+        (Array of) unique id(s) for given permutation(s)
     '''
 
     if not isinstance(ids, np.ndarray): ids = np.array(ids)[:,None]
@@ -121,15 +121,24 @@ class FowardHook():
 
     Examples::
         >>> hook = ForwardHook(model.tail.dense)
-            model.predict(inputs)
-            print(hook.inputs)
+        >>> model.predict(inputs)
+        >>> print(hook.inputs)
     '''
     def __init__(self, module:nn.Module, hook_fn:Optional=None):
         self.input,self.output = None,None
         if hook_fn is not None: self.hook_fn = hook_fn
         self.hook = module.register_forward_hook(self.hook_fn)
         
-    def hook_fn(self, module, input:Union[Tensor,Tuple[Tensor]], output:Union[Tensor,Tuple[Tensor]]) -> None:
+    def hook_fn(self, module:nn.Module, input:Union[Tensor,Tuple[Tensor]], output:Union[Tensor,Tuple[Tensor]]) -> None:
+        r'''
+        Default hook function records inputs and outputs of module
+
+        Arguments:
+            module: nn.Module to hook
+            input: input tensor
+            output: output tensor of module
+        '''
+
         self.input,self.output = input,output
         
     def remove(self) -> None:

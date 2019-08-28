@@ -9,16 +9,16 @@ lumin.nn.data.batch\_yielder module
 
 .. automodule:: lumin.nn.data.batch_yielder
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.nn.data.fold\_yielder module
 ----------------------------------
 
 .. automodule:: lumin.nn.data.fold_yielder
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -26,5 +26,5 @@ Module contents
 
 .. automodule:: lumin.nn.data
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

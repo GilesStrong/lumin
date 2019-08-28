@@ -17,32 +17,32 @@ lumin.nn.models.helpers module
 
 .. automodule:: lumin.nn.models.helpers
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.nn.models.initialisations module
 --------------------------------------
 
 .. automodule:: lumin.nn.models.initialisations
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.nn.models.model module
 ----------------------------
 
 .. automodule:: lumin.nn.models.model
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.nn.models.model\_builder module
 -------------------------------------
 
 .. automodule:: lumin.nn.models.model_builder
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -50,5 +50,5 @@ Module contents
 
 .. automodule:: lumin.nn.models
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

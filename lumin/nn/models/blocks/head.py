@@ -29,6 +29,20 @@ class AbsHead(AbsBlock):
     @abstractmethod
     def _map_outputs(self) -> Dict[str,List[int]]: pass
 
+    @abstractmethod
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through head
+
+        Arguments:
+            x: input tensor
+        
+        Returns
+            Resulting tensor
+        '''
+
+        pass
+
 
 class CatEmbHead(AbsHead):
     r'''
@@ -49,9 +63,17 @@ class CatEmbHead(AbsHead):
 
     Examples::
         >>> head = CatEmbHead(cont_feats=cont_feats)
-        >>> head = CatEmbHead(cont_feats=cont_feats, cat_embedder=CatEmbedder.from_fy(train_fy))
-        >>> head = CatEmbHead(cont_feats=cont_feats, cat_embedder=CatEmbedder.from_fy(train_fy), do_cont=0.1, do_cat=0.05)
-        >>> head = CatEmbHead(cont_feats=cont_feats, cat_embedder=CatEmbedder.from_fy(train_fy), lookup_init=lookup_uniform_init)
+        >>>
+        >>> head = CatEmbHead(cont_feats=cont_feats,
+        ...                   cat_embedder=CatEmbedder.from_fy(train_fy))
+        >>>
+        >>> head = CatEmbHead(cont_feats=cont_feats,
+        ...                   cat_embedder=CatEmbedder.from_fy(train_fy),
+        ...                   do_cont=0.1, do_cat=0.05)
+        >>>
+        >>> head = CatEmbHead(cont_feats=cont_feats,
+        ...                   cat_embedder=CatEmbedder.from_fy(train_fy),
+        ...                   lookup_init=lookup_uniform_init)
     '''
 
     def __init__(self, cont_feats:List[str], do_cont:float=0, do_cat:float=0, cat_embedder:Optional[CatEmbedder]=None, 

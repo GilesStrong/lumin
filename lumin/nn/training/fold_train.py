@@ -50,14 +50,16 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         ) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
     Main training method for :class:`~lumin.nn.models.model.Model`.
-    Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and save them to savepath.
+    Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a
+    :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and save them to savepath.
     Note, this does not return trained models, instead they are saved and must be loaded later. Instead this method returns results of model training.
-    Each :class:`~lumin.nn.models.model.Model` is trained on N-1 folds, for a :class:`~lumin.nn.data.fold_yielder.FoldYielder` with N folds, and the remaining fold is used as validation data.
+    Each :class:`~lumin.nn.models.model.Model` is trained on N-1 folds, for a :class:`~lumin.nn.data.fold_yielder.FoldYielder` with N folds, and the remaining
+    fold is used as validation data.
     Training folds are loaded iteratively, and model evaluation takes place after each fold use (a sub-epoch), rather than after ever use of all folds (epoch).
     Training continues until:
         - All of the training folds are used max_epoch number of times;
-        - Or validation loss does not decrease for patience number of training folds (or cycles, if using an 
-            :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`);
+        - Or validation loss does not decrease for patience number of training folds;
+          (or cycles, if using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`);
         - Or a callback triggers trainign to stop, e.g. :class:`~lumin.nn.callbacks.cyclic_callbacks.OneCycle`
         
     Once training is finished, the state with the lowest validation loss is loaded, evaluated, and saved.
@@ -89,12 +91,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         callback_args: depreciated in favour of callback_partials
 
     Returns:
-        results: list of validation losses and other eval_metrics results, ordered by model training. Can be passed to 
-            :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
-        histories: list of loss histories, ordered by model training
-        cycle_losses: if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed, list of validation losses at the end of each cycle,
-            ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
+        - results list of validation losses and other eval_metrics results, ordered by model training. Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
+        - histories list of loss histories, ordered by model training
+        - cycle_losses if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed, list of validation losses at the end of each cycle, ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
     '''
+    # TODO: fix returns paret of doc string
 
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")

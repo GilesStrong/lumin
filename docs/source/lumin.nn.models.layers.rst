@@ -9,8 +9,8 @@ lumin.nn.models.layers.activations module
 
 .. automodule:: lumin.nn.models.layers.activations
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -18,5 +18,5 @@ Module contents
 
 .. automodule:: lumin.nn.models.layers
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

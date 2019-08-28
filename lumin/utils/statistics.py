@@ -9,7 +9,13 @@ __all__ = ['bootstrap_stats', 'get_moments', 'uncert_round']
 
 
 def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[str,Any]]:
-    '''Compute statistics and KDEs of data via sampling with replacement'''
+    r'''
+    Computes statistics and KDEs of data via sampling with replacement
+
+    Arguments:
+        args: dictionary of arguments
+    '''
+
     out_dict, mean, std, c68, boot = {}, [], [], [], []
     name    = ''   if 'name'    not in args else args['name']
     weights = None if 'weights' not in args else args['weights']
@@ -54,7 +60,7 @@ def get_moments(arr:np.ndarray) -> Tuple[float,float,float,float]:
 
 
 def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
-    '''Round value according tp given uncertainty'''
+    '''Round value according t0 given uncertainty'''
     if uncert == math.inf: return value, uncert
     uncert = np.nan_to_num(uncert)
     if uncert == 0: return value, uncert

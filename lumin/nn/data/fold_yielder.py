@@ -23,7 +23,9 @@ class FoldYielder:
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
 
     Examples::
-        >>> fy = FoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'], cat_feats=['channel'], ignore_feats=['phi'], input_pipe='input_pipe.pkl')
+        >>> fy = FoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'],
+        ...                  cat_feats=['channel'], ignore_feats=['phi'],
+        ...                  input_pipe='input_pipe.pkl')
     '''
 
     # TODO: Add ability to load file from string name
@@ -60,18 +62,64 @@ class FoldYielder:
         self.cont_feats = [f for f in self.cont_feats if f not in self._ignore_feats]
         self.cat_feats  = [f for f in self.cat_feats  if f not in self._ignore_feats]
     
-    def get_ignore(self) -> List[str]: return self._ignore_feats
+    def get_ignore(self) -> List[str]:
+        r'''
+        Returns list of ignored features
 
-    def set_foldfile(self, foldfile:h5py.File) -> None: self.foldfile, self.n_folds = foldfile, len(foldfile)
+        Returns:
+            Features removed from training data
+        '''
+        
+        return self._ignore_feats
 
-    def add_input_pipe(self, input_pipe:Pipeline) -> None:   self.input_pipe  = input_pipe
+    def set_foldfile(self, foldfile:h5py.File) -> None:
+        r'''
+        Sets the file from which to access data
 
-    def add_output_pipe(self, output_pipe:Pipeline) -> None: self.output_pipe = output_pipe
+        Arguments:
+            foldfile: opened h5py file
+        '''
+        
+        self.foldfile, self.n_folds = foldfile, len(foldfile)
+
+    def add_input_pipe(self, input_pipe:Pipeline) -> None:
+        r'''
+        Adds an input pipe to the FoldYielder for use when deprocessing data
+
+        Arguments:
+            input_pipe: Pipeline which was used for preprocessing the input data
+        '''
+        
+        self.input_pipe  = input_pipe
+
+    def add_output_pipe(self, output_pipe:Pipeline) -> None:
+        r'''
+        Adds an output pipe to the FoldYielder for use when deprocessing data
+
+        Arguments:
+            output_pipe: Pipeline which was used for preprocessing the target data
+        '''
+        
+        self.output_pipe = output_pipe
 
     def add_input_pipe_from_file(self, name:str) -> None:
+        r'''
+        Adds an input pipe from a pkl file to the FoldYielder for use when deprocessing data
+
+        Arguments:
+            name: name of pkl file containing Pipeline which was used for preprocessing the input data
+        '''
+
         with open(name, 'rb') as fin: self.input_pipe = pickle.load(fin)
 
     def add_output_pipe_from_file(self, name:str) -> None:
+        r'''
+        Adds an output pipe from a pkl file to the FoldYielder for use when deprocessing data
+
+        Arguments:
+            name: name of pkl file containing Pipeline which was used for preprocessing the target data
+        '''
+
         with open(name, 'rb') as fin: self.output_pipe = pickle.load(fin)
 
     def get_fold(self, idx:int) -> Dict[str,np.ndarray]:
@@ -199,6 +247,15 @@ class FoldYielder:
         return data
 
     def save_fold_pred(self, pred:np.ndarray, fold_idx:int, pred_name:str='pred') -> None:
+        r'''
+        Save predictions for given fold as a new column in the foldfile
+
+        Arguments:
+            pred: array of predictions in the same order as data appears in the file
+            fold_idx: index for fold
+            pred_name: name of column to save predictions under
+        '''
+
         try: self.foldfile.create_dataset(f'fold_{fold_idx}/{pred_name}', shape=pred.shape, dtype='float32')
         except RuntimeError: pass
         self.foldfile[f'fold_{fold_idx}/{pred_name}'][...] = pred
@@ -226,7 +283,10 @@ class HEPAugFoldYielder(FoldYielder):
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
 
     Examples::
-        >>> fy = HEPAugFoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'], rot_mult=2, reflect_y=True, reflect_z=True, input_pipe='input_pipe.pkl')
+        >>> fy = HEPAugFoldYielder('train.h5',
+        ...                        cont_feats=['pT','eta','phi','mass'],
+        ...                        rot_mult=2, reflect_y=True, reflect_z=True,
+        ...                        input_pipe='input_pipe.pkl')
     '''
 
     '''Accessing data from foldfile and apply HEP specific data augmentation during training and testing'''
@@ -290,6 +350,18 @@ class HEPAugFoldYielder(FoldYielder):
                     pass
             
     def get_fold(self, idx:int) -> Dict[str,np.ndarray]:
+        r'''
+        Get data for single fold applying random train-time data augmentaion. Data consists of dictionary of inputs, targets, and weights.
+        Accounts for ignored features.
+        Inputs are passed through np.nan_to_num to deal with nans and infs.
+
+        Arguments:
+            idx: fold index to load
+
+        Returns:
+            tuple of inputs, targets, and weights as Numpy arrays
+        '''
+
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data
         inputs = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/inputs']), columns=self.input_feats)
@@ -323,6 +395,19 @@ class HEPAugFoldYielder(FoldYielder):
         elif n_axes == 1: return '{0:01b}'.format(int(aug_idx/div))
     
     def get_test_fold(self, idx:int, aug_idx:int) -> Dict[str, np.ndarray]:
+        r'''
+        Get test data for single fold applying test-time data augmentaion. Data consists of dictionary of inputs, targets, and weights.
+        Accounts for ignored features.
+        Inputs are passed through np.nan_to_num to deal with nans and infs.
+
+        Arguments:
+            idx: fold index to load
+            aug_idx: index for the test-time augmentaion (ignored if random test-time augmentation requested)
+
+        Returns:
+            tuple of inputs, targets, and weights as Numpy arrays
+        '''
+
         if aug_idx >= self.aug_mult: raise ValueError(f"Invalid augmentation idx passed {aug_idx}")
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data

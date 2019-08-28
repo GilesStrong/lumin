@@ -9,8 +9,8 @@ lumin.nn.ensemble.ensemble module
 
 .. automodule:: lumin.nn.ensemble.ensemble
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -18,5 +18,5 @@ Module contents
 
 .. automodule:: lumin.nn.ensemble
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

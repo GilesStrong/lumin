@@ -9,8 +9,8 @@ lumin.inference.summary\_stat module
 
 .. automodule:: lumin.inference.summary_stat
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -18,5 +18,5 @@ Module contents
 
 .. automodule:: lumin.inference
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

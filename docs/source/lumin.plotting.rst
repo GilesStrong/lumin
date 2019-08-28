@@ -9,40 +9,40 @@ lumin.plotting.data\_viewing module
 
 .. automodule:: lumin.plotting.data_viewing
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.plotting.interpretation module
 ------------------------------------
 
 .. automodule:: lumin.plotting.interpretation
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.plotting.plot\_settings module
 ------------------------------------
 
 .. automodule:: lumin.plotting.plot_settings
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.plotting.results module
 -----------------------------
 
 .. automodule:: lumin.plotting.results
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 lumin.plotting.training module
 ------------------------------
 
 .. automodule:: lumin.plotting.training
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:
 
 
 Module contents
@@ -50,5 +50,5 @@ Module contents
 
 .. automodule:: lumin.plotting
    :members:
-   :show-inheritance:
    :undoc-members:
+   :show-inheritance:

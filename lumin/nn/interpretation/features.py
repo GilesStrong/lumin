@@ -40,8 +40,11 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
 
     Examples::
         >>> fi = get_nn_feat_importance(model, train_fy)
+        >>>
         >>> fi = get_nn_feat_importance(model, train_fy, savename='feat_import')
-        >>> fi = get_nn_feat_importance(model, train_fy, eval_metric=AMS(n_total=100000))
+        >>>
+        >>> fi = get_nn_feat_importance(model, train_fy,
+        ...                             eval_metric=AMS(n_total=100000))
     '''
 
     feats = fy.cont_feats + fy.cat_feats
@@ -98,8 +101,12 @@ def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metr
 
     Examples::
         >>> fi = get_ensemble_feat_importance(ensemble, train_fy)
-        >>> fi = get_ensemble_feat_importance(ensemble, train_fy, savename='feat_import')
-        >>> fi = get_ensemble_feat_importance(ensemble, train_fy, eval_metric=AMS(n_total=100000))
+        >>>
+        >>> fi = get_ensemble_feat_importance(ensemble, train_fy
+        ...                                   savename='feat_import')
+        >>>
+        >>> fi = get_ensemble_feat_importance(ensemble, train_fy,
+        ...                                   eval_metric=AMS(n_total=100000))
     '''
 
     mean_fi = []
