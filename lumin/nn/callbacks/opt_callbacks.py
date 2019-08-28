@@ -9,6 +9,8 @@ from ...plotting.plot_settings import PlotSettings
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+__all__ = ['LRFinder']
+
 
 class LRFinder(Callback):
     r'''

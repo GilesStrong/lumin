@@ -12,45 +12,37 @@ Subpackages
 Submodules
 ----------
 
-lumin.nn.models.abs\_model module
----------------------------------
-
-.. automodule:: lumin.nn.models.abs_model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 lumin.nn.models.helpers module
 ------------------------------
 
 .. automodule:: lumin.nn.models.helpers
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.nn.models.initialisations module
 --------------------------------------
 
 .. automodule:: lumin.nn.models.initialisations
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.nn.models.model module
 ----------------------------
 
 .. automodule:: lumin.nn.models.model
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.nn.models.model\_builder module
 -------------------------------------
 
 .. automodule:: lumin.nn.models.model_builder
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 
 Module contents
@@ -58,5 +50,5 @@ Module contents
 
 .. automodule:: lumin.nn.models
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

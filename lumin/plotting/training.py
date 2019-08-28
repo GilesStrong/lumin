@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from .plot_settings import PlotSettings
 from ..nn.callbacks.opt_callbacks import LRFinder
 
+__all__ = ['plot_train_history', 'plot_lr_finders']
+
 
 def _lookup_name(name:str) -> str:
     if name == 'trn_loss': return 'Training'

@@ -10,6 +10,8 @@ from ..nn.data.fold_yielder import FoldYielder
 from ..optimisation.features import get_rf_feat_importance
 from .statistics import uncert_round
 
+__all__ = ['check_val_set']
+
 
 def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
     '''Method to check validation set suitability by seeing whether random forests can predict whether events belong to one dataset or the other.

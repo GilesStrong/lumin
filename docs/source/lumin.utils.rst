@@ -9,40 +9,40 @@ lumin.utils.data module
 
 .. automodule:: lumin.utils.data
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.utils.misc module
 -----------------------
 
 .. automodule:: lumin.utils.misc
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.utils.mod\_ver module
 ---------------------------
 
 .. automodule:: lumin.utils.mod_ver
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.utils.multiprocessing module
 ----------------------------------
 
 .. automodule:: lumin.utils.multiprocessing
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.utils.statistics module
 -----------------------------
 
 .. automodule:: lumin.utils.statistics
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 
 Module contents
@@ -50,5 +50,5 @@ Module contents
 
 .. automodule:: lumin.utils
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

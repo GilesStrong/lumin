@@ -7,6 +7,8 @@ from pathlib import Path
 
 from sklearn.model_selection import StratifiedKFold, KFold
 
+__all__ = ['save_to_grp', 'fold2foldfile', 'df2foldfile']
+
 
 def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
     r'''

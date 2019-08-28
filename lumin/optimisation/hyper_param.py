@@ -21,6 +21,8 @@ from ..plotting.plot_settings import PlotSettings
 
 import matplotlib.pyplot as plt
 
+__all__ = ['get_opt_rf_params', 'fold_lr_find']
+
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
@@ -87,7 +89,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
 
     Arguments:
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing training data
-        model_builder: :class:`~lumin.nn.models.ModelBuilder` providing networks and optimisers
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` providing networks and optimisers
         bs: batch size
         train_on_weights: If weights are present, whether to use them for training
         shuffle_fold: whether to shuffle data in folds
@@ -97,7 +99,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder which were used for each model trained
+        List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which were used for each model trained
     '''
 
     if callback_partials is None: callback_partials = []

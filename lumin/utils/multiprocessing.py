@@ -1,6 +1,8 @@
 import multiprocessing as mp
 from typing import Callable, Any, List, Dict
 
+__all__ = ['mp_run']
+
 
 def mp_run(args:List[Dict[Any,Any]], func:Callable[[Any],Any]) -> Dict[Any,Any]:
     r'''

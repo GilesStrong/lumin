@@ -12,6 +12,8 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset, inset_axes
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+__all__ = ['plot_roc', 'plot_binary_class_pred', 'plot_sample_pred']
+
 
 def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     r'''

@@ -4,6 +4,8 @@ import torch
 from torch import Tensor
 from typing import Callable
 
+__all__ = ['SignificanceLoss']
+
 
 @weak_module
 class SignificanceLoss(nn.Module):

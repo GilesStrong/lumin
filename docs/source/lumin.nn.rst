@@ -13,6 +13,7 @@ Subpackages
    lumin.nn.losses
    lumin.nn.metrics
    lumin.nn.models
+   lumin.nn.optimisers
    lumin.nn.training
 
 Module contents
@@ -20,5 +21,5 @@ Module contents
 
 .. automodule:: lumin.nn
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

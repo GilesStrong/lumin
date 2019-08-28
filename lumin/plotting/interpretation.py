@@ -17,6 +17,9 @@ from ..utils.misc import to_np, FowardHook
 from ..utils.mod_ver import check_pdpbox
 from ..nn.models.abs_model import AbsModel
 
+__all__ = ['plot_importance', 'plot_embedding', 'plot_1d_partial_dependence', 'plot_2d_partial_dependence', 'plot_multibody_weighted_outputs',
+           'plot_bottleneck_weighted_inputs']
+
 
 def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty',
                     savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:

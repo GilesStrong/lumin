@@ -11,6 +11,8 @@ from .cyclic_callbacks import AbsCyclicCallback
 from ...utils.misc import to_tensor
 from ...plotting.plot_settings import PlotSettings
 
+__all__ = ['SWA', 'AbsModelCallback']
+
 
 class AbsModelCallback(Callback):
     '''Abstract class for callbacks which provide alternative models during training'''
@@ -53,7 +55,7 @@ class SWA(AbsModelCallback):
     Arguments:
         start_epoch: (sub-)epoch/cycle to begin averaging
         renewal_period: How often to check performance of averages, and renew tracking of least performant
-        model: :class:`~lumin.nn.models.Model` to provide parameters, alternatively call :meth:`~lumin.nn.models.Model.set_model`
+        model: :class:`~lumin.nn.models.model.Model` to provide parameters, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         val_fold: Dictionary containing inputs, targets, and weights (or None) as Numpy arrays
         cyclic_callback: Optional for any cyclical callback which is running
         update_on_cycle_end: Whether to lock in to the cyclic callback and only update at the end of a cycle. Default yes, if cyclic callback present.

@@ -6,6 +6,8 @@ import torch.nn as nn
 
 from ..initialisations import lookup_normal_init
 
+__all__ = []
+
 
 class AbsBlock(nn.Module):
     def __init__(self, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
