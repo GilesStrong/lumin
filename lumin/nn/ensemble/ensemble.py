@@ -20,6 +20,8 @@ from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.statistics import uncert_round
 
+__all__ = ['Ensemble']
+
 
 class Ensemble(AbsEnsemble):
     r'''
@@ -34,7 +36,7 @@ class Ensemble(AbsEnsemble):
     Arguments:
         input_pipe: Optional input pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_input_pipe`
         output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_ouput_pipe`
-        model_builder: Optional :class:`~lumin.nn.models.ModelBuilder` for constructing models from saved weights.
+        model_builder: Optional :class:`~lumin.nn.models.model_builder.ModelBuilder` for constructing models from saved weights.
 
     Examples::
         >>> ensemble = Ensemble()
@@ -94,7 +96,7 @@ class Ensemble(AbsEnsemble):
         Arguments:
             results: results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             size: number of models to load as ranked by metric
-            model_builder: :class:`~lumin.nn.models.ModelBuilder` used for building :class:`~lumin.nn.models.Model` from saved models
+            model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` used for building :class:`~lumin.nn.models.model.Model` from saved models
             metric: metric name listed in results to use for ranking and weighting trained models
             weighting: 'reciprocal' or 'uniform' how to weight model predictions during predicition.
                 'reciprocal' = models weighted by 1/metric
@@ -138,7 +140,7 @@ class Ensemble(AbsEnsemble):
         Arguments:
             results: results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             size: number of models to load as ranked by metric
-            model_builder: :class:`~lumin.nn.models.ModelBuilder` used for building :class:`~lumin.nn.models.Model` from saved models
+            model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` used for building :class:`~lumin.nn.models.model.Model` from saved models
             metric: metric name listed in results to use for ranking and weighting trained models
             weighting: 'reciprocal' or 'uniform' how to weight model predictions during predicition.
                 'reciprocal' = models weighted by 1/metric
@@ -332,7 +334,7 @@ class Ensemble(AbsEnsemble):
                     
     def load(self, name:str) -> None:
         r'''
-        Load an instantiated :class:`~lumin.nn.ensemble.ensemble.Ensemble` with weights and :class:`~lumin.nn.models.Model` from save.
+        Load an instantiated :class:`~lumin.nn.ensemble.ensemble.Ensemble` with weights and :class:`~lumin.nn.models.model.Model` from save.
 
         Arguments;
             name: base name for saved objects
@@ -363,7 +365,7 @@ class Ensemble(AbsEnsemble):
 
     def export2onnx(self, base_name:str, bs:int=1) -> None:
         r'''
-        Export all :class:`~lumin.nn.models.Model` contained in :class:`~lumin.nn.ensemble.ensemble.Ensemble` to ONNX format.
+        Export all :class:`~lumin.nn.models.model.Model` contained in :class:`~lumin.nn.ensemble.ensemble.Ensemble` to ONNX format.
         Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
 
         Arguments:
@@ -375,7 +377,7 @@ class Ensemble(AbsEnsemble):
 
     def export2tfpb(self, base_name:str, bs:int=1) -> None:
         r'''
-        Export all :class:`~lumin.nn.models.Model` contained in :class:`~lumin.nn.ensemble.ensemble.Ensemble` to Tensorflow ProtocolBuffer format, via ONNX.
+        Export all :class:`~lumin.nn.models.model.Model` contained in :class:`~lumin.nn.ensemble.ensemble.Ensemble` to Tensorflow ProtocolBuffer format, via ONNX.
         Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
 
         Arguments:

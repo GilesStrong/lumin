@@ -3,6 +3,8 @@ from typing import Any
 import torch
 import torch.nn as nn
 
+__all__ = ['lookup_act', 'Swish']
+
 
 def lookup_act(act:str) -> Any:
     r'''

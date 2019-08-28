@@ -21,14 +21,16 @@ from ..metrics.eval_metric import EvalMetric
 from ...utils.misc import to_device
 from ...utils.statistics import uncert_round
 
+__all__ = ['Model']
+
 
 class Model(AbsModel):
     r'''
-    Wrapper class to handle training and inference of NNs created via a :class:`~lumin.nn.models.ModelBuilder`.
+    Wrapper class to handle training and inference of NNs created via a :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Note that saved models can be instantiated direcly via :meth:`~lumin.nn.models.model.Model.from_save` classmethod.
     
     Arguments:
-        model_builder: :class:`~lumin.nn.models.ModelBuilder` which will construct the network, loss, and optimiser
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` which will construct the network, loss, and optimiser
 
     Examples::
         >>> model = Model(model_builder)
@@ -69,14 +71,14 @@ class Model(AbsModel):
     @classmethod
     def from_save(cls, name:str, model_builder:ModelBuilder) -> AbsModel:
         r'''
-        Instantiated a :class:`~lumin.nn.models.Model` and load saved state from file.
+        Instantiated a :class:`~lumin.nn.models.model.Model` and load saved state from file.
         
         Arguments:
             name: name of file containing saved state
-            model_builder: :class:`~lumin.nn.models.ModelBuilder` which was used to construct the network
+            model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` which was used to construct the network
         
         Returns:
-            Instantiated :class:`~lumin.nn.models.Model` with network weights, optimiser state, and input mask loaded from saved state
+            Instantiated :class:`~lumin.nn.models.model.Model` with network weights, optimiser state, and input mask loaded from saved state
         
         Examples::
             >>> model = Model.from_save('weights/model.h5', model_builder)
@@ -323,7 +325,7 @@ class Model(AbsModel):
 
         Arguments:
             name: name of save file
-            model_builder: if :class:`~lumin.nn.models.Model` was not initialised with a :class:`~lumin.nn.models.ModelBuilder`, you will need to pass one here
+            model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`, you will need to pass one here
         '''
 
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
@@ -371,7 +373,7 @@ class Model(AbsModel):
            
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         r'''
-        Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.Model` and provided arguments
+        Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.model.Model` and provided arguments
 
         Arguments:
             fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance

@@ -28,6 +28,8 @@ from ...plotting.plot_settings import PlotSettings
 
 import matplotlib.pyplot as plt
 
+__all__ = ['fold_train_ensemble']
+
 
 def _get_folds(val_idx, n_folds, shuffle_folds:bool=True):
     r'''
@@ -47,12 +49,10 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         plot_settings:PlotSettings=PlotSettings(), callback_args:Optional[List[Dict[str,Any]]]=None
                         ) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
-    Main training method for :class:`~lumin.nn.models.Model`.
-    Trains a specified numer of models created by a :class:`~lumin.nn.models.ModelBuilder` on data provided by a 
-    :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and save them to savepath.
+    Main training method for :class:`~lumin.nn.models.model.Model`.
+    Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and save them to savepath.
     Note, this does not return trained models, instead they are saved and must be loaded later. Instead this method returns results of model training.
-    Each :class:`~lumin.nn.models.Model` is trained on N-1 folds, for a :class:`~lumin.nn.data.fold_yielder.FoldYielder` with N folds, and the remaining fold is
-    used as validation data.
+    Each :class:`~lumin.nn.models.model.Model` is trained on N-1 folds, for a :class:`~lumin.nn.data.fold_yielder.FoldYielder` with N folds, and the remaining fold is used as validation data.
     Training folds are loaded iteratively, and model evaluation takes place after each fold use (a sub-epoch), rather than after ever use of all folds (epoch).
     Training continues until:
         - All of the training folds are used max_epoch number of times;
@@ -66,7 +66,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing ot training data
         n_models: number of models to train
         bs: batch size. Number of data points per iteration
-        model_builder: :class:`~lumin.nn.models.ModelBuilder` creating the networks to train
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` creating the networks to train
         callback_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called
         eval_metrics: list of instantiated :class:`~lumin.nn.metric.eval_metric.EvalMetric`.
             At the end of training, validation data and model predictions will be passed to each, and the results printed and saved

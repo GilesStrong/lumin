@@ -5,6 +5,8 @@ import torch.nn as nn
 from .callback import Callback
 from ..models.abs_model import AbsModel
 
+__all__ = ['GradClip']
+
 
 class GradClip(Callback):
     r'''
@@ -13,7 +15,7 @@ class GradClip(Callback):
     Arguments:
         clip: value to clip at
         clip_norm: whether to clip according to norm (`torch.nn.utils.clip_grad_norm_`) or value (`torch.nn.utils.clip_grad_value_`)
-         model: :class:`~lumin.nn.models.Model` with parameters to clip gradients, alternatively call :meth:`~lumin.nn.models.Model.set_model`
+         model: :class:`~lumin.nn.models.model.Model` with parameters to clip gradients, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
         >>> grad_clip = GradClip(1e-5)

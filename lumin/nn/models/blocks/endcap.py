@@ -8,6 +8,8 @@ from torch import Tensor
 
 from ....utils.misc import to_np
 
+__all__ = []
+
 
 class AbsEndcap(nn.Module):
     '''Abstract class for constructing post training layer which performs furtehr calculation on NN outputs.

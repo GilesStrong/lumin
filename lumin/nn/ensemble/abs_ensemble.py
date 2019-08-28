@@ -5,6 +5,8 @@ from abc import ABC, abstractmethod
 from ..models.abs_model import AbsModel
 from ..data.fold_yielder import FoldYielder
 
+__all__ = []
+
 
 class AbsEnsemble(ABC):
     '''Abstract classs for ensembles'''

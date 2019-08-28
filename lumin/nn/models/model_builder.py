@@ -18,6 +18,8 @@ from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 from ..optimisers.radam import RAdam
 from ..optimisers.ranger import Ranger
 
+__all__ = ['ModelBuilder']
+
 '''
 Todo
 - Better typing for nn._WeightedLoss
@@ -103,10 +105,10 @@ class ModelBuilder(object):
     def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
                            loss:Optional[Any]=None, opt_args:Optional[Dict[str,Any]]=None):
         r'''
-        Instantiate a :class:`~lumin.nn.models.ModelBuilder` from an exisitng :class:`~lumin.nn.models.ModelBuilder`, but with options to adjust loss, optimiser, pretraining, and module freezing
+        Instantiate a :class:`~lumin.nn.models.model_builder.ModelBuilder` from an exisitng :class:`~lumin.nn.models.model_builder.ModelBuilder`, but with options to adjust loss, optimiser, pretraining, and module freezing
 
         Arguments:
-            model_builder: existing :class:`~lumin.nn.models.ModelBuilder` or filename for a pickled :class:`~lumin.nn.models.ModelBuilder` 
+            model_builder: existing :class:`~lumin.nn.models.model_builder.ModelBuilder` or filename for a pickled :class:`~lumin.nn.models.model_builder.ModelBuilder` 
             pretrain_file: if set, will load saved parameters for entire network from saved model
             freeze_head: whether to start with the head parameters set to untrainable
             freeze_body: whether to start with the body parameters set to untrainable
@@ -116,7 +118,7 @@ class ModelBuilder(object):
                 Currently, only ADAM (default) and SGD are available.
 
         Returns:
-            Instantiated :class:`~lumin.nn.models.ModelBuilder`
+            Instantiated :class:`~lumin.nn.models.model_builder.ModelBuilder`
             
         Examples::
             >>> new_model_builder = ModelBuilder.from_model_builder(ModelBuidler)

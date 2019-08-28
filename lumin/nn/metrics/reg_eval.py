@@ -7,6 +7,8 @@ from ...utils.statistics import bootstrap_stats
 from .eval_metric import EvalMetric
 from ..data.fold_yielder import FoldYielder
 
+__all__ = ['RegPull', 'RegAsProxyPull']
+
 
 class RegPull(EvalMetric):
     r'''

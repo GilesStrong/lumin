@@ -9,6 +9,8 @@ from ..plotting.plot_settings import PlotSettings
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+__all__ = ['binary_class_cut', 'binary_class_cut_by_ams']
+
 
 def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,

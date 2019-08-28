@@ -5,6 +5,8 @@ import torch.nn as nn
 import torch
 from torch.tensor import Tensor
 
+__all__ = ['WeightedMSE', 'WeightedMAE', 'WeightedCCE']
+
 
 @weak_module
 class WeightedMSE(nn.MSELoss):

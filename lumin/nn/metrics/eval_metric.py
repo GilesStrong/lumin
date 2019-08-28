@@ -5,6 +5,8 @@ from typing import Optional
 
 from ..data.fold_yielder import FoldYielder
 
+__all__ = ['EvalMetric']
+
 
 class EvalMetric(ABC):
     '''Abstract class for evaluating performance of a model using some metric'''

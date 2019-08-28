@@ -7,6 +7,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.decomposition import PCA
 
+__all__ = ['get_pre_proc_pipes', 'fit_input_pipe', 'fit_output_pipe', 'proc_cats']
+
 
 def get_pre_proc_pipes(norm_in:bool=True, norm_out:bool=False, pca:bool=False, whiten:bool=False,
                        with_mean:bool=True, with_std:bool=True, n_components:Optional[int]=None) -> Tuple[Pipeline,Pipeline]:
