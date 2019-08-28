@@ -27,5 +27,9 @@ class GradClip(Callback):
         self.func = nn.utils.clip_grad_norm_ if clip_norm else nn.utils.clip_grad_value_
         
     def on_backwards_end(self, **kargs) -> None:
+        r'''
+        Clips gradients prior to parameter updates
+        '''
+
         if self.clip > 0: self.func(self.model.parameters(), self.clip)
             

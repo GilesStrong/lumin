@@ -29,11 +29,15 @@ class LRFinder(Callback):
         self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/nb)
         
     def on_train_begin(self, **kargs):
+        r'''
+        Prepares variables and optimiser for new training
+        '''
+
         self.best,self.iter = math.inf,0
         self.model.set_lr(self.lr_bounds[0])
         self.history = {'loss': [], 'lr': []}
         
-    def calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
+    def _calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
     def plot(self, n_skip:int=0, n_max:Optional[int]=None, lim_y:Optional[Tuple[float,float]]=None):
         r'''
@@ -73,10 +77,17 @@ class LRFinder(Callback):
             plt.show()
 
     def on_batch_end(self, loss:float, **kargs):
+        r'''
+        Records loss and increments LR
+
+        Arguments:
+            loss: training loss for most recent batch
+        '''
+
         self.history['loss'].append(loss)
         self.history['lr'].append(self.model.opt.param_groups[0]['lr'])
         self.iter += 1
-        lr = self.calc_lr()
+        lr = self._calc_lr()
         self.model.opt.param_groups[0]['lr'] = lr
         if math.isnan(loss) or loss > self.best*10 or lr > self.lr_bounds[1]: self.model.stop_train = True
         if loss < self.best and self.iter > 10: self.best = loss

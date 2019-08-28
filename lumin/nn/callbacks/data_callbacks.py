@@ -33,20 +33,27 @@ class BinaryLabelSmooth(Callback):
         self.coefs = coefs if isinstance(coefs, tuple) else (coefs, coefs)
     
     def on_epoch_begin(self, by:BatchYielder, **kargs) -> None:
-        '''Apply smoothing at train-time'''
+        r'''
+        Apply smoothing at train-time
+        '''
+
         by.targets = by.targets.astype(float)
         by.targets[by.targets == 0] = self.coefs[0]
         by.targets[by.targets == 1] = 1-self.coefs[1]
          
     def on_eval_begin(self, targets:Tensor, **kargs) -> None:
-        '''Apply smoothing at test-time'''
+        r'''
+        Apply smoothing at test-time
+        '''
+
         targets[targets == 0] = self.coefs[0]
         targets[targets == 1] = 1-self.coefs[1]
 
 
 class SequentialReweight(Callback):
     r'''
-    **Experiemntal proceedure**
+    .. Caution:: Experiemntal proceedure
+
     During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
     Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
 
@@ -63,7 +70,7 @@ class SequentialReweight(Callback):
         super().__init__(model=model)
         self.scale,self.reweight_func = scale,reweight_func
 
-    def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
+    def _reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
         preds = self.model.predict_array(fld['inputs'], as_np=False)
         coefs = to_np(self.reweight_func(preds, to_device(Tensor(fld['targets']))))
@@ -72,12 +79,21 @@ class SequentialReweight(Callback):
         fld['weights'] *= weight/np.sum(fld['weights'])
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
     
-    def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None: self.reweight_fold(fy, val_id)
+    def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
+        r'''
+        Reweighs the validation fold once training is finished
+
+        Arguments:
+            fy: FoldYielder providing the training and validation data
+            fold_id: Fold index which was used for validation
+        '''
+        
+        self._reweight_fold(fy, val_id)
 
 
 class SequentialReweightClasses(SequentialReweight):
     r'''
-    **Experiemntal proceedure**
+    .. Caution:: Experiemntal proceedure
     Version of :class:`~lumin.nn.callbacks.data_callbacks.SequentialReweight` designed for classification, which renormalises class weights to original weight-sum after reweighting
     During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
     Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
@@ -91,7 +107,7 @@ class SequentialReweightClasses(SequentialReweight):
         >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
     '''
 
-    def reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
+    def _reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
         preds = self.model.predict_array(fld['inputs'], as_np=False)
         coefs = to_np(self.reweight_func(preds, to_device(Tensor(fld['targets']))))
@@ -120,10 +136,11 @@ class BootstrapResample(Callback):
         super().__init__(model=model)
         self.n_trn_flds,self.bag_each_time,self.reweight = n_folds-1,bag_each_time,reweight
         
-    def get_sample(self, length:int) -> np.ndarray: return np.random.choice(range(length), length, replace=True)
+    def _get_sample(self, length:int) -> np.ndarray: return np.random.choice(range(length), length, replace=True)
     
-    def resample(self, sample:np.ndarray, inputs:Union[np.ndarray,Tensor], targets:Union[np.ndarray,Tensor],
-                 weights:Union[np.ndarray,Tensor,None]) -> None:
+    def _resample(self, sample:np.ndarray, inputs:Union[np.ndarray,Tensor], targets:Union[np.ndarray,Tensor],
+                  weights:Union[np.ndarray,Tensor,None]) -> None:
+
         pkg = np if isinstance(weights, np.ndarray) else torch 
         # Get weight sums before resampling
         if weights is not None and self.reweight:
@@ -146,18 +163,29 @@ class BootstrapResample(Callback):
                 else: weights *= weight_sum/pkg.sum(weights)
         
     def on_train_begin(self, **kargs) -> None:
+        r'''
+        Resets internal parameters to prepare for a new training
+        '''
+
         self.iter,self.samples,self.objective = 0,[],None
         np.random.seed()  # Is this necessary?
     
     def on_epoch_begin(self, by:BatchYielder, **kargs) -> None:
+        r'''
+        Resamples training data for new epoch
+
+        Arguments:
+            by: BatchYielder providing data for the upcoming epoch
+        '''
+
         if self.bag_each_time or self.iter < self.n_trn_flds:
-            sample = self.get_sample(len(by.targets))
+            sample = self._get_sample(len(by.targets))
             if not self.bag_each_time: self.samples.append(sample)
         else:
             sample = self.samples[self.iter % self.n_trn_flds]
         self.iter += 1
         if self.objective is None: self.objective = by.objective
-        self.resample(sample, by.inputs, by.targets, by.weights)
+        self._resample(sample, by.inputs, by.targets, by.weights)
 
 
 class FeatureSubsample(Callback):
@@ -185,10 +213,21 @@ class FeatureSubsample(Callback):
         self.feat_idxs = np.hstack((cont_idxs, len(self.cont_feats)+np.arange(self.model.model_builder.cat_embedder.n_cat_in)))
         self.feat_idxs.sort()
     
-    def on_train_begin(self, model_num:int, savepath:Path, **kargs) -> None:
-        self.model_num,self.savepath = model_num,savepath
+    def on_train_begin(self, **kargs) -> None:
+        r'''
+        Subsamples features for use in training and sets model's input mask for inference
+        '''
+
         np.random.seed()  # Is this necessary?
         self._sample_feats()
         self.model.set_input_mask(self.feat_idxs)
         
-    def on_epoch_begin(self, by:BatchYielder, **kargs) -> None: by.inputs = by.inputs[:,self.feat_idxs]
+    def on_epoch_begin(self, by:BatchYielder, **kargs) -> None:
+        r'''
+        Masks input data to remove non-selected features
+
+        Arguments:
+            by: BatchYielder providing data for the upcoming epoch
+        '''
+        
+        by.inputs = by.inputs[:,self.feat_idxs]
