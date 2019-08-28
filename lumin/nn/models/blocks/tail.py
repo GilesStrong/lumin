@@ -21,7 +21,7 @@ class AbsTail(AbsBlock):
 class ClassRegMulti(AbsTail):
     r'''
     Output block for (multi(class/label)) classification or regression tasks.
-    Designed to be passed as a 'tail' to :class:`~lumin.nn.models.ModelBuilder`.
+    Designed to be passed as a 'tail' to :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Takes output size of network body and scales it to required number of outputs.
     For regression tasks, y_range can be set with per-output minima and maxima. The outputs are then adjusted according to ((y_max-y_min)*x)+self.y_min, where x
     is the output of the network passed through a sigmoid function. Effectively allowing regression to be performed without normalising and standardising the

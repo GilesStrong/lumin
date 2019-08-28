@@ -42,6 +42,10 @@ extensions = [
     "sphinx_rtd_theme",
 ]
 
+autodoc_default_options = {
+    'undoc-members': False,
+}
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

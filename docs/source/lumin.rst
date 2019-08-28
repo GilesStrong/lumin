@@ -22,8 +22,8 @@ lumin.version module
 
 .. automodule:: lumin.version
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 
 Module contents
@@ -31,5 +31,5 @@ Module contents
 
 .. automodule:: lumin
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

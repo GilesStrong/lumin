@@ -9,7 +9,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set_style("whitegrid")
 
-__all__ = ['CycleLR', 'CycleMom', 'OneCycle']
+__all__ = ['AbsCyclicCallback', 'CycleLR', 'CycleMom', 'OneCycle']
 
 
 class AbsCyclicCallback(Callback):
@@ -75,7 +75,7 @@ class CycleLR(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the LR (effectively reverses lr_range order), 'auto' selects according to interp
         scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:`~lumin.nn.models.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`.
+        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`.
         nb: Number of batches in a (sub-)epoch
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
@@ -111,7 +111,7 @@ class CycleMom(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the momentum (effectively reverses mom_range order), 'auto' selects according to interp
         scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:`~lumin.nn.models.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
+        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         nb: Number of batches in a (sub-)epoch
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
@@ -144,7 +144,7 @@ class OneCycle(AbsCyclicCallback):
         lr_range: tuple of initial and final LRs
         mom_range: tuple of initial and final momenta
         interp: 'cosine' or 'linear' interpolation
-        model: :class:`~lumin.nn.models.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
+        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         nb: Number of batches in a (sub-)epoch
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 

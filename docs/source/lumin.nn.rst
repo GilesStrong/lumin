@@ -21,5 +21,5 @@ Module contents
 
 .. automodule:: lumin.nn
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

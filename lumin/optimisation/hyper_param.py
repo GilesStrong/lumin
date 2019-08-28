@@ -89,7 +89,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
 
     Arguments:
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing training data
-        model_builder: :class:`~lumin.nn.models.ModelBuilder` providing networks and optimisers
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` providing networks and optimisers
         bs: batch size
         train_on_weights: If weights are present, whether to use them for training
         shuffle_fold: whether to shuffle data in folds
@@ -99,7 +99,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder which were used for each model trained
+        List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which were used for each model trained
     '''
 
     if callback_partials is None: callback_partials = []

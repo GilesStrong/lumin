@@ -9,16 +9,16 @@ lumin.nn.optimisers.radam module
 
 .. automodule:: lumin.nn.optimisers.radam
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 lumin.nn.optimisers.ranger module
 ---------------------------------
 
 .. automodule:: lumin.nn.optimisers.ranger
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 
 Module contents
@@ -26,5 +26,5 @@ Module contents
 
 .. automodule:: lumin.nn.optimisers
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

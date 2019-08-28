@@ -23,7 +23,7 @@ class AbsBody(AbsBlock):
 
 class FullyConnected(AbsBody):
     r'''
-    Fully connected set of hidden layers. Designed to be passed as a 'body' to :class:`~lumin.nn.models.ModelBuilder`.
+    Fully connected set of hidden layers. Designed to be passed as a 'body' to :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Supports batch normalisation and dropout.
     Order is dense->activation->BN->DO, except when res is true in which case the BN is applied after the addition.
     Can optionaly have skip connections between each layer (res=true).

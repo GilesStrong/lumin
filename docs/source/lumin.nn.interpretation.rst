@@ -9,8 +9,8 @@ lumin.nn.interpretation.features module
 
 .. automodule:: lumin.nn.interpretation.features
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
 
 
 Module contents
@@ -18,5 +18,5 @@ Module contents
 
 .. automodule:: lumin.nn.interpretation
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

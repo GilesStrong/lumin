@@ -53,7 +53,7 @@ class SequentialReweight(Callback):
     Arguments:
         reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
         scale: multiplicative factor for rescaling returned tensor of reweight_func
-        model: :class:`~lumin.nn.models.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
+        model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
         >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
@@ -85,7 +85,7 @@ class SequentialReweightClasses(SequentialReweight):
     Arguments:
         reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
         scale: multiplicative factor for rescaling returned tensor of reweight_func
-        model: :class:`~lumin.nn.models.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
+        model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Examples::
         >>> seq_reweight = SequentialReweight(reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
@@ -164,11 +164,11 @@ class FeatureSubsample(Callback):
     r'''
     Callback for training a model on a random sub-sample of the range of possible input features.
     Only sub-samples continuous features. Number of continuous inputs infered from model.
-    Associated :class:`~lumin.nn.models.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
+    Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
 
     Arguments:
         cont_feats: list of all continuous features in input data. Order must match.
-        model: :class:`~lumin.nn.models.Model` being trained, alternatively call :meth:`~lumin.nn.models.Model.set_model`        
+        model: :class:`~lumin.nn.models.model.Model` being trained, alternatively call :meth:`~lumin.nn.models.Model.set_model`        
 
     Examples::
         >>> feat_subsample = FeatureSubsample(cont_feats=['pT', 'eta', 'phi'])

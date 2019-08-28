@@ -22,12 +22,12 @@ __all__ = ['get_nn_feat_importance', 'get_ensemble_feat_importance']
 def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
                            plot:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     r'''
-    Compute permutation importance of features used by a :class:`~lumin.nn.models.Model` on provided data using either loss or an 
+    Compute permutation importance of features used by a :class:`~lumin.nn.models.model.Model` on provided data using either loss or an 
     :class:`~lumin.nn.metric.eval_metric.EvalMetric` to quantify performance.
     Returns bootstrapped mean importance from sample constructed by computing importance for each fold in fy.
 
     Arguments:
-        model: :class:`~lumin.nn.models.Model` to use to evaluate feature importance
+        model: :class:`~lumin.nn.models.model.Model` to use to evaluate feature importance
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data used to train model
         eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
         pb_parent: Not used if calling method directly
@@ -84,7 +84,7 @@ def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metr
     r'''
     Compute permutation importance of features used by an :class:`~lumin.nn.ensemble.ensemble.Ensemble` on provided data using either loss or an
     :class:`~lumin.nn.metric.eval_metric.EvalMetric` to quantify performance.
-    Returns bootstrapped mean importance from sample constructed by computing importance for each :class:`~lumin.nn.models.Model` in ensemble.
+    Returns bootstrapped mean importance from sample constructed by computing importance for each :class:`~lumin.nn.models.model.Model` in ensemble.
 
     Arguments:
         ensemble: :class:`~lumin.nn.ensemble.ensemble.Ensemble` to use to evaluate feature importance
