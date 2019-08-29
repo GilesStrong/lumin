@@ -5,13 +5,13 @@ import warnings
 
 from ..data.fold_yielder import FoldYielder
 
-__all__ = ['CatEmbedder']
+__all__ = ['CatEmbedder', 'Embedder']
 
 
 def Embedder(cat_names:List[str], cat_szs:List[int], emb_szs:Optional[List[int]]=None, max_emb_sz:int=50,
              emb_load_path:Optional[Union[Path,str]]=None):
     r'''
-    Depreciated: renamed to plot_rank_order_dendrogram
+    .. Attention:: Depreciated in favour of :class:`~lumin.nn.models.helpers.CatEmbedder` and will be removed in `v0.4`.
     '''
     
     # XXX Remove in v0.4

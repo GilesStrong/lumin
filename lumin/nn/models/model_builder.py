@@ -30,13 +30,16 @@ class ModelBuilder(object):
     r'''
     Class to build models to specified architecture on demand along with an optimiser.
 
+    .. Attention:: cat_args is now depreciated in favour of cat_embedder and will be removed in `v0.4`
+    .. Attention:: n_cont_in is now depreciated in favour of cont_feats and will be removed in `v0.4`
+
     Arguments:
         objective: string representation of network objective, i.e. 'classification', 'regression', 'multiclass'
         n_out: number of outputs required
         cont_feats: list of names of continuous input features
         model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
-            Currently, only ADAM (default) and SGD are available.
+            Currently, only ADAM (default), RAdam, Ranger, and SGD are available.
         cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` for embedding categorical inputs
         loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective
         head: uninstantiated class which can receive input data and upscale it to model width

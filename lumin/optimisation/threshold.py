@@ -17,7 +17,7 @@ def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
                      plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
     r'''
-    Depreciated: renamed to plot_rank_order_dendrogram
+    .. Attention:: Depreciated as renamed to :meth:`~lumin.optimisation.threshold.binary_class_cut_by_ams`. Will be removed in `v0.4`.
     '''
     
     # XXX Remove in v0.4

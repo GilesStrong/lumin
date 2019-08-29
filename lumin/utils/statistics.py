@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Tuple, Dict, Optional, Any
+from typing import Tuple, Dict, Optional, Any, Union
 import multiprocessing as mp
 import math
 
@@ -8,12 +8,25 @@ from statsmodels.nonparametric.kde import KDEUnivariate
 __all__ = ['bootstrap_stats', 'get_moments', 'uncert_round']
 
 
-def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[str,Any]]:
+def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> Union[None,Dict[str,Any]]:
     r'''
     Computes statistics and KDEs of data via sampling with replacement
 
     Arguments:
-        args: dictionary of arguments
+        args: dictionary of arguments. Possible keys are:
+            name - name prepended to returned keys in result dict
+            weights - array of weights matching length of data to use for weighted resampling
+            n - number of times to resample data
+            x - points at which to compute the kde values of resample data
+            kde - whether to compute the kde values at x-points for resampled data
+            mean - whether to compute the means of the resampled data
+            std - whether to compute standard deviation of resampled data
+            c68 - whether to compute the width of the absolute central 68.2 percentile of the resampled data
+
+        out_q: if using multiporcessing can place result dictionary in provided queue
+
+    Returns:
+        Result dictionary if `out_q` is `None` else `None`.
     '''
 
     out_dict, mean, std, c68, boot = {}, [], [], [], []
@@ -48,7 +61,19 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> [Dict[
 
 
 def get_moments(arr:np.ndarray) -> Tuple[float,float,float,float]:
-    '''Compute mean and std of data, and their associated uncertainties'''
+    r'''
+    Computes mean and std of data, and their associated uncertainties
+
+    Arguments:
+        arr: univariate data
+
+    Returns:
+        - mean
+        - statistical uncertainty of mean
+        - standard deviation
+        - statistical uncertainty of standard deviation
+    '''
+
     n = len(arr)
     m = np.mean(arr)
     m_4 = np.mean((arr-m)**4)
@@ -60,7 +85,18 @@ def get_moments(arr:np.ndarray) -> Tuple[float,float,float,float]:
 
 
 def uncert_round(value:float, uncert:float) -> Tuple[float,float]:
-    '''Round value according t0 given uncertainty'''
+    r'''
+    Round value according to given uncertainty using one significant figure of the uncertainty
+
+    Arguments:
+        value: value to round
+        uncert: uncertainty of value
+
+    Returns:
+        - rounded value
+        - rounded uncertainty
+    '''
+
     if uncert == math.inf: return value, uncert
     uncert = np.nan_to_num(uncert)
     if uncert == 0: return value, uncert

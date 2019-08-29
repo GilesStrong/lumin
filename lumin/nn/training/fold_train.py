@@ -64,6 +64,8 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         
     Once training is finished, the state with the lowest validation loss is loaded, evaluated, and saved.
 
+    .. Attention:: callback_args is now depreciated in favour of callback_partials and will be removed in `v0.4`
+
     Arguments:
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing ot training data
         n_models: number of models to train

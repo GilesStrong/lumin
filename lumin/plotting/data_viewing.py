@@ -142,7 +142,7 @@ def compare_events(events:list) -> None:
 
 def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    Depreciated: renamed to plot_rank_order_dendrogram
+    .. Attention:: Depreciated as renamed to :meth:`~lumin.plotting.data_viewing.plot_rank_order_dendrogram`. Will be removed in `v0.4`.
     '''
     
     # XXX Remove in v0.4

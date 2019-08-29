@@ -44,9 +44,12 @@ def to_pt_eta_phi(df:pd.DataFrame, vec:str, eta:Optional[bool]=None, drop:bool=F
     r'''
     Vectoriesed conversion of 3-momenta to pT,eta,phi coordinates inplace, optionally dropping old px,py,pz features
 
+    .. Attention:: eta is now deprecieated as it is now infered from `df`. Will be removed in `V0.4`
+
     Arguments:
             df: DataFrame to alter
             vec: column prefix of vector components to alter, e.g. 'muon' for columns ['muon_px', 'muon_py', 'muon_pz']
+            eta: depreciated as now infered
             drop: Whether to remove original columns and just keep the new ones
     '''
 

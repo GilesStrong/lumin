@@ -6,7 +6,7 @@ LUMIN Documentation
 Lumin Unifies Many Improvements for Networks
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Package Reference
 
    lumin.data_processing
@@ -22,4 +22,3 @@ Indices and tables
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
