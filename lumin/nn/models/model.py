@@ -181,12 +181,12 @@ class Model(AbsModel):
         r'''
         Pass inputs through network and obtain predictions.
 
-        Arguments::
+        Arguments:
             inputs: input data as Numpy array, Pandas DataFrame, or tensor on device
             as_np: whether to return predictions as Numpy array (otherwise tensor)
             mask_inputs: whether to apply input mask if one has been set
 
-        Returns::
+        Returns:
             Model prediction(s) per datapoint
         '''
         
