@@ -1,8 +1,8 @@
 sphinx==2.2.0
 -e git+https://github.com/GilesStrong/pytorch_sphinx_theme#egg=pytorch_sphinx_theme
 -e git+https://github.com/hagenw/sphinxcontrib-katex.git#egg=sphinxcontrib.katex
-sphinx_autodoc_typehints
-sphinx_autodoc_annotation
+sphinx_autodoc_typehints==1.7.0
+sphinx_autodoc_annotation==1.0.post1
 -f https://download.pytorch.org/whl/cpu/torch_stable.html
 torch
 seaborn==0.8.1
