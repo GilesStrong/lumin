@@ -1,6 +1,7 @@
 from typing import Optional, Callable, Any, List, Dict
 import numpy as np
 from functools import partial
+from abc import abstractmethod
 
 import torch.nn as nn
 import torch
@@ -10,6 +11,8 @@ from ..layers.activations import lookup_act
 from ..initialisations import lookup_normal_init
 from .abs_block import AbsBlock
 
+__all__ = ['FullyConnected', 'MultiBlock']
+
 
 class AbsBody(AbsBlock):
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]],
@@ -17,11 +20,25 @@ class AbsBody(AbsBlock):
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.feat_map,self.lookup_act = n_in,feat_map,lookup_act
+
+    @abstractmethod
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through body
+
+        Arguments:
+            x: incoming tensor
+        
+        Returns
+            Resulting tensor
+        '''
+
+        pass
     
 
 class FullyConnected(AbsBody):
     r'''
-    Fully connected set of hidden layers. Designed to be passed as a 'body' to :class:ModelBuilder.
+    Fully connected set of hidden layers. Designed to be passed as a 'body' to :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Supports batch normalisation and dropout.
     Order is dense->activation->BN->DO, except when res is true in which case the BN is applied after the addition.
     Can optionaly have skip connections between each layer (res=true).
@@ -44,11 +61,22 @@ class FullyConnected(AbsBody):
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=100, act='relu')
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=200, act='relu', growth_rate=-0.3)
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4, width=100, act='swish', do=0.1, res=True)
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6, width=32, act='selu', dense=True, growth_rate=0.5)
-        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6, width=50, act='prelu', bn=True, lookup_init=lookup_uniform_init)
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
+        ...                       width=100, act='relu')
+        >>>
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
+        ...                       width=200, act='relu', growth_rate=-0.3)
+        >>>                                  
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
+        ...                       width=100, act='swish', do=0.1, res=True)
+        >>>                                  
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6,
+        ...                       width=32, act='selu', dense=True,
+        ...                       growth_rate=0.5)
+        >>>                                  
+        >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6,
+        ...                       width=50, act='prelu', bn=True,
+        ...                       lookup_init=lookup_uniform_init)
     '''
 
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]], depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False,
@@ -129,12 +157,12 @@ class MultiBlock(AbsBody):
     Arguments:
         n_in: number of inputs to the block
         feat_map: dictionary mapping input features to the model to outputs of head block
-        blocks: list of uninstantciated :class:AbsBody blocks to which to pass a subsection of the total inputs. Note that partials should be used to set any
-            relevant parameters at initialisation time
-        feats_per_block: list of lists of names of features to pass to each :class:AbsBody, not that the feat_map provided by :class:AbsHead will map features
-            to their relavant head outputs
-        bottleneck: if true, each block will receive the output of a single neuron which takes as input all the features which each given block does not directly
-            take as inputs
+        blocks: list of uninstantciated :class:`~lumin.nn.models.blocks.body.AbsBody` blocks to which to pass a subsection of the total inputs. Note that
+            partials should be used to set any relevant parameters at initialisation time
+        feats_per_block: list of lists of names of features to pass to each :class:`~lumin.nn.models.blocks.body.AbsBody`, not that the feat_map provided by
+            :class:`~lumin.nn.models.blocks.head.AbsHead` will map features to their relavant head outputs
+        bottleneck: if true, each block will receive the output of a single neuron which takes as input all the features which each given block does not
+            directly take as inputs
         bottleneck_act: if set to a string representation of an activation function, the output of each bottleneck neuron will be passed throguh the defined
             activation function before being passed to their associated blocks
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
@@ -142,17 +170,28 @@ class MultiBlock(AbsBody):
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
-        >>> body = MultiBlock(blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
-                                      partial(FullyConnected, depth=6, width=55, act='swish', dense=True, growth_rate=-0.1)],
-                              feats_per_block=[[f for f in train_feats if 'DER_' in f], [f for f in train_feats if 'PRI_' in f]])
-        >>> body = MultiBlock(blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
-                                      partial(FullyConnected, depth=6, width=55, act='swish', dense=True, growth_rate=-0.1)],
-                              feats_per_block=[[f for f in train_feats if 'DER_' in f], [f for f in train_feats if 'PRI_' in f]]
-                              bottleneck=True)
-        >>> body = MultiBlock(blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
-                                      partial(FullyConnected, depth=6, width=55, act='swish', dense=True, growth_rate=-0.1)],
-                              feats_per_block=[[f for f in train_feats if 'DER_' in f], [f for f in train_feats if 'PRI_' in f]]
-                              bottleneck=True, bottleneck_act='swish')
+        >>> body = MultiBlock(
+        ...     blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
+        ...             partial(FullyConnected, depth=6, width=55, act='swish',
+        ...                     dense=True, growth_rate=-0.1)],
+        ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
+        ...                      [f for f in train_feats if 'PRI_' in f]])
+        >>>
+        >>> body = MultiBlock(
+        ...     blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
+        ...     partial(FullyConnected, depth=6, width=55, act='swish',
+        ...             dense=True, growth_rate=-0.1)],
+        ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
+        ...                      [f for f in train_feats if 'PRI_' in f]],
+        ...     bottleneck=True)
+        >>>
+        >>> body = MultiBlock(
+        ...     blocks=[partial(FullyConnected, depth=1, width=50, act='swish'),
+        ...             partial(FullyConnected, depth=6, width=55, act='swish',
+        ...                     dense=True, growth_rate=-0.1)],
+        ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
+        ...                      [f for f in train_feats if 'PRI_' in f]],
+        ...     bottleneck=True, bottleneck_act='swish')
     '''
 
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]], blocks:List[partial], feats_per_block:List[List[str]],

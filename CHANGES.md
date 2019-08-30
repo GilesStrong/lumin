@@ -2,23 +2,30 @@
 
 ## Important changes
 
+- Online documentation now available at https://lumin.readthedocs.io
+
 ## Breaking
 
 ## Additions
 
 - `bin_binary_class_pred`
--   Ability to only consider classes rather than samples when computing bin edges 
--   Ability to add pure signal bins if normalisation uncertainty would be below some value 
+    - Ability to only consider classes rather than samples when computing bin edges
+    - Ability to add pure signal bins if normalisation uncertainty would be below some value
 - `plot_bottleneck_weighted_inputs` method for intterpretting bottleneck blocks in `MultiBlock`
 - Added RAdam optimiser https://github.com/LiyuanLucasLiu/RAdam
+- Added Ranger optimsier https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer
+- Online documentation: https://lumin.readthedocs.io
 
 ## Removals
+
+- weak decorators for losses
 
 ## Fixes
 
 - `CatEmbedder.from_fy` using features ignored by `FoldYielder`
 - `bottleneck_sz_masks` to `bottleneck_masks` in `MultiBlock`
 - SWA crahsing when evaluating targets of type long, when loss expects a float (model.evaluate now converts to float when objective is not multiclass classification)
+- Doc string fixes
 
 ## Changes
 

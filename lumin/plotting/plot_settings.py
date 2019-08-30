@@ -1,5 +1,7 @@
 from pathlib import Path
 
+__all__ = ['PlotSettings']
+
 
 class PlotSettings:
     r'''
@@ -48,7 +50,7 @@ class PlotSettings:
         self.targ2class = {0: 'Background', 1: 'Signal'} if 'targ2class' not in kargs else kargs['targ2class']
         self.sample2col = None if 'sample2col' not in kargs else kargs['sample2col']
 
-    def str2sz(self, sz:str, ax=str) -> float:
+    def str2sz(self, sz:str, ax:str) -> float:
         r'''
         Used to map requested plot sizes to actual dimensions
 

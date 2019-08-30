@@ -9,9 +9,26 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 sns.set_style("whitegrid")
 
+__all__ = ['AbsCyclicCallback', 'CycleLR', 'CycleMom', 'OneCycle']
+
 
 class AbsCyclicCallback(Callback):
-    '''Abstract class for callbacks affecting lr or mom'''
+    r'''
+    Abstract class for callbacks affecting lr or mom
+
+    Arguments:
+        interp: string representation of interpolation function. Either 'linear' or 'cosine'.
+        param_range: minimum and maximum values for parameter
+        cycle_mult: multiplicative factor for adjusting the cycle length after each cycle.
+            E.g `cycle_mult=1` keeps the same cycle length, `cycle_mult=2` doubles the cycle length after each cycle.
+        decrease_param: whether to begin by decreasing the parameter, otherwise begin by increasing it
+        scale: multiplicative factor for setting the initial number of epochs per cycle.
+            E.g `scale=1` means 1 epoch per cycle, `scale=5` means 5 epochs per cycle.
+        model: model to refer to during training
+        nb: number of minibatches (iterations) to expect per epoch
+        plot_settings: PlotSettings class
+    '''
+
     def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
@@ -19,9 +36,17 @@ class AbsCyclicCallback(Callback):
         self.interp,self.cycle_iter,self.cycle_count,self.cycle_end,self.hist = interp.lower(),0,0,False,[]
         if nb is not None: self.nb = self.scale*nb
 
-    def set_nb(self, nb:int) -> None: self.nb = self.scale*nb
+    def set_nb(self, nb:int) -> None:
+        r'''
+        Sets the callback's internal number of iterations per cycle equal to `nb*scale`
 
-    def incr_cycle(self) -> None:
+        Arguments:
+            nb: number of minibatches per epoch
+        '''
+        
+        self.nb = self.scale*nb
+
+    def _incr_cycle(self) -> None:
         self.cycle_iter += 1
         if self.cycle_iter == self.nb:
             self.cycle_iter = 0
@@ -30,6 +55,10 @@ class AbsCyclicCallback(Callback):
             self.cycle_end = True
 
     def plot(self) -> None:
+        r'''
+        Plots the history of the parameter evolution as a function of iterations
+        '''
+
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
             plt.xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
@@ -39,7 +68,7 @@ class AbsCyclicCallback(Callback):
             plt.yticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
             plt.show()
 
-    def calc_param(self) -> float:
+    def _calc_param(self) -> float:
         if self.interp == 'cosine':
             x = np.cos(np.pi*(self.cycle_iter)/self.nb)+1
             dx = (self.param_range[1]-self.param_range[0])*x/2
@@ -51,12 +80,29 @@ class AbsCyclicCallback(Callback):
         else:
             raise ValueError(f"Interpolation mode {self.interp} not implemented")
 
-    def on_epoch_begin(self, **kargs) -> None: self.cycle_end = False
+    def on_epoch_begin(self, **kargs) -> None:
+        r'''
+        Ensures the `cycle_end` flag is false when the epoch starts
+        '''
+        
+        self.cycle_end = False
     
-    def on_batch_end(self,   **kargs) -> None: self.incr_cycle()
+    def on_batch_end(self,   **kargs) -> None:
+        r'''
+        Increments the callback's progress through the cycle
+        '''
+        
+        self._incr_cycle()
 
     def on_batch_begin(self, **kargs) -> float:
-        param = self.calc_param()
+        r'''
+        Computes the new value for the optimiser parameter and returns it
+
+        Returns:
+            new value for optimiser parameter
+        '''
+
+        param = self._calc_param()
         self.hist.append(param)
         return param
 
@@ -73,13 +119,16 @@ class CycleLR(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the LR (effectively reverses lr_range order), 'auto' selects according to interp
         scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:Model to alter, alternatively call :meth:set_model.
+        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`.
         nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
-        >>> cosine_lr   = CycleLR(lr_range=(0,    2e-3), cycle_mult=2, scale=1, interp='cosine', nb=100)
-        >>> cyclical_lr = CycleLR(lr_range=(2e-4, 2e-3), cycle_mult=1, scale=5, interp='linear', nb=100)
+        >>> cosine_lr = CycleLR(lr_range=(0, 2e-3), cycle_mult=2, scale=1,
+        ...                     interp='cosine', nb=100)
+        >>>
+        >>> cyclical_lr = CycleLR(lr_range=(2e-4, 2e-3), cycle_mult=1, scale=5,
+                                  interp='linear', nb=100)
     '''
 
     # TODO sort lr-range or remove decrease_param
@@ -92,6 +141,10 @@ class CycleLR(AbsCyclicCallback):
         self.param_name = 'Learning Rate'
         
     def on_batch_begin(self, **kargs) -> None:
+        r'''
+        Computes the new lr and assignes it to the optimiser
+        '''
+
         lr = super().on_batch_begin(**kargs)
         self.model.set_lr(lr)
 
@@ -109,12 +162,13 @@ class CycleMom(AbsCyclicCallback):
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the momentum (effectively reverses mom_range order), 'auto' selects according to interp
         scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:Model to alter, alternatively call :meth:set_model
+        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
-        >>> cyclical_mom = CycleMom(mom_range=(0.85 0.95), cycle_mult=1, scale=5, interp='linear', nb=100)
+        >>> cyclical_mom = CycleMom(mom_range=(0.85 0.95), cycle_mult=1,
+        ...                         scale=5, interp='linear', nb=100)
     '''
 
     # TODO sort lr-range or remove decrease_param
@@ -127,6 +181,10 @@ class CycleMom(AbsCyclicCallback):
         self.param_name = 'Momentum'
         
     def on_batch_begin(self, **kargs) -> None:
+        r'''
+        Computes the new momentum and assignes it to the optimiser
+        '''
+
         mom = super().on_batch_begin(**kargs)
         self.model.set_mom(mom) 
 
@@ -142,12 +200,13 @@ class OneCycle(AbsCyclicCallback):
         lr_range: tuple of initial and final LRs
         mom_range: tuple of initial and final momenta
         interp: 'cosine' or 'linear' interpolation
-        model: :class:Model to alter, alternatively call :meth:set_model
+        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
-        >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2], mom_range=(0.85, 0.95), interp='cosine', nb=100)
+        >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2],
+        ...                     mom_range=(0.85, 0.95), interp='cosine', nb=100)
     '''
 
     def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
@@ -156,19 +215,23 @@ class OneCycle(AbsCyclicCallback):
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
 
     def on_batch_begin(self, **kargs) -> None:
+        r'''
+        Computes the new lr and momentum and assignes them to the optimiser
+        '''
+
         self.decrease_param = self.cycle_count % 1 != 0
         self.param_range = self.lr_range
-        lr = self.calc_param()
+        lr = self._calc_param()
         self.hist['lr'].append(lr)
         self.model.set_lr(lr)
 
         self.decrease_param = self.cycle_count % 1 == 0
         self.param_range = self.mom_range
-        mom = self.calc_param()
+        mom = self._calc_param()
         self.hist['mom'].append(mom)
         self.model.set_mom(mom)
 
-    def incr_cycle(self) -> None:
+    def _incr_cycle(self) -> None:
         self.cycle_iter += 1
         if self.cycle_iter == self.nb:
             self.cycle_iter = 0
@@ -179,6 +242,10 @@ class OneCycle(AbsCyclicCallback):
         if self.cycle_count == 1: self.model.stop_train = True
 
     def plot(self):
+        r'''
+        Plots the history of the lr and momentum evolution as a function of iterations
+        '''
+
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             fig, axs = plt.subplots(2, 1, figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
             axs[1].set_xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)

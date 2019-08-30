@@ -16,6 +16,9 @@ from .blocks.head import CatEmbHead, AbsHead
 from .blocks.tail import ClassRegMulti, AbsTail
 from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 from ..optimisers.radam import RAdam
+from ..optimisers.ranger import Ranger
+
+__all__ = ['ModelBuilder']
 
 '''
 Todo
@@ -27,14 +30,17 @@ class ModelBuilder(object):
     r'''
     Class to build models to specified architecture on demand along with an optimiser.
 
+    .. Attention:: cat_args is now depreciated in favour of cat_embedder and will be removed in `v0.4`
+    .. Attention:: n_cont_in is now depreciated in favour of cont_feats and will be removed in `v0.4`
+
     Arguments:
         objective: string representation of network objective, i.e. 'classification', 'regression', 'multiclass'
         n_out: number of outputs required
         cont_feats: list of names of continuous input features
         model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
-            Currently, only ADAM (default) and SGD are available.
-        cat_embedder: :class:CatEmbedder for embedding categorical inputs
+            Currently, only ADAM (default), RAdam, Ranger, and SGD are available.
+        cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` for embedding categorical inputs
         loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective
         head: uninstantiated class which can receive input data and upscale it to model width
         body: uninstantiated class which implements the main bulk of the model's hidden layers
@@ -49,20 +55,42 @@ class ModelBuilder(object):
 
 
     Examples::
-        >>> model_builder = ModelBuilder(objective='classifier', cont_feats=cont_feats, n_out=1, model_args={'body':{'depth':4, 'width':100}})
+        >>> model_builder = ModelBuilder(objective='classifier',
+        >>>                              cont_feats=cont_feats, n_out=1,
+        >>>                              model_args={'body':{'depth':4,
+        >>>                                                  'width':100}})
+        >>>
         >>> min_targs = np.min(targets, axis=0).reshape(targets.shape[1],1)
-            max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
-            min_targs[min_targs > 0] *=0.8
-            min_targs[min_targs < 0] *=1.2
-            max_targs[max_targs > 0] *=1.2
-            max_targs[max_targs < 0] *=0.8
-            y_range = np.hstack((min_targs, max_targs))
-            model_builder = ModelBuilder(objective='regression', cont_feats=cont_feats, n_out=6, cat_embedder=CatEmbedder.from_fy(train_fy),
-                                         model_args={'body':{'depth':4, 'width':100}, 'tail':{y_range=y_range})
-        >>> model_builder = ModelBuilder(objective='multiclassifier', cont_feats=cont_feats, n_out=5, model_args={'body':{'width':100, depth':6, do':0.1, 'res':True}})
-        >>> model_builder = ModelBuilder(objective='classifier', cont_feats=cont_feats, n_out=1, model_args={'body':{'depth':4, 'width':100}},
-                                         opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5},
-                                         loss=partial(SignificanceLoss, sig_weight=sig_weight, bkg_weight=bkg_weight, func=calc_ams_torch))
+        >>> max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
+        >>> min_targs[min_targs > 0] *=0.8
+        >>> min_targs[min_targs < 0] *=1.2
+        >>> max_targs[max_targs > 0] *=1.2
+        >>> max_targs[max_targs < 0] *=0.8
+        >>> y_range = np.hstack((min_targs, max_targs))
+        >>> model_builder = ModelBuilder(
+        >>>     objective='regression', cont_feats=cont_feats, n_out=6,
+        >>>     cat_embedder=CatEmbedder.from_fy(train_fy),
+        >>>     model_args={'body':{'depth':4, 'width':100},
+        >>>                 'tail':{y_range=y_range})
+        >>>
+        >>> model_builder = ModelBuilder(objective='multiclassifier',
+        >>>                              cont_feats=cont_feats, n_out=5,
+        >>>                              model_args={'body':{'width':100,
+        >>>                                                  'depth':6,
+        >>>                                                  'do':0.1,
+        >>>                                                  'res':True}})
+        >>>
+        >>> model_builder = ModelBuilder(objective='classifier',
+        >>>                              cont_feats=cont_feats, n_out=1,
+        >>>                              model_args={'body':{'depth':4,
+        >>>                                                  'width':100}},
+        >>>                              opt_args={'opt':'sgd',
+        >>>                                        'momentum':0.8,
+        >>>                                        'weight_decay':1e-5},
+        >>>                              loss=partial(SignificanceLoss,
+        >>>                                           sig_weight=sig_weight,
+        >>>                                           bkg_weight=bkg_weight,
+        >>>                                           func=calc_ams_torch))
     '''
 
     # TODO: Make opt use partials rather than strings
@@ -71,7 +99,7 @@ class ModelBuilder(object):
 
     def __init__(self, objective:str, n_out:int, cont_feats:Optional[List[str]]=None,
                  model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,
-                 loss:Union[Any,'auto']='auto', head:AbsHead=CatEmbHead, body:AbsBody=FullyConnected, tail:AbsTail=ClassRegMulti,
+                 loss:Any='auto', head:AbsHead=CatEmbHead, body:AbsBody=FullyConnected, tail:AbsTail=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
                  freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
@@ -102,10 +130,10 @@ class ModelBuilder(object):
     def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
                            loss:Optional[Any]=None, opt_args:Optional[Dict[str,Any]]=None):
         r'''
-        Instantiate a :class:ModelBuilder from an exisitng :class:ModelBuilder, but with options to adjust loss, optimiser, pretraining, and module freezing
+        Instantiate a :class:`~lumin.nn.models.model_builder.ModelBuilder` from an exisitng :class:`~lumin.nn.models.model_builder.ModelBuilder`, but with options to adjust loss, optimiser, pretraining, and module freezing
 
         Arguments:
-            model_builder: existing :class:ModelBuilder or filename for a pickled :class:ModelBuilder 
+            model_builder: existing :class:`~lumin.nn.models.model_builder.ModelBuilder` or filename for a pickled :class:`~lumin.nn.models.model_builder.ModelBuilder` 
             pretrain_file: if set, will load saved parameters for entire network from saved model
             freeze_head: whether to start with the head parameters set to untrainable
             freeze_body: whether to start with the body parameters set to untrainable
@@ -115,13 +143,20 @@ class ModelBuilder(object):
                 Currently, only ADAM (default) and SGD are available.
 
         Returns:
-            Instantiated :class:ModelBuilder
+            Instantiated :class:`~lumin.nn.models.model_builder.ModelBuilder`
             
         Examples::
-            >>> new_model_builder = ModelBuilder.from_model_builder(ModelBuidler)
-            >>> new_model_builder = ModelBuilder.from_model_builder(ModelBuidler, loss=partial(SignificanceLoss, sig_weight=sig_weight,
-                                                                                               bkg_weight=bkg_weight, func=calc_ams_torch))
-            >>> new_model_builder = ModelBuilder.from_model_builder('weights/model_builder.pkl', opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5})
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     ModelBuidler)
+            >>>
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     ModelBuidler, loss=partial(
+            >>>         SignificanceLoss, sig_weight=sig_weight,
+            >>>         bkg_weight=bkg_weight, func=calc_ams_torch))
+            >>>
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     'weights/model_builder.pkl',
+            >>>     opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5})
         '''
 
         if isinstance(model_builder, str):
@@ -158,6 +193,7 @@ class ModelBuilder(object):
     def _build_opt(self, model:nn.Module) -> optim.Optimizer:
         if   self.opt == 'adam':      return optim.Adam(model.parameters(), **self.opt_args)
         elif self.opt == 'radam':     return RAdam(model.parameters(),  **self.opt_args)
+        elif self.opt == 'ranger':    return Ranger(model.parameters(),  **self.opt_args)
         elif self.opt == 'sgd':       return optim.SGD(model.parameters(),  **self.opt_args)
         else: raise ValueError(f"Optimiser {self.opt} not currently available")
 
@@ -216,7 +252,7 @@ class ModelBuilder(object):
         Load model weights from pretrained file
 
         Arguments:
-            model: instantiated model, i.e. return of :meth:build_model
+            model: instantiated model, i.e. return of :meth:`~lumin.nn.models.model_builder.ModelBuilder.build_model`
 
         Returns:
             model with weights loaded

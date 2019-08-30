@@ -5,6 +5,8 @@ from ...utils.misc import to_device
 
 from torch.tensor import Tensor
 
+__all__ = ['BatchYielder']
+
 
 '''
 Todo

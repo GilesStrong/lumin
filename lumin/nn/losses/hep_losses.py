@@ -1,11 +1,11 @@
-from torch._jit_internal import weak_module, weak_script_method
 import torch.nn as nn
 import torch
 from torch import Tensor
 from typing import Callable
 
+__all__ = ['SignificanceLoss']
 
-@weak_module
+
 class SignificanceLoss(nn.Module):
     r'''
     General class for implementing significance-based loss functions, e.g. Asimov Loss (https://arxiv.org/abs/1806.00322).
@@ -18,16 +18,30 @@ class SignificanceLoss(nn.Module):
         func: callable which returns a float based on signal and background weights
 
     Examples::
-        >>> loss = SignificanceLoss(weight, sig_weight=sig_weight, bkg_weight=bkg_weight, func=calc_ams_torch)
-        >>> loss = SignificanceLoss(weight, sig_weight=sig_weight, bkg_weight=bkg_weight, func=partial(calc_ams_torch, br=10))        
+        >>> loss = SignificanceLoss(weight, sig_weight=sig_weight,
+        ...                         bkg_weight=bkg_weight, func=calc_ams_torch)
+        >>>
+        >>> loss = SignificanceLoss(weight, sig_weight=sig_weight,
+        ...                         bkg_weight=bkg_weight,
+        ...                         func=partial(calc_ams_torch, br=10))        
     '''
 
     def __init__(self, weight:Tensor, sig_wgt=float, bkg_wgt=float, func=Callable[[Tensor, Tensor], Tensor]) -> Tensor:
         super().__init__()
         self.weight,self.sig_wgt,self.bkg_wgt,self.func = weight.squeeze(),sig_wgt,bkg_wgt,func
     
-    @weak_script_method
-    def forward(self, input, target):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         input, target = input.squeeze(), target.squeeze()
         # Reweight accordign to batch size
         sig_wgt = (target*self.weight)*self.sig_wgt/torch.dot(target, self.weight)

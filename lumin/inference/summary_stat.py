@@ -3,7 +3,7 @@ import pandas as pd
 from typing import List, Optional
 from fastprogress import progress_bar
 
-from ..utils.statistics import uncert_round
+__all__ = ['bin_binary_class_pred']
 
 
 def bin_binary_class_pred(df:pd.DataFrame, max_unc:float, consider_samples:Optional[List[str]]=None, step_sz:float=1e-3, pred_name:str='pred',

@@ -16,6 +16,8 @@ from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
 
+__all__ = ['CatEmbHead']
+
 
 class AbsHead(AbsBlock):
     def __init__(self, cont_feats:List[str], cat_embedder:Optional[CatEmbedder]=None, 
@@ -27,29 +29,51 @@ class AbsHead(AbsBlock):
     @abstractmethod
     def _map_outputs(self) -> Dict[str,List[int]]: pass
 
+    @abstractmethod
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through head
+
+        Arguments:
+            x: input tensor
+        
+        Returns
+            Resulting tensor
+        '''
+
+        pass
+
 
 class CatEmbHead(AbsHead):
     r'''
     Standard model head for columnar data.
     Provides inputs for continuous features and embedding matrices for categorical inputs, and uses a dense layer to upscale to width of network body.
-    Designed to be passed as a 'head' to :class:ModelBuilder.
-    Supports batch normalisation and dropout (at separate rates for pre-dense continuous, pre-dense categorical embeddings, and post dense).
+    Designed to be passed as a 'head' to :class:`~lumin.nn.models.model_builder.ModelBuilder`.
+    Supports batch normalisation and dropout (at separate rates for continuous features and categorical embeddings).
     Continuous features are expected to be the first len(cont_feats) columns of input tensors and categorical features the remaining columns.
-    Embedding arguments for categorical features are set using a :class:CatEmbedder.
+    Embedding arguments for categorical features are set using a :class:`~lumin.nn.models.helpers.CatEmbedder`.
 
     Arguments:
         cont_feats: list of names of continuous input features
         do_cont: if not None will add a dropout layer with dropout rate do acting on the continuous inputs prior to concatination wih the categorical embeddings
         do_cat: if not None will add a dropout layer with dropout rate do acting on the categorical embeddings prior to concatination wih the continuous inputs
-        cat_embedder: :class:CatEmbedder providing details of how to embed categorical inputs
+        cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` providing details of how to embed categorical inputs
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         freeze: whether to start with module parameters set to untrainable
 
     Examples::
         >>> head = CatEmbHead(cont_feats=cont_feats)
-        >>> head = CatEmbHead(cont_feats=cont_feats, cat_embedder=CatEmbedder.from_fy(train_fy))
-        >>> head = CatEmbHead(cont_feats=cont_feats, cat_embedder=CatEmbedder.from_fy(train_fy), do_cont=0.1, do_cat=0.05)
-        >>> head = CatEmbHead(cont_feats=cont_feats, cat_embedder=CatEmbedder.from_fy(train_fy), lookup_init=lookup_uniform_init)
+        >>>
+        >>> head = CatEmbHead(cont_feats=cont_feats,
+        ...                   cat_embedder=CatEmbedder.from_fy(train_fy))
+        >>>
+        >>> head = CatEmbHead(cont_feats=cont_feats,
+        ...                   cat_embedder=CatEmbedder.from_fy(train_fy),
+        ...                   do_cont=0.1, do_cat=0.05)
+        >>>
+        >>> head = CatEmbHead(cont_feats=cont_feats,
+        ...                   cat_embedder=CatEmbedder.from_fy(train_fy),
+        ...                   lookup_init=lookup_uniform_init)
     '''
 
     def __init__(self, cont_feats:List[str], do_cont:float=0, do_cat:float=0, cat_embedder:Optional[CatEmbedder]=None, 
@@ -129,7 +153,7 @@ class CatEmbHead(AbsHead):
 
         Arguments:
             savename: if not None, will save copy of plot to give path
-            settings: :class:PlotSettings class to control figure appearance
+            settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         '''
         
         for i, n in enumerate(self.cat_embedder.cat_names): plot_embedding(self.embeds[i].state_dict(), n, savename=savename, settings=settings)

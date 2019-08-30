@@ -7,6 +7,8 @@ from pathlib import Path
 
 from sklearn.model_selection import StratifiedKFold, KFold
 
+__all__ = ['save_to_grp', 'fold2foldfile', 'df2foldfile']
+
 
 def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
     r'''
@@ -56,7 +58,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
                 strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None):
     r'''
-    Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:FoldYielder
+    Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
     
     Arguments:
         df: Dataframe from which to save data

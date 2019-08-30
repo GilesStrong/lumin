@@ -28,6 +28,8 @@ from ...plotting.plot_settings import PlotSettings
 
 import matplotlib.pyplot as plt
 
+__all__ = ['fold_train_ensemble']
+
 
 def _get_folds(val_idx, n_folds, shuffle_folds:bool=True):
     r'''
@@ -47,24 +49,30 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         plot_settings:PlotSettings=PlotSettings(), callback_args:Optional[List[Dict[str,Any]]]=None
                         ) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
-    Main training method for :class:Model.
-    Trains a specified numer of models created by a :class:ModelBuilder on data provided by a :class:FoldYielder, and save them to savepath.
+    Main training method for :class:`~lumin.nn.models.model.Model`.
+    Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a
+    :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and save them to savepath.
     Note, this does not return trained models, instead they are saved and must be loaded later. Instead this method returns results of model training.
-    Each :class:Model is trained on N-1 folds, for a :class:FoldYielder with N folds, and the remaining fold is used as validation data.
+    Each :class:`~lumin.nn.models.model.Model` is trained on N-1 folds, for a :class:`~lumin.nn.data.fold_yielder.FoldYielder` with N folds, and the remaining
+    fold is used as validation data.
     Training folds are loaded iteratively, and model evaluation takes place after each fold use (a sub-epoch), rather than after ever use of all folds (epoch).
     Training continues until:
         - All of the training folds are used max_epoch number of times;
-        - Or validation loss does not decrease for patience number of training folds (or cycles, if using an :class:AbsCyclicCallback);
-        - Or a callback triggers trainign to stop, e.g. :class:OneCycle
+        - Or validation loss does not decrease for patience number of training folds;
+          (or cycles, if using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`);
+        - Or a callback triggers trainign to stop, e.g. :class:`~lumin.nn.callbacks.cyclic_callbacks.OneCycle`
+        
     Once training is finished, the state with the lowest validation loss is loaded, evaluated, and saved.
 
+    .. Attention:: callback_args is now depreciated in favour of callback_partials and will be removed in `v0.4`
+
     Arguments:
-        fy: :class:FoldYielder interfacing ot training data
+        fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing ot training data
         n_models: number of models to train
         bs: batch size. Number of data points per iteration
-        model_builder: :class:ModelBuilder creating the networks to train
-        callback_partials: optional list of functools.partial, each of which will a instantiate :class:Callback when called
-        eval_metrics: list of instantiated :class:EvalMetric.
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` creating the networks to train
+        callback_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called
+        eval_metrics: list of instantiated :class:`~lumin.nn.metric.eval_metric.EvalMetric`.
             At the end of training, validation data and model predictions will be passed to each, and the results printed and saved
         train_on_weights: If weights are present in training data, whether to pass them to the loss function during training
         eval_on_weights: If weights are present in validation data, whether to pass them to the loss function during validation
@@ -73,22 +81,23 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         plots: list of string representation of plots to produce. currently:
             'history': loss history of all models after all training has finished
             'realtime': live loss evolution during training
-            'cycle": call the plot method of the last (if any) :class:AbsCyclicCallback listed in callback_partials after every complete model training.
-        shuffle_fold: whether to tell :class:BatchYielder to shuffle data
+            'cycle": call the plot method of the last (if any) :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` listed in callback_partials after
+            every complete model training.
+        shuffle_fold: whether to tell :class:`~lumin.nn.data.batch_yielder.BatchYielder` to shuffle data
         shuffle_folds: whether to shuffle the order of the trainign folds
         bulk_move: whether to pass all training data to device at once, or by minibatch. Bulk moving will be quicker, but may not fit in memory.
         savepath: path to to which to save model weights and results
         verbose: whether to print out extra information during training
         log_output: whether to save printed results to a log file rather than printing them
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         callback_args: depreciated in favour of callback_partials
 
     Returns:
-        results: list of validation losses and other eval_metrics results, ordered by model training. Can be passed to :class:Ensemble.
-        histories: list of loss histories, ordered by model training
-        cycle_losses: if an :class:AbsCyclicCallback was passed, list of validation losses at the end of each cycle, ordered by model training.
-            Can be passed to :class:Ensemble.
+        - results list of validation losses and other eval_metrics results, ordered by model training. Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
+        - histories list of loss histories, ordered by model training
+        - cycle_losses if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed, list of validation losses at the end of each cycle, ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
     '''
+    # TODO: fix returns paret of doc string
 
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")

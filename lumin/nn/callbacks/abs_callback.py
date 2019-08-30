@@ -1,5 +1,7 @@
 from abc import ABC
 
+__all__ = []
+
 
 class AbsCallback(ABC):
     '''Abstract callback class for typing'''
