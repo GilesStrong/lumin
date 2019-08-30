@@ -1,6 +1,6 @@
 from typing import Optional
 
-#from torch._jit_internal import weak_module, weak_script_method
+from torch._jit_internal import weak_module, weak_script_method
 import torch.nn as nn
 import torch
 from torch.tensor import Tensor
@@ -8,7 +8,7 @@ from torch.tensor import Tensor
 __all__ = ['WeightedMSE', 'WeightedMAE', 'WeightedCCE']
 
 
-#@weak_module
+@weak_module
 class WeightedMSE(nn.MSELoss):
     r'''
     Class for computing Mean Squared-Error loss with optional weights per prediction.
@@ -27,7 +27,7 @@ class WeightedMSE(nn.MSELoss):
         super().__init__(reduction='mean' if weight is None else 'none')
         self.weights = weight
         
-    #@weak_script_method
+    @weak_script_method
     def forward(self, input:Tensor, target:Tensor) -> Tensor:
         r'''
         Evaluate loss for given predictions
@@ -44,7 +44,7 @@ class WeightedMSE(nn.MSELoss):
         else:                        return super().forward(input, target)
 
 
-#@weak_module
+@weak_module
 class WeightedMAE(nn.L1Loss):
     r'''
     Class for computing Mean Absolute-Error loss with optional weights per prediction.
@@ -63,7 +63,7 @@ class WeightedMAE(nn.L1Loss):
         super().__init__(reduction='mean' if weight is None else 'none')
         self.weights = weight
         
-    #@weak_script_method
+    @weak_script_method
     def forward(self, input:Tensor, target:Tensor) -> Tensor:
         r'''
         Evaluate loss for given predictions
@@ -80,7 +80,7 @@ class WeightedMAE(nn.L1Loss):
         else:                        return super().forward(input, target)
 
 
-#@weak_module
+@weak_module
 class WeightedCCE(nn.NLLLoss):
     r'''
     Class for computing Categorical Cross-Entropy loss with optional weights per prediction.
@@ -99,7 +99,7 @@ class WeightedCCE(nn.NLLLoss):
         super().__init__(reduction='mean')
         self.weights = weight
         
-    #@weak_script_method
+    @weak_script_method
     def forward(self, input:Tensor, target:Tensor) -> Tensor:
         r'''
         Evaluate loss for given predictions
