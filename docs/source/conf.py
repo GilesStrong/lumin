@@ -59,7 +59,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # -- Options for HTML output -------------------------------------------------
 html_theme = "pytorch_sphinx_theme"
-html_favicon = './_static/img/Lumin-logo-tall-coloured.svg'
+html_favicon = './_static/img/Lumin-logo-tall-dark.png'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
