@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'LUMIN'
-copyright = '2019, Giles C. Strong'
-author = 'Giles C. Strong'
+copyright = '2019, LUMIN Contributors'
+author = 'LUMIN Contributors'
 
 
 # -- General configuration ---------------------------------------------------
