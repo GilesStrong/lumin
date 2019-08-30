@@ -3,6 +3,8 @@ sphinx==2.2.0
 -e git+https://github.com/hagenw/sphinxcontrib-katex.git#egg=sphinxcontrib.katex
 sphinx_autodoc_typehints
 sphinx_autodoc_annotation
+-f https://download.pytorch.org/whl/nightly/cpu/torch_nightly.html
+torch_nightly
 seaborn==0.8.1
 matplotlib>=3.0.2
 pandas>=0.23.0
