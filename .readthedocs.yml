@@ -9,7 +9,7 @@ sphinx:
 formats: all
 
 conda:
-    file: docs/environment.yml
+    environment: docs/environment.yml
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
