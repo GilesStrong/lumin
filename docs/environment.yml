@@ -1,7 +1,6 @@
 name: lumin
 channels:
-- pytorch
-- defaults
+- anaconda
 dependencies:
 - pytorch
     # - pip:
