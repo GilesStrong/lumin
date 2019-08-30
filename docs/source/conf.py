@@ -44,7 +44,7 @@ extensions = [
     "sphinx_rtd_theme",
 ]
 
-autodoc_mock_imports = ["torch"]
+# autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
