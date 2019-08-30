@@ -1,11 +1,9 @@
 name: lumin
-
-# channels:
-#     - anaconda
-
+channels:
+- pytorch
+- defaults
 dependencies:
-    - python==3.6
-    - pytorch
+- pytorch
     # - pip:
     #     - seaborn==0.8.1
     #     - matplotlib>=3.0.2
