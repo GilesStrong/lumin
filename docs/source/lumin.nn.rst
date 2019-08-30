@@ -5,7 +5,6 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 1
 
    lumin.nn.callbacks
    lumin.nn.data

@@ -1,4 +1,4 @@
-from torch._jit_internal import weak_module, weak_script_method
+# from torch._jit_internal import weak_module, weak_script_method
 import torch.nn as nn
 import torch
 from torch import Tensor
@@ -7,7 +7,7 @@ from typing import Callable
 __all__ = ['SignificanceLoss']
 
 
-@weak_module
+# @weak_module
 class SignificanceLoss(nn.Module):
     r'''
     General class for implementing significance-based loss functions, e.g. Asimov Loss (https://arxiv.org/abs/1806.00322).
@@ -32,7 +32,7 @@ class SignificanceLoss(nn.Module):
         super().__init__()
         self.weight,self.sig_wgt,self.bkg_wgt,self.func = weight.squeeze(),sig_wgt,bkg_wgt,func
     
-    @weak_script_method
+    # @weak_script_method
     def forward(self, input:Tensor, target:Tensor) -> Tensor:
         r'''
         Evaluate loss for given predictions
