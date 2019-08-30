@@ -11,7 +11,7 @@ formats: all
 # conda:
 #     environment: docs/environment.yml
 
-python.system_packages: true
+python.system_packages: True
 
 # Optionally set the version of Python and requirements required to build your docs
 python:
