@@ -1,1 +1,4 @@
 sphinx==2.2.0
+-e git+https://github.com/GilesStrong/pytorch_sphinx_theme#egg=pytorch_sphinx_theme
+-e git+https://github.com/hagenw/sphinxcontrib-katex.git#egg=sphinxcontrib.katex
+matplotlib>=3.1.1
