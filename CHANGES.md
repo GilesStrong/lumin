@@ -15,6 +15,7 @@
 - Online documentation: https://lumin.readthedocs.io
 - Default optimiser notice
 - Can now pass arbitary optimisers to the 'opt' value in `opt_args`. Optimisers still interpretable from strings.
+- Expanded advanced model building example to include more interpretation examples and diagrams of network architectures
 
 ## Removals
 
