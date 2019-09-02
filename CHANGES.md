@@ -11,7 +11,7 @@
 - `bin_binary_class_pred`
     - Ability to only consider classes rather than samples when computing bin edges
     - Ability to add pure signal bins if normalisation uncertainty would be below some value
-- `plot_bottleneck_weighted_inputs` method for intterpretting bottleneck blocks in `MultiBlock`
+- `plot_bottleneck_weighted_inputs` method for interpretting bottleneck blocks in `MultiBlock`
 - Online documentation: https://lumin.readthedocs.io
 - Default optimiser notice
 - Can now pass arbitary optimisers to the 'opt' value in `opt_args`. Optimisers still interpretable from strings.

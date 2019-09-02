@@ -138,8 +138,10 @@ class ModelBuilder(object):
             freeze_body: whether to start with the body parameters set to untrainable
             freeze_tail: whether to start with the tail parameters set to untrainable
             loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective            
-            opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
-                Currently, only ADAM (default) and SGD are available.
+            opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values. Choice of optimiser (`'opt'`) keyword can
+                either be set by passing the string name (e.g. `'adam'` ), but only ADAM and SGD are available this way, or by passing an uninstantiated
+                optimiser (e.g. torch.optim.Adam). If no optimser is set, then it defaults to ADAM. Additional keyword arguments can be set, and these will be
+                passed tot he optimiser during instantiation
 
         Returns:
             Instantiated :class:`~lumin.nn.models.model_builder.ModelBuilder`
@@ -159,7 +161,7 @@ class ModelBuilder(object):
             >>>
             >>> new_model_builder = ModelBuilder.from_model_builder(
             >>>     'weights/model_builder.pkl',
-            >>>     opt_args={'opt':torch.optim.adam,
+            >>>     opt_args={'opt':torch.optim.Adam,
             ...               'momentum':0.8,
             ...               'weight_decay':1e-5})
         '''
