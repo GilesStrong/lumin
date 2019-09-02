@@ -1,5 +1,5 @@
 
-from typing import Dict, Union, Any, Callable, Tuple, Optional, List
+from typing import Dict, Union, Any, Callable, Tuple, Optional, List, Iterator
 import pickle
 import  warnings
 
@@ -15,8 +15,7 @@ from .blocks.body import FullyConnected, AbsBody
 from .blocks.head import CatEmbHead, AbsHead
 from .blocks.tail import ClassRegMulti, AbsTail
 from ..losses.basic_weighted import WeightedCCE, WeightedMSE
-from ..optimisers.radam import RAdam
-from ..optimisers.ranger import Ranger
+from ...utils.misc import to_device
 
 __all__ = ['ModelBuilder']
 
@@ -157,6 +156,12 @@ class ModelBuilder(object):
             >>> new_model_builder = ModelBuilder.from_model_builder(
             >>>     'weights/model_builder.pkl',
             >>>     opt_args={'opt':'sgd', 'momentum':0.8, 'weight_decay':1e-5})
+            >>>
+            >>> new_model_builder = ModelBuilder.from_model_builder(
+            >>>     'weights/model_builder.pkl',
+            >>>     opt_args={'opt':torch.optim.adam,
+            ...               'momentum':0.8,
+            ...               'weight_decay':1e-5})
         '''
 
         if isinstance(model_builder, str):
@@ -187,19 +192,28 @@ class ModelBuilder(object):
     def _parse_opt_args(self, opt_args:Optional[Dict[str,Any]]=None) -> None:
         if opt_args is None: opt_args = {}
         else:                opt_args = {k.lower(): opt_args[k] for k in opt_args}
-        self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}   
-        self.opt = 'adam' if 'opt' not in opt_args else opt_args['opt']
+        self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}
+        if 'opt' not in opt_args:
+            print('No optimiser specified, defaulting to ADAM')
+            self.opt = optim.Adam
+        else:
+            self.opt = opt_args['opt'] if not isinstance(opt_args['opt'], str) else self._interp_opt(opt_args['opt'])
 
-    def _build_opt(self, model:nn.Module) -> optim.Optimizer:
-        if   self.opt == 'adam':      return optim.Adam(model.parameters(), **self.opt_args)
-        elif self.opt == 'radam':     return RAdam(model.parameters(),  **self.opt_args)
-        elif self.opt == 'ranger':    return Ranger(model.parameters(),  **self.opt_args)
-        elif self.opt == 'sgd':       return optim.SGD(model.parameters(),  **self.opt_args)
-        else: raise ValueError(f"Optimiser {self.opt} not currently available")
+    @staticmethod
+    def _interp_opt(opt:str) -> Callable[[Iterator, Optional[Any]], optim.Optimizer]:
+        opt = opt.lower()
+        if   opt == 'adam':   return optim.Adam
+        elif opt == 'sgd':    return optim.SGD
+        else: raise ValueError(f"Optimiser {opt} not interpretable from string, please pass as class")
+
+    def _build_opt(self, model:nn.Module) -> optim.Optimizer: return self.opt(model.parameters(), **self.opt_args)
 
     def set_lr(self, lr:float) -> None:
         r'''
         Set learning rate for all model parameters
+
+        Arguments:
+            lr: learning rate
         '''
         
         self.opt_args['lr'] = lr
@@ -272,6 +286,7 @@ class ModelBuilder(object):
 
         model = self.build_model()
         if self.pretrain_file is not None: self.load_pretrained(model)
+        model = to_device(model)
         opt = self._build_opt(model)
         return model, opt, self.loss
 

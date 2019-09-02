@@ -12,9 +12,9 @@
     - Ability to only consider classes rather than samples when computing bin edges
     - Ability to add pure signal bins if normalisation uncertainty would be below some value
 - `plot_bottleneck_weighted_inputs` method for intterpretting bottleneck blocks in `MultiBlock`
-- Added RAdam optimiser https://github.com/LiyuanLucasLiu/RAdam
-- Added Ranger optimsier https://github.com/lessw2020/Ranger-Deep-Learning-Optimizer
 - Online documentation: https://lumin.readthedocs.io
+- Default optimiser notice
+- Can now pass arbitary optimisers to the 'opt' value in `opt_args`. Optimisers still interpretable from strings.
 
 ## Removals
 
@@ -26,6 +26,7 @@
 - `bottleneck_sz_masks` to `bottleneck_masks` in `MultiBlock`
 - SWA crahsing when evaluating targets of type long, when loss expects a float (model.evaluate now converts to float when objective is not multiclass classification)
 - Doc string fixes
+- Fixed model being moved to device after instantiating optimiser (sometimes leads to an error). Models now moved to device in `ModelBuilder.get_model` rather than in `Model.__init__`
 
 ## Changes
 

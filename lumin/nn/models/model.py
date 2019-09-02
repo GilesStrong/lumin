@@ -43,7 +43,6 @@ class Model(AbsModel):
         self.model_builder,self.input_mask = model_builder,None
         if self.model_builder is not None:
             self.model, self.opt, self.loss = self.model_builder.get_model()
-            self.model = to_device(self.model)
             self.head, self.body, self.tail = self.model[0], self.model[1], self.model[2]
             self.objective = self.model_builder.objective
             self.n_out = self.tail.get_out_size()
