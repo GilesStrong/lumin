@@ -14,7 +14,6 @@ Subpackages
    lumin.nn.losses
    lumin.nn.metrics
    lumin.nn.models
-   lumin.nn.optimisers
    lumin.nn.training
 
 Module contents
