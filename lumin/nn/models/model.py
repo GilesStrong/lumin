@@ -21,14 +21,16 @@ from ..metrics.eval_metric import EvalMetric
 from ...utils.misc import to_device
 from ...utils.statistics import uncert_round
 
+__all__ = ['Model']
+
 
 class Model(AbsModel):
     r'''
-    Wrapper class to handle training and inference of NNs created via a :class:ModelBuilder.
-    Note that saved models can be instantiated direcly via :meth:from_save classmethod.
+    Wrapper class to handle training and inference of NNs created via a :class:`~lumin.nn.models.model_builder.ModelBuilder`.
+    Note that saved models can be instantiated direcly via :meth:`~lumin.nn.models.model.Model.from_save` classmethod.
     
     Arguments:
-        model_builder: :class:ModelBuilder which will construct the network, loss, and optimiser
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` which will construct the network, loss, and optimiser
 
     Examples::
         >>> model = Model(model_builder)
@@ -41,7 +43,6 @@ class Model(AbsModel):
         self.model_builder,self.input_mask = model_builder,None
         if self.model_builder is not None:
             self.model, self.opt, self.loss = self.model_builder.get_model()
-            self.model = to_device(self.model)
             self.head, self.body, self.tail = self.model[0], self.model[1], self.model[2]
             self.objective = self.model_builder.objective
             self.n_out = self.tail.get_out_size()
@@ -69,14 +70,14 @@ class Model(AbsModel):
     @classmethod
     def from_save(cls, name:str, model_builder:ModelBuilder) -> AbsModel:
         r'''
-        Instantiated a :class:Model and load saved state from file.
+        Instantiated a :class:`~lumin.nn.models.model.Model` and load saved state from file.
         
         Arguments:
             name: name of file containing saved state
-            model_builder: :class:ModelBuilder which was used to construct the network
+            model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` which was used to construct the network
         
         Returns:
-            Instantiated :class:Model with network weights, optimiser state, and input mask loaded from saved state
+            Instantiated :class:`~lumin.nn.models.model.Model` with network weights, optimiser state, and input mask loaded from saved state
         
         Examples::
             >>> model = Model.from_save('weights/model.h5', model_builder)
@@ -111,11 +112,11 @@ class Model(AbsModel):
         
     def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
         r'''
-        Fit network for one complete iteration of a :class:BatchYielder, i.e. one (sub-)epoch
+        Fit network for one complete iteration of a :class:`~lumin.nn.data.batch_yielder.BatchYielder`, i.e. one (sub-)epoch
 
         Arguments:
-            batch_yielder: :class:BatchYielder providing training data in form of tuple of inputs, targtes, and weights as tensors on device
-            callbacks: list of :class:AbsCallback to be used during training
+            batch_yielder: :class:`~lumin.nn.data.batch_yielder.BatchYielder` providing training data in form of tuple of inputs, targtes, and weights as tensors on device
+            callbacks: list of :class:`~lumin.nn.callbacks.abs_callback.AbsCallback` to be used during training
 
         Returns:
             Loss on training data averaged across all minibatches
@@ -165,7 +166,10 @@ class Model(AbsModel):
         for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
         if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
         y_pred = self.model(to_device(inputs.float()))
-        if 'multiclass' in self.objective and not isinstance(targets, torch.LongTensor): targets = targets.long().squeeze()
+
+        if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
+        elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
+
         loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
@@ -196,10 +200,10 @@ class Model(AbsModel):
 
     def predict_folds(self, fy:FoldYielder, pred_name:str='pred') -> None:
         r'''
-        Apply model to all dataaccessed by a :class:FoldYielder and save predictions as new group in fold file
+        Apply model to all dataaccessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as new group in fold file
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             pred_name: name of group to which to save predictions
         '''
 
@@ -227,12 +231,12 @@ class Model(AbsModel):
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred') -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
-        A compatability method to call :meth:predict_array or :meth:predict_folds, depending on input type.
+        A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`, depending on input type.
 
         Arguments:
-            inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:FoldYielder interfacing to data
+            inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             as_np: whether to return predictions as Numpy array (otherwise tensor) if inputs are a Numpy array, Pandas DataFrame, or tensor
-            pred_name: name of group to which to save predictions if inputs are a :class:FoldYielder
+            pred_name: name of group to which to save predictions if inputs are a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
@@ -318,7 +322,7 @@ class Model(AbsModel):
 
         Arguments:
             name: name of save file
-            model_builder: if :class:Model was not initialised with a :class:ModelBuilder, you will need to pass one here
+            model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`, you will need to pass one here
         '''
 
         if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
@@ -366,11 +370,11 @@ class Model(AbsModel):
            
     def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
         r'''
-        Call :meth:get_nn_feat_importance passing this :class:Model and provided arguments
+        Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.model.Model` and provided arguments
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data on which to evaluate importance
-            eval_metric: Optional :class:EvalMetric to use for quantifying performance
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance
+            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use for quantifying performance
         '''
 
         return get_nn_feat_importance(self, fy, eval_metric)

@@ -2,6 +2,9 @@ from typing import Any
 
 import torch
 import torch.nn as nn
+from torch import Tensor
+
+__all__ = ['lookup_act', 'Swish']
 
 
 def lookup_act(act:str) -> Any:
@@ -41,7 +44,17 @@ class Swish(nn.Module):
         super().__init__()
         self.inplace = True
 
-    def forward(self, x):
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through Swish function
+
+        Arguments:
+            x: incoming tensor
+
+        Returns:
+            Resulting tensor
+        '''
+
         if self.inplace:
             x.mul_(torch.sigmoid(x))
             return x  # Do we need to return?

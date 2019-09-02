@@ -7,6 +7,8 @@ from ...utils.statistics import bootstrap_stats
 from .eval_metric import EvalMetric
 from ..data.fold_yielder import FoldYielder
 
+__all__ = ['RegPull', 'RegAsProxyPull']
+
 
 class RegPull(EvalMetric):
     r'''
@@ -22,9 +24,14 @@ class RegPull(EvalMetric):
         wgt_name: name of group in fold file containing datapoint weights
 
     Examples::
-        >>> mean_pull  = RegPull(return_mean=True,  use_bootstrap=True,  use_pull=True)
-        >>> std_delta  = RegPull(return_mean=False, use_bootstrap=True,  use_pull=False)
-        >>> mean_pull  = RegPull(return_mean=True,  use_bootstrap=False, use_pull=True, wgt_name='weights')
+        >>> mean_pull  = RegPull(return_mean=True, use_bootstrap=True,
+        ...                      use_pull=True)
+        >>>
+        >>> std_delta  = RegPull(return_mean=False, use_bootstrap=True,
+        ...                      use_pull=False)
+        >>>
+        >>> mean_pull  = RegPull(return_mean=True, use_bootstrap=False,
+        ...                      use_pull=True, wgt_name='weights')
     '''
 
     # TODO: Check how this handels multi-target regression, may need to adjust averaging axis & DescrStatsW may not handle multi-dimensional data well.
@@ -59,7 +66,7 @@ class RegPull(EvalMetric):
         Compute statisitic on fold using provided predictions.
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             idx: fold index corresponding to fold for which y_pred was computed
             y_pred: predictions for fold
 
@@ -90,10 +97,14 @@ class RegAsProxyPull(RegPull):
 
     Examples::
         >>> def reg_proxy_func(df):
-                df['pred'] = calc_pair_mass(df, (1.77682, 1.77682), {targ[targ.find('_t')+3:]: f'pred_{i}' for i, targ in enumerate(targ_feats)})
-                df['gen_target'] = 125
-            
-            std_delta = RegAsProxyPull(proxy_func=reg_proxy_func, return_mean=False, use_pull=False)
+        >>>     df['pred'] = calc_pair_mass(df, (1.77682, 1.77682),
+        ...                                 {targ[targ.find('_t')+3:]:
+        ...                                 f'pred_{i}' for i, targ
+        ...                                 in enumerate(targ_feats)})
+        >>>     df['gen_target'] = 125
+        >>>    
+        >>> std_delta = RegAsProxyPull(proxy_func=reg_proxy_func,
+        ...                            return_mean=False, use_pull=False)
     '''
 
     def __init__(self, proxy_func:Callable[[pd.DataFrame],None], return_mean:bool, use_bootstrap:bool=False, use_weights:bool=True, 
@@ -107,7 +118,7 @@ class RegAsProxyPull(RegPull):
         Compute statisitic on fold using provided predictions.
 
         Arguments:
-            fy: :class:FoldYielder interfacing to data
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             idx: fold index corresponding to fold for which y_pred was computed
             y_pred: predictions for fold
 

@@ -1,4 +1,41 @@
-# Targeting V0.3
+# V0.3.1 Tears in Rain - micro update
+
+## Important changes
+
+- Online documentation now available at https://lumin.readthedocs.io
+
+## Breaking
+
+## Additions
+
+- `bin_binary_class_pred`
+    - Ability to only consider classes rather than samples when computing bin edges
+    - Ability to add pure signal bins if normalisation uncertainty would be below some value
+- `plot_bottleneck_weighted_inputs` method for interpretting bottleneck blocks in `MultiBlock`
+- Online documentation: https://lumin.readthedocs.io
+- Default optimiser notice
+- Can now pass arbitary optimisers to the 'opt' value in `opt_args`. Optimisers still interpretable from strings.
+- Expanded advanced model building example to include more interpretation examples and diagrams of network architectures
+
+## Removals
+
+- weak decorators for losses
+
+## Fixes
+
+- `CatEmbedder.from_fy` using features ignored by `FoldYielder`
+- `bottleneck_sz_masks` to `bottleneck_masks` in `MultiBlock`
+- SWA crahsing when evaluating targets of type long, when loss expects a float (model.evaluate now converts to float when objective is not multiclass classification)
+- Doc string fixes
+- Fixed model being moved to device after instantiating optimiser (sometimes leads to an error). Models now moved to device in `ModelBuilder.get_model` rather than in `Model.__init__`
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# V0.3 Tears in Rain
 
 ## Important changes
 
@@ -202,6 +239,7 @@
 - Correct name of internal embedding dropout layer in `CatEmbHead`: emd_do -> emb_do
 - Adding missing settings for activations and initialisations to body and tail
 - Corrected plot annotation for percentage in `binary_class_cut`
+- loss history plot not being saved correctly
 
 ## Changes
 

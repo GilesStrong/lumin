@@ -10,6 +10,8 @@ from ..nn.data.fold_yielder import FoldYielder
 from ..optimisation.features import get_rf_feat_importance
 from .statistics import uncert_round
 
+__all__ = ['check_val_set']
+
 
 def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional[FoldYielder]=None, n_folds:Optional[int]=None) -> None:
     '''Method to check validation set suitability by seeing whether random forests can predict whether events belong to one dataset or the other.
@@ -89,14 +91,14 @@ def check_val_set(train:Union[pd.DataFrame,np.ndarray,FoldYielder], val:Union[pd
                   test:Optional[Union[pd.DataFrame,np.ndarray,FoldYielder]]=None, n_folds:Optional[int]=None) -> None:
     r'''
     Method to check validation set suitability by seeing whether Random Forests can predict whether events belong to one dataset or another.
-    If a :class:FoldYielder is passed, then trainings are run once per fold and averaged.
+    If a :class:`~lumin.nn.data.fold_yielder.FoldYielder` is passed, then trainings are run once per fold and averaged.
     Will compute the ROC AUC for set discrimination (should be close to 0.5) and compute the feature importances to aid removal of discriminating features.
 
     Arguments:
         train: training data
         val: validation data
         test: optional testing data
-        n_folds: if set and if passed a :class:FoldYielder, will only use the first n_folds folds
+        n_folds: if set and if passed a :class:`~lumin.nn.data.fold_yielder.FoldYielder`, will only use the first n_folds folds
     '''
 
     if isinstance(train, FoldYielder): _check_val_set_fy(train, val, test, n_folds)

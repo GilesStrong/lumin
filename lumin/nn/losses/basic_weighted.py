@@ -1,12 +1,12 @@
 from typing import Optional
 
-from torch._jit_internal import weak_module, weak_script_method
 import torch.nn as nn
 import torch
 from torch.tensor import Tensor
 
+__all__ = ['WeightedMSE', 'WeightedMAE', 'WeightedCCE']
 
-@weak_module
+
 class WeightedMSE(nn.MSELoss):
     r'''
     Class for computing Mean Squared-Error loss with optional weights per prediction.
@@ -17,6 +17,7 @@ class WeightedMSE(nn.MSELoss):
 
     Examples::
         >>> loss = WeightedMSE()
+        >>>
         >>> loss = WeightedMSE(weights)
     '''
 
@@ -24,13 +25,22 @@ class WeightedMSE(nn.MSELoss):
         super().__init__(reduction='mean' if weight is None else 'none')
         self.weights = weight
         
-    @weak_script_method
-    def forward(self, input:Tensor, target:Tensor):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
         else:                        return super().forward(input, target)
 
 
-@weak_module
 class WeightedMAE(nn.L1Loss):
     r'''
     Class for computing Mean Absolute-Error loss with optional weights per prediction.
@@ -41,6 +51,7 @@ class WeightedMAE(nn.L1Loss):
 
     Examples::
         >>> loss = WeightedMAE()
+        >>>
         >>> loss = WeightedMAE(weights)
     '''
     
@@ -48,13 +59,22 @@ class WeightedMAE(nn.L1Loss):
         super().__init__(reduction='mean' if weight is None else 'none')
         self.weights = weight
         
-    @weak_script_method
-    def forward(self, input:Tensor, target:Tensor):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
         else:                        return super().forward(input, target)
 
 
-@weak_module
 class WeightedCCE(nn.NLLLoss):
     r'''
     Class for computing Categorical Cross-Entropy loss with optional weights per prediction.
@@ -65,6 +85,7 @@ class WeightedCCE(nn.NLLLoss):
 
     Examples::
         >>> loss = WeightedCCE()
+        >>>
         >>> loss = WeightedCCE(weights)
     '''
 
@@ -72,7 +93,17 @@ class WeightedCCE(nn.NLLLoss):
         super().__init__(reduction='mean')
         self.weights = weight
         
-    @weak_script_method
-    def forward(self, input:Tensor, target:Tensor):
+    def forward(self, input:Tensor, target:Tensor) -> Tensor:
+        r'''
+        Evaluate loss for given predictions
+
+        Arguments:
+            input: prediction tensor
+            target: target tensor
+        
+        Returns:
+            (weighted) loss
+        '''
+
         if self.weights is not None: return torch.mean(self.weights*super().forward(input, target))
         else:                        return super().forward(input, target)

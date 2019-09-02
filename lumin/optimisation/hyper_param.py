@@ -21,6 +21,8 @@ from ..plotting.plot_settings import PlotSettings
 
 import matplotlib.pyplot as plt
 
+__all__ = ['get_opt_rf_params', 'fold_lr_find']
+
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
@@ -80,22 +82,24 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
                  callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
     r'''
-    Wrapper function for training using :class:LRFinder which runs a Smith LR range test (https://arxiv.org/abs/1803.09820) using folds in :class:FoldYielder.
-    Trains models for 1 fold, interpolating LR between set bounds. This repeats for each fold in :class:FoldYielder, and loss evolution is averaged.
+    Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
+    using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
+    Trains models for 1 fold, interpolating LR between set bounds. This repeats for each fold in :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and loss
+    evolution is averaged.
 
     Arguments:
-        fy: :class:FoldYielder providing training data
-        model_builder: :class:ModelBuilder providing networks and optimisers
+        fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing training data
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` providing networks and optimisers
         bs: batch size
         train_on_weights: If weights are present, whether to use them for training
         shuffle_fold: whether to shuffle data in folds
         n_folds: if >= 1, will only train n_folds number of models, otherwise will train one model per fold
         lr_bounds: starting and ending LR values
-        callback_partials: optional list of functools.partial, each of which will a instantiate :class:Callback when called        
-        plot_settings: :class:PlotSettings class to control figure appearance
+        callback_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called        
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        List of :class:LRFinder which were used for each model trained
+        List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which were used for each model trained
     '''
 
     if callback_partials is None: callback_partials = []

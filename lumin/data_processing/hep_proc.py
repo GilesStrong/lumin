@@ -3,6 +3,9 @@ import pandas as pd
 from typing import List, Dict, Tuple, Union, Optional, Set
 import warnings
 
+__all__ = ['to_cartesian', 'to_pt_eta_phi', 'delta_phi', 'twist', 'add_abs_mom', 'add_mass', 'add_energy', 'add_mt', 'get_vecs', 'fix_event_phi', 'fix_event_z',
+           'fix_event_y', 'event_to_cartesian', 'proc_event', 'calc_pair_mass']
+
 '''
 Todo:
 - Add non inplace versions/options
@@ -41,9 +44,12 @@ def to_pt_eta_phi(df:pd.DataFrame, vec:str, eta:Optional[bool]=None, drop:bool=F
     r'''
     Vectoriesed conversion of 3-momenta to pT,eta,phi coordinates inplace, optionally dropping old px,py,pz features
 
+    .. Attention:: eta is now deprecieated as it is now infered from `df`. Will be removed in `V0.4`
+
     Arguments:
             df: DataFrame to alter
             vec: column prefix of vector components to alter, e.g. 'muon' for columns ['muon_px', 'muon_py', 'muon_pz']
+            eta: depreciated as now infered
             drop: Whether to remove original columns and just keep the new ones
     '''
 
@@ -262,13 +268,15 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
     
     Arguments:
         df: DataFrame to alter
-        fix_phi: whether to rotate events using :meth:fix_event_phi
-        fix_y: whether to flip events using :meth:fix_event_y
-        fix_z: whether to flip events using :meth:fix_event_z
+        fix_phi: whether to rotate events using :meth:`~lumin.data_prcoessing.hep.proc.fix_event_phi`
+        fix_y: whether to flip events using :meth:`~lumin.data_prcoessing.hep.proc.fix_event_y`
+        fix_z: whether to flip events using :meth:`~lumin.data_prcoessing.hep.proc.fix_event_z`
         use_cartesian: wether to convert vectors to Cartesian coordinates
-        ref_vec_0: column prefix of vector components to use as reference (0) for :meth:fix_event_phi, :meth:fix_event_y, and :meth:fix_event_z
-                   e.g. 'muon' for columns ['muon_pT', 'muon_eta', 'muon_phi']
-        ref_vec_1: column prefix of vector components to use as reference 1 for :meth:fix_event_z, e.g. 'muon' for columns ['muon_pT', 'muon_eta', 'muon_phi']
+        ref_vec_0: column prefix of vector components to use as reference (0) for :meth:~lumin.data_prcoessing.hep.proc.fix_event_phi`,
+            :meth:`~lumin.data_prcoessing.hep.proc.fix_event_y`, and :meth:`~lumin.data_prcoessing.hep.proc.fix_event_z`
+            e.g. 'muon' for columns ['muon_pT', 'muon_eta', 'muon_phi']
+        ref_vec_1: column prefix of vector components to use as reference 1 for :meth:`~lumin.data_prcoessing.hep.proc.fix_event_z`,
+            e.g. 'muon' for columns ['muon_pT', 'muon_eta', 'muon_phi']
         keep_feats: columns to keep which would otherwise be dropped
         default_vals:  list of default values which might be used to represent missing vector components. These will be replaced with np.nan.
     '''
@@ -300,7 +308,7 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
 
 def calc_pair_mass(df:pd.DataFrame, masses:Union[Tuple[float,float],Tuple[np.ndarray,np.ndarray]], feat_map:Dict[str,str]) -> np.ndarray:
     r'''
-    Vectorised computation of invarient mass of pair of particles with given masses, using 4-momenta. Only works for vectors defined in Cartesian coordinates.
+    Vectorised computation of invarient mass of pair of particles with given masses, using 3-momenta. Only works for vectors defined in Cartesian coordinates.
 
     Arguments:
         df: DataFrame vector components

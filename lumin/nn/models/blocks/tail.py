@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional, Union, Tuple, Callable
+from abc import abstractmethod
 
 from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device
@@ -8,6 +9,8 @@ from .abs_block import AbsBlock
 from torch.tensor import Tensor
 import torch.nn as nn
 
+__all__ = ['ClassRegMulti']
+
 
 class AbsTail(AbsBlock):
     def __init__(self, n_in:int, n_out:int, objective:str, bias_init:Optional[float]=None,
@@ -15,11 +18,25 @@ class AbsTail(AbsBlock):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.n_out,self.objective,self.bias_init = n_in,n_out,objective,bias_init
 
+    @abstractmethod
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through tail
+
+        Arguments:
+            x: incoming tensor
+        
+        Returns
+            Resulting tensor of model outputs
+        '''
+
+        pass
+
 
 class ClassRegMulti(AbsTail):
     r'''
     Output block for (multi(class/label)) classification or regression tasks.
-    Designed to be passed as a 'tail' to :class:ModelBuilder.
+    Designed to be passed as a 'tail' to :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Takes output size of network body and scales it to required number of outputs.
     For regression tasks, y_range can be set with per-output minima and maxima. The outputs are then adjusted according to ((y_max-y_min)*x)+self.y_min, where x
     is the output of the network passed through a sigmoid function. Effectively allowing regression to be performed without normalising and standardising the
@@ -36,17 +53,23 @@ class ClassRegMulti(AbsTail):
 
     Examples::
         >>> tail = ClassRegMulti(n_in=100, n_out=1, objective='classification')
+        >>>
         >>> tail = ClassRegMulti(n_in=100, n_out=5, objective='multiclass')
+        >>>
         >>> y_range = (0.8*targets.min(), 1.2*targets.max())
-            tail = ClassRegMulti(n_in=100, n_out=1, objective='regression', y_range=y_range)
+        >>> tail = ClassRegMulti(n_in=100, n_out=1, objective='regression',
+        ...                      y_range=y_range)
+        >>>
         >>> min_targs = np.min(targets, axis=0).reshape(targets.shape[1],1)
-            max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
-            min_targs[min_targs > 0] *=0.8
-            min_targs[min_targs < 0] *=1.2
-            max_targs[max_targs > 0] *=1.2
-            max_targs[max_targs < 0] *=0.8
-            y_range = np.hstack((min_targs, max_targs))
-            tail = ClassRegMulti(n_in=100, n_out=6, objective='regression', y_range=y_range, lookup_init=lookup_uniform_init)
+        >>> max_targs = np.max(targets, axis=0).reshape(targets.shape[1],1)
+        >>> min_targs[min_targs > 0] *=0.8
+        >>> min_targs[min_targs < 0] *=1.2
+        >>> max_targs[max_targs > 0] *=1.2
+        >>> max_targs[max_targs < 0] *=0.8
+        >>> y_range = np.hstack((min_targs, max_targs))
+        >>> tail = ClassRegMulti(n_in=100, n_out=6, objective='regression',
+        ...                      y_range=y_range,
+        ...                      lookup_init=lookup_uniform_init)
     '''
 
     # TODO: Automate y_range calculation with adjustable leeway

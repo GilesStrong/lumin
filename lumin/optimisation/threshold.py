@@ -9,13 +9,15 @@ from ..plotting.plot_settings import PlotSettings
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+__all__ = ['binary_class_cut', 'binary_class_cut_by_ams']
+
 
 def binary_class_cut(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=0.9,
                      wgt_factor:float=1.0, br:float=0.0, syst_unc_b:float=0.0,
                      pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight',
                      plot_settings:PlotSettings=PlotSettings()) -> Tuple[float,float,float]:
     r'''
-    Depreciated: renamed to plot_rank_order_dendrogram
+    .. Attention:: Depreciated as renamed to :meth:`~lumin.optimisation.threshold.binary_class_cut_by_ams`. Will be removed in `v0.4`.
     '''
     
     # XXX Remove in v0.4
@@ -44,7 +46,7 @@ def binary_class_cut_by_ams(df:pd.DataFrame, top_perc:float=5.0, min_pred:float=
         pred_name: column to use as predictions
         targ_name: column to use as truth labels for signal and background
         wgt_name: column to use as weights for signal and background events
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
         Optimised cut

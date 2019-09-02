@@ -11,6 +11,8 @@ from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
 from ..plotting.plot_settings import PlotSettings
 
+__all__ = ['get_rf_feat_importance', 'rf_rank_features']
+
 
 def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
     r'''
@@ -46,7 +48,7 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
         n_estimators: number of trees to use in each forest
         n_rfs: number of trainings to perform on all training features in order to compute importances
         savename: Optional name of file to which to save the plot of feature importances
-        plot_settings: :class:PlotSettings class to control figure appearance
+        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
         List of features passing importance_cut, ordered by importance
