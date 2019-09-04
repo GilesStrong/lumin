@@ -6,9 +6,15 @@
 
 ## Additions
 
+- `rf_check_feat_removal` method to check whether one of several (correlated) features can safely be ignored
+
 ## Removals
 
 ## Fixes
+
+- Remove mutable default paramert for `get_opt_rf_params`
+- Missing `n_estimators` in call to `get_opt_rf_params` to `rf_rank_features`
+- Added string interpretation check when loading `ModelBuilder` saved in pre-v0.3.1 versions
 
 ## Changes
 

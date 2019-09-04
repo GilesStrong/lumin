@@ -11,7 +11,7 @@ from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
 from ..plotting.plot_settings import PlotSettings
 
-__all__ = ['get_rf_feat_importance', 'rf_rank_features']
+__all__ = ['get_rf_feat_importance', 'rf_rank_features', 'rf_check_feat_removal']
 
 
 def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
@@ -58,7 +58,7 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
     w_val = None if wgt_name is None else val_df[wgt_name]
     print("Optimising RF")
     opt_params, rf = get_opt_rf_params(train_df[train_feats], train_df[targ_name], val_df[train_feats], val_df[targ_name],
-                                       objective, w_trn=w_trn, w_val=w_val, verbose=False)
+                                       objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, verbose=False)
     print("Evalualting importances")
     fi = get_rf_feat_importance(rf, train_df[train_feats], train_df[targ_name], w_trn)
     orig_score = rf.score(val_df[train_feats], val_df[targ_name], w_val)
@@ -92,3 +92,81 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
     else:
         print('All training features found to be important')
     return top_feats
+
+
+def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
+                          train_feats:List[str], check_feats:List[str],
+                          targ_name:str='gen_target', wgt_name:Optional[str]=None,
+                          val_df:Optional[pd.DataFrame]=None, 
+                          n_estimators:int=40, n_rfs:int=1, rf_params:Optional[Dict[str,Any]]=None) -> Dict[str,float]:
+    r'''
+    Checks whether features can be removed from the set of training features without degrading model performance using Random Forests
+    Computes scores for model with all training features then for each feature listed in `check_feats` computes scores for a model trained on all training features except that feature
+    E.g. if two features are highly correlated this function could be used to check whether one of them could be removed.
+    
+    Arguments:
+        train_df: training data as Pandas DataFrame
+        objective: string representation of objective: either 'classification' or 'regression'
+        train_feats: complete list of training features
+        check_feats: list of features to try removing
+        targ_name: name of column containing target data
+        wgt_name: name of column containing weight data. If set, will use weights for training and evaluation, otherwise will not
+        val_df: optional validation data as Pandas DataFrame.
+            If set will compute validation scores in addition to Out Of Bag scores
+            And will optimise RF parameters if `rf_params` is None
+        n_estimators: number of trees to use in each forest
+        n_rfs: number of trainings to perform on all training features in order to compute importances
+        rf_params: optional dictionary of keyword parameters for SK-Learn Random Forests
+            If None and val_df is None will use default parameters of 'min_samples_leaf':3, 'max_features':0.5
+            Elif None and val_df is not None will optimise parameters using :meth:`lumin.optimisation.hyper_param.get_opt_rf_params`
+            
+    Returns:
+        Dictionary of results
+    '''
+    
+    w_trn = None if wgt_name is None else train_df[wgt_name]
+    w_val = None if wgt_name is None or val_df is None else val_df[wgt_name]
+    
+    if rf_params is None:
+        if val_df is None:
+            rf_params = {'min_samples_leaf':3, 'max_features':0.5, 'n_estimators':n_estimators}
+            print('Using following default RF parameters:', rf_params)
+        else:
+            print('Optimising RF parameters')
+            rf_params, _ = get_opt_rf_params(train_df[train_feats], train_df[targ_name], val_df[train_feats], val_df[targ_name],
+                                             objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, verbose=False)
+    else:
+        rf_params['n_estimators'] = n_estimators
+        
+    rf_params['n_jobs']    = -1
+    rf_params['oob_score'] = True
+            
+    m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
+    pt = PrettyTable(['Removed', 'OOB Score', 'Val Score'])
+    results = {}
+    
+    for remove in ['None']+check_feats:
+        feats = train_feats if remove == 'None' else [f for f in train_feats if f != remove]
+        oob,val = [],[]
+        for _ in range(n_rfs):
+            rf = m(**rf_params)
+            rf.fit(train_df[feats], train_df[targ_name], w_trn)
+            oob.append(rf.oob_score_)
+            if val_df is not None: val.append(rf.score(val_df[feats], val_df[targ_name], w_val))
+                
+        oob_score, oob_unc = np.mean(oob), np.std(oob, ddof=1)/np.sqrt(n_rfs)
+        results[f'{remove}_oob_score'] = oob_score
+        results[f'{remove}_oob_unc']   = oob_unc
+        oob_round = uncert_round(oob_score, oob_unc)
+        if val_df is not None:
+            val_score, val_unc = np.mean(val), np.std(val, ddof=1)/np.sqrt(n_rfs)
+            results[f'{remove}_val_score'] = val_score
+            results[f'{remove}_val_unc']   = val_unc
+            val_round = uncert_round(val_score, val_unc)
+        else:
+            val_round = ['-','-']
+            
+        pt.add_row([remove, f'{oob_round[0]}±{oob_round[1]}', f'{val_round[0]}±{val_round[1]}'])
+        
+    print(pt)
+    return results

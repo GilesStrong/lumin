@@ -14,6 +14,7 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> Union[
 
     Arguments:
         args: dictionary of arguments. Possible keys are:
+            data - data to resample
             name - name prepended to returned keys in result dict
             weights - array of weights matching length of data to use for weighted resampling
             n - number of times to resample data
