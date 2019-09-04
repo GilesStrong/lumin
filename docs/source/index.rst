@@ -242,7 +242,7 @@ grow LUMIN to better meet the needs of the scientific community.
 Future
 ~~~~~~
 
-The current priority is to get documentation written, tests added, and
+The current priority is to imporve the documentation, add unit tests, and
 expand the examples.
 
 The next step will be to try and increase the user base and number of
