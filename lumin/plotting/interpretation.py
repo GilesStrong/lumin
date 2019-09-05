@@ -22,7 +22,7 @@ __all__ = ['plot_importance', 'plot_embedding', 'plot_1d_partial_dependence', 'p
 
 
 def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty',
-                    savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+                    x_lbl:str='Importance via feature permutation', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot feature importances as computted via `get_nn_feat_importance`, `get_ensemble_feat_importance`, or `rf_rank_features`
 
@@ -39,7 +39,7 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
         fig, ax = plt.subplots(figsize=(settings.w_large, (0.75)*settings.lbl_sz))
         xerr = None if unc_name not in df else 'Uncertainty'
         df.plot(feat_name, imp_name, 'barh', ax=ax, legend=False, xerr=xerr, error_kw={'elinewidth': 3})
-        ax.set_xlabel('Importance via feature permutation', fontsize=settings.lbl_sz, color=settings.lbl_col)
+        ax.set_xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
         ax.set_ylabel('Feature', fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
