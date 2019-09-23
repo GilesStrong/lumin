@@ -13,6 +13,7 @@
     - `plot_results`, `retrain_on_import_feats`, and `verbose` to control printed outputs of function
 - Control over x-axis label in `plot_importance`
 - `repeated_rf_rank_features`
+- `get_df` function to `LRFinder`
 
 ## Removals
 
@@ -24,6 +25,10 @@
 - `rf_rank_features` importance cut now >= threshold, was previously >
 
 ## Changes
+
+- Improved `plot_lr_finders`
+- Moved to Pandas 0.25.0
+- Moved to Seaborn 0.9.0
 
 ## Depreciations
 
