@@ -4,6 +4,7 @@ import numpy as np
 from collections import OrderedDict
 import timeit
 from functools import partial
+import math
 
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
@@ -123,10 +124,6 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         lr_finders.append(lr_finder)
         
     print("LR finder took {:.3f}s ".format(timeit.default_timer()-tmr))
-    if n_folds != 1:
-        plot_lr_finders(lr_finders, loss='loss', cut=-2, settings=plot_settings)
-    else:
-        lr_finders[0].plot_lr()    
-        lr_finders[0].plot(n_skip=5)
+    plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings)
     return lr_finders
 
