@@ -1,12 +1,13 @@
 import pandas as pd
 import numpy as np
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from fastprogress import progress_bar
 from rfpimp import importances
 from prettytable import PrettyTable
 
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
+from sklearn.utils import resample
 
 from .hyper_param import get_opt_rf_params
 from ..plotting.interpretation import plot_importance
@@ -184,9 +185,9 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
 
 
 def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps:int, min_frac_import:float, objective:str,
-                              train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None,
+                              train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None, strat_key:Optional[str]=None,
                               importance_cut:float=0.0, n_estimators:int=40, n_rfs:int=1, n_max_display:int=30,
-                              savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> List[str]:
+                              savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[str],pd.DataFrame]:
     r'''
     Runs :meth:`~lumin.optimisation.features.rf_rank_features` multiple times on bootstrap resamples of training data and computes the fraction of times each feature passes the importance cut.
     Then returns a list features which are have a fractional selection as important great than some number.
@@ -201,6 +202,7 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
         train_feats: complete list of training features
         targ_name: name of column containing target data
         wgt_name: name of column containing weight data. If set, will use weights for training and evaluation, otherwise will not
+        strat_key: name of column to use to stratify data when resampling 
         importance_cut: minimum importance required to be considered an 'important feature'
         n_estimators: number of trees to use in each forest
         n_rfs: number of trainings to perform on all training features in order to compute importances
@@ -209,14 +211,15 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        List of features with fractional selection greater than min_frac_import, ordered by decreasing fractional selection
+        - List of features with fractional selection greater than min_frac_import, ordered by decreasing fractional selection
+        - DataFrame of number of selections and fractional selections for all features
     '''
     
     selections = pd.DataFrame({'Feature':train_feats, 'N_Selections':0})
-    for i in range(n_reps):
+    for i in progress_bar(range(n_reps)):
         print(f'Repition {i}')
-        tmp_df = train_df.loc[resample(train_df.index, replace=True, stratify=train_df[targ_name] if 'class' in objective else False)]
-        import_feats = rf_rank_features(tmp_df, df_val, objective=objective, train_feats=train_feats,
+        tmp_df = train_df.loc[resample(train_df.index, replace=True, stratify=None if strat_key is None else train_df[strat_key])]
+        import_feats = rf_rank_features(tmp_df, val_df, objective=objective, train_feats=train_feats,
                                         importance_cut=importance_cut, targ_name=targ_name, n_rfs=n_rfs, wgt_name=wgt_name,
                                         plot_results=False, retrain_on_import_feats=False, verbose=False)
         for f in import_feats: selections.loc[selections.Feature == f, 'N_Selections'] += 1
@@ -227,4 +230,4 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
                     x_lbl='Fraction of times important', savename=savename, settings=plot_settings)
     top_feats = list(selections[selections.Fractional_Selection >= min_frac_import].Feature)
     print(f"\n{len(top_feats)} features found with fractional selection greater than {min_frac_import}:\n", top_feats, '\n')
-    return top_feats
+    return top_feats, selections
