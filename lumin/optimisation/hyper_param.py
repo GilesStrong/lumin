@@ -4,6 +4,7 @@ import numpy as np
 from collections import OrderedDict
 import timeit
 from functools import partial
+import math
 
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
@@ -26,8 +27,7 @@ __all__ = ['get_opt_rf_params', 'fold_lr_find']
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
-                      params:OrderedDict=OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]}),
-                      n_estimators:int=40, verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
+                      params:Optional[OrderedDict]=None, n_estimators:int=40, verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
     r'''
     Use an ordered parameter-scan to roughly optimise Random Forest hyper-parameters.
 
@@ -47,9 +47,8 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
         params: dictionary mapping parameters to their optimised values
         rf: best performing Random Forest
     '''
-
+    if params is None: params = OrderedDict({'min_samples_leaf': [1,3,5,10,25,50,100], 'max_features': [0.3,0.5,0.7,0.9]})
     rf = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
-    
     best_params = {'n_estimators': n_estimators, 'n_jobs': -1, 'max_features':'sqrt'}
     best_scores = []
     scores = []
@@ -125,10 +124,6 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         lr_finders.append(lr_finder)
         
     print("LR finder took {:.3f}s ".format(timeit.default_timer()-tmr))
-    if n_folds != 1:
-        plot_lr_finders(lr_finders, loss='loss', cut=-2, settings=plot_settings)
-    else:
-        lr_finders[0].plot_lr()    
-        lr_finders[0].plot(n_skip=5)
+    plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings)
     return lr_finders
 
