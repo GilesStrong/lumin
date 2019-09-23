@@ -1,7 +1,6 @@
 import numpy as np
 import math
 from typing import Tuple, Optional
-import pandas as pd
 
 from .callback import Callback
 from ..models.abs_model import AbsModel
@@ -29,7 +28,7 @@ class LRFinder(Callback):
         self.lr_bounds = lr_bounds
         self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/nb)
         
-    def on_train_begin(self, **kargs) -> None:
+    def on_train_begin(self, **kargs):
         r'''
         Prepares variables and optimiser for new training
         '''
@@ -40,7 +39,7 @@ class LRFinder(Callback):
         
     def _calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
-    def plot(self, n_skip:int=0, n_max:Optional[int]=None, lim_y:Optional[Tuple[float,float]]=None) -> None:
+    def plot(self, n_skip:int=0, n_max:Optional[int]=None, lim_y:Optional[Tuple[float,float]]=None):
         r'''
         Plot the loss as a function of the LR.
 
@@ -49,8 +48,6 @@ class LRFinder(Callback):
             n_max: Maximum iteration number to plot
             lim_y: y-range for plotting
         '''
-
-        # TODO: Decide on whether to keep this; could just pass to plot_lr_finders
 
         with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
@@ -65,7 +62,7 @@ class LRFinder(Callback):
             plt.xlabel("Learning rate", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
             plt.show()
         
-    def plot_lr(self) -> None:
+    def plot_lr(self):
         r'''
         Plot the LR as a function of iterations.
         '''
@@ -79,14 +76,7 @@ class LRFinder(Callback):
             plt.xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
             plt.show()
 
-    def get_df(self) -> pd.DataFrame:
-        r'''
-        Returns a DataFrame of LRs and losses
-        '''
-
-        return pd.DataFrame({'LR': self.history['lr'], 'Loss': self.history['loss']})
-
-    def on_batch_end(self, loss:float, **kargs) -> None:
+    def on_batch_end(self, loss:float, **kargs):
         r'''
         Records loss and increments LR
 
