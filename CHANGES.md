@@ -1,39 +1,3 @@
-# Targeting V0.3.2
-
-## Important changes
-
-## Breaking
-
-## Additions
-
-- `rf_check_feat_removal` method to check whether one of several (correlated) features can safely be ignored
-- `rf_rank_features`:
-
-    -`n_max_display` to `rf_rank_features` to adjucst number of features displayed in plot
-    - `plot_results`, `retrain_on_import_feats`, and `verbose` to control printed outputs of function
-- Control over x-axis label in `plot_importance`
-- `repeated_rf_rank_features`
-- `get_df` function to `LRFinder`
-
-## Removals
-
-## Fixes
-
-- Remove mutable default paramert for `get_opt_rf_params`
-- Missing `n_estimators` in call to `get_opt_rf_params` to `rf_rank_features`
-- Added string interpretation check when loading `ModelBuilder` saved in pre-v0.3.1 versions
-- `rf_rank_features` importance cut now >= threshold, was previously >
-
-## Changes
-
-- Improved `plot_lr_finders`
-- Moved to Pandas 0.25.0
-- Moved to Seaborn 0.9.0
-
-## Depreciations
-
-## Comments
-
 # V0.3.1 Tears in Rain - micro update
 
 ## Important changes
