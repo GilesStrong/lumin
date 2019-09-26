@@ -99,5 +99,5 @@ class LRFinder(Callback):
         self.iter += 1
         lr = self._calc_lr()
         self.model.opt.param_groups[0]['lr'] = lr
-        if math.isnan(loss) or loss > self.best*10 or lr > self.lr_bounds[1]: self.model.stop_train = True
+        if math.isnan(loss) or loss > self.best*100 or lr > self.lr_bounds[1]: self.model.stop_train = True
         if loss < self.best and self.iter > 10: self.best = loss

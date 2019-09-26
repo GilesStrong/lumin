@@ -228,7 +228,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
-    print("______________________________________\n")                
+    print("______________________________________\n")
     if log_output:
         sys.stdout = old_stdout
         log_file.close()

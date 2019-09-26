@@ -2,6 +2,9 @@
 
 ## Important changes
 
+- Moved to Pandas 0.25.0
+- Moved to Seaborn 0.9.0
+
 ## Breaking
 
 ## Additions

@@ -75,11 +75,11 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
         argmin_lr = agg.loc[agg.mean_loss.idxmin(), 'LR']
         loss_range = 1.1*agg.loc[agg.LR < argmin_lr, 'mean_loss'].max()
         
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style('whitegrid'), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         sns.lineplot(x='LR', y='Loss', data=df, ci='sd')
         plt.xscale('log')
-        plt.grid(True, which="both")
+        plt.grid(b=True, which="both", axis="both")
         if loss_range is not None: plt.ylim((0,loss_range) if isinstance(loss_range, float) else loss_range)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
