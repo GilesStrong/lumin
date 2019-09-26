@@ -26,7 +26,7 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         ignore_trn: whether to ignore training loss
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, history in enumerate(histories):
             if i == 0:

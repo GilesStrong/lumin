@@ -11,12 +11,12 @@
 
 - `rf_check_feat_removal` method to check whether one of several (correlated) features can safely be ignored
 - `rf_rank_features`:
-
     -`n_max_display` to `rf_rank_features` to adjucst number of features displayed in plot
     - `plot_results`, `retrain_on_import_feats`, and `verbose` to control printed outputs of function
 - Control over x-axis label in `plot_importance`
 - `repeated_rf_rank_features`
 - `get_df` function to `LRFinder`
+- Ability to use dictionaries for `PlotSettings.style`
 
 ## Removals
 

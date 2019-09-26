@@ -35,7 +35,7 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = plt.subplots(figsize=(settings.w_large, (0.75)*settings.lbl_sz))
         xerr = None if unc_name not in df else 'Uncertainty'
         df.plot(feat_name, imp_name, 'barh', ax=ax, legend=False, xerr=xerr, error_kw={'elinewidth': 3})
@@ -58,7 +58,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    with sns.axes_style(settings.style):
+    with sns.axes_style(**settings.style):
         plt.figure(figsize=(settings.w_small, settings.h_small))
         sns.heatmap(to_np(embed['weight']), annot=True, linewidths=.5, cmap=settings.div_palette, annot_kws={'fontsize':settings.leg_sz})
         plt.xlabel("Embedding", fontsize=settings.lbl_sz, color=settings.lbl_col)
@@ -114,7 +114,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats
                           **pdp_isolate_kargs)
     if input_pipe is not None: _deprocess_iso(iso, input_pipe, feat, train_feats)
 
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = pdp.pdp_plot(iso, feat, center=False,  plot_lines=True, cluster=n_clusters is not None, n_cluster_centers=n_clusters,
                                plot_params={'title': None, 'subtitle': None}, figsize=(settings.w_mid, settings.h_mid), **pdp_plot_kargs)
         ax['title_ax'].remove()
@@ -172,7 +172,7 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
                                 **pdp_interact_kargs)
     if input_pipe is not None: _deprocess_interact(interact, input_pipe, feats, train_feats)
             
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         fig, ax = pdp.pdp_interact_plot(interact, feats, figsize=(settings.h_large, settings.h_large),
                                         plot_params={'title': None, 'subtitle': None, 'cmap':settings.seq_palette}, **pdp_interact_plot_kargs)
         ax['title_ax'].remove()
@@ -244,7 +244,7 @@ def plot_multibody_weighted_outputs(model:AbsModel, inputs:Union[np.ndarray,Tens
         y.append(to_np(torch.abs(o@w)/b.get_out_size()) if use_mean else to_np(torch.abs(o@w)))
         itr += b.get_out_size()
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         sns.boxplot(x=block_names, y=y)
         plt.xlabel("Block", fontsize=settings.lbl_sz, color=settings.lbl_col)
@@ -294,7 +294,7 @@ def plot_bottleneck_weighted_inputs(model:AbsModel, bottleneck_idx:int, inputs:U
     order = np.argsort(y.mean(axis=1))
     x,y = list(x[order]),list(y[order])
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         sns.boxplot(x=x, y=y)
         plt.xlabel("Features", fontsize=settings.lbl_sz, color=settings.lbl_col)

@@ -49,7 +49,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
     if plot_params is None: plot_params = {}
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
         for i in range(len(cuts)):
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
@@ -189,7 +189,7 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, name in enumerate(name2args):
             if 'color' not in name2args[name]: name2args[name]['color'] = palette[i]
