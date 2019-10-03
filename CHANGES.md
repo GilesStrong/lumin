@@ -17,6 +17,13 @@
 - `repeated_rf_rank_features`
 - `get_df` function to `LRFinder`
 - Ability to use dictionaries for `PlotSettings.style`
+- `plot_rank_order_dendrogram`:
+    - added threshold param to control plotting colour and return
+    - returns list of paris of correlated features
+- `FoldYielder`
+    - Method to list columns in foldfile
+    - option to initialise using a string or path for the foldfile
+    - close method to close the foldfile 
 
 ## Removals
 
@@ -26,6 +33,7 @@
 - Missing `n_estimators` in call to `get_opt_rf_params` to `rf_rank_features`
 - Added string interpretation check when loading `ModelBuilder` saved in pre-v0.3.1 versions
 - `rf_rank_features` importance cut now >= threshold, was previously >
+- `plot_rank_order_dendrogram` now clusters by absolute Spearman's rank correlation coeficient
 
 ## Changes
 

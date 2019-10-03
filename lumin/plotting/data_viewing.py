@@ -150,27 +150,39 @@ def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotS
     return plot_rank_order_dendrogram(df=df, savename=savename, settings=settings)
 
 
-def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> List[List[str]]:
     r'''
-    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient
+    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient.
+    Also returns a list pairs of features with correlation coefficients greater than the threshold
 
     Arguments:
         df: Pandas DataFrame containing data
+        threshold: Threshold on correlation coefficient
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+
+    Returns:
+        List of pairs of features with correlation coefficients greater than the threshold
     '''
 
-    with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
-        corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
-        corr_condensed = hc.distance.squareform(1-corr)
-        z = hc.linkage(corr_condensed, method='average')
+    corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
+    corr_condensed = hc.distance.squareform(1-np.abs(corr))  # Abs because negtaive of a feature is a trvial transformation: information unaffected
+    z = hc.linkage(corr_condensed, method='average')
 
+    with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_large, (0.5*len(df.columns))))
-        hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz)
-        plt.xlabel('Distance', fontsize=settings.lbl_sz, color=settings.lbl_col)
+        hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz, color_threshold=1-threshold)
+        plt.xlabel("Distance (1 - |Spearman's Rank Correlation Coefficient|)", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
+
+    feats = df.columns
+    pairs = []
+    for r in z:
+        if 1-r[2] < threshold: break
+        if r[0] < len(feats) and r[1] < len(feats): pairs.append([feats[r[0]],feats[r[1]]])
+    return pairs
 
 
 def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,Dict[str,Any]], 
