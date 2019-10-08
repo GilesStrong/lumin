@@ -42,7 +42,7 @@ class Model(AbsModel):
     def __init__(self, model_builder:Optional[ModelBuilder]=None):
         self.model_builder,self.input_mask = model_builder,None
         if self.model_builder is not None:
-            self.model, self.opt, self.loss = self.model_builder.get_model()
+            self.model, self.opt, self.loss, self.input_mask = self.model_builder.get_model()
             self.head, self.body, self.tail = self.model[0], self.model[1], self.model[2]
             self.objective = self.model_builder.objective
             self.n_out = self.tail.get_out_size()
@@ -110,13 +110,14 @@ class Model(AbsModel):
 
         self.input_mask = mask
         
-    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
+    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None, mask_inputs:bool=True) -> float:
         r'''
         Fit network for one complete iteration of a :class:`~lumin.nn.data.batch_yielder.BatchYielder`, i.e. one (sub-)epoch
 
         Arguments:
             batch_yielder: :class:`~lumin.nn.data.batch_yielder.BatchYielder` providing training data in form of tuple of inputs, targtes, and weights as tensors on device
             callbacks: list of :class:`~lumin.nn.callbacks.abs_callback.AbsCallback` to be used during training
+            mask_inputs: whether to apply input mask if one has been set
 
         Returns:
             Loss on training data averaged across all minibatches
@@ -127,6 +128,7 @@ class Model(AbsModel):
         losses = []
         if callbacks is None: callbacks = []
         for c in callbacks: c.on_epoch_begin(by=batch_yielder)
+        if self.input_mask is not None and mask_inputs: batch_yielder.inputs = batch_yielder.inputs[:,self.input_mask]
 
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
@@ -325,7 +327,9 @@ class Model(AbsModel):
             model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`, you will need to pass one here
         '''
 
-        if model_builder is not None: self.model, self.opt, self.loss = model_builder.get_model()
+        # TODO: update map location when device choice is changable by user
+
+        if model_builder is not None: self.model, self.opt, self.loss, self.input_mask = model_builder.get_model()
         state = torch.load(name, map_location='cuda' if torch.cuda.is_available() else 'cpu')
         self.model.load_state_dict(state['model'])
         self.opt.load_state_dict(state['opt'])
