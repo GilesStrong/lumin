@@ -35,6 +35,7 @@
 - Added string interpretation check when loading `ModelBuilder` saved in pre-v0.3.1 versions
 - `rf_rank_features` importance cut now >= threshold, was previously >
 - `plot_rank_order_dendrogram` now clusters by absolute Spearman's rank correlation coeficient
+- `feat_map` to `self.feat_map` in `MultiBlock.__init__`
 
 ## Changes
 
@@ -42,8 +43,14 @@
 - Moved to Pandas 0.25.0
 - Moved to Seaborn 0.9.0
 - Moved to Scikit-learn 0.21.0
+- `model_builder.get_model` now returns a 4th object, an input_mask
+- Feature subsampling:
+    - Moved to `ModelBuilder` rather than `FeatureSubsample` callback: required to handle `MultiBlock` models
+    - Now allows a list of features to always be present in model via `ModelBuilder.guaranteed_feats`
 
 ## Depreciations
+
+- `FeatureSubsample` in favour of `guaranteed_feats` and `cont_subsample_rate` in `ModelBuilder`. Will be removed in v0.5.
 
 ## Comments
 

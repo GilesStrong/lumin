@@ -195,7 +195,12 @@ class FeatureSubsample(Callback):
     r'''
     Callback for training a model on a random sub-sample of the range of possible input features.
     Only sub-samples continuous features. Number of continuous inputs infered from model.
-    Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
+    Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns
+    as trainig data. 
+
+    .. Attention:: This callback is now deprecieated in favour of passing `cont_subsample_rate` and  `guaranteed_feats` to
+        :class:`~lumin.nn.models.model_builder.ModelBuilder` as these offer greater functionality and are compatable with using a
+        :class:`~luminnn.models.blocks.body.MultiBlock` body. Will be removed in `V0.5`.
 
     Arguments:
         cont_feats: list of all continuous features in input data. Order must match.
@@ -204,8 +209,6 @@ class FeatureSubsample(Callback):
     Examples::
         >>> feat_subsample = FeatureSubsample(cont_feats=['pT', 'eta', 'phi'])
     '''
-
-    # TODO cont feat names no longer required only number; move to infer number of cont feats from model_builder and batch_yielder
 
     def __init__(self, cont_feats:List[str], model:Optional[AbsModel]=None):
         super().__init__(model=model)
@@ -224,13 +227,3 @@ class FeatureSubsample(Callback):
         np.random.seed()  # Is this necessary?
         self._sample_feats()
         self.model.set_input_mask(self.feat_idxs)
-        
-    def on_epoch_begin(self, by:BatchYielder, **kargs) -> None:
-        r'''
-        Masks input data to remove non-selected features
-
-        Arguments:
-            by: BatchYielder providing data for the upcoming epoch
-        '''
-        
-        by.inputs = by.inputs[:,self.feat_idxs]

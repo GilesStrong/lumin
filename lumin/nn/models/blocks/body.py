@@ -204,14 +204,14 @@ class MultiBlock(AbsBody):
         
         if self.bottleneck_sz > 0:
             self.bottleneck_blocks,self.bottleneck_masks = [],[]
-            for i, fs in enumerate(self.feats_per_block):
-                tmp_map = {f: feat_map[f] for f in feat_map if f not in feats_per_block[i]}
+            for fpb in self.feats_per_block:
+                tmp_map = {f: self.feat_map[f] for f in self.feat_map if f not in fpb}
                 self.bottleneck_masks.append([i for f in tmp_map for i in tmp_map[f]])
                 self.bottleneck_blocks.append(self._get_bottleneck(self.bottleneck_masks[-1]))
             self.bottleneck_blocks = nn.ModuleList(self.bottleneck_blocks)
 
         for i, b in enumerate(blocks):
-            tmp_map = {f: feat_map[f] for f in feat_map if f in feats_per_block[i]}
+            tmp_map = {f: self.feat_map[f] for f in self.feat_map if f in self.feats_per_block[i]}
             self.masks.append([i for f in tmp_map for i in tmp_map[f]])
             self.blocks.append(b(n_in=len(self.masks[-1])+self.bottleneck_sz, feat_map=tmp_map, lookup_init=self.lookup_init,
                                  lookup_act=self.lookup_act, freeze=self.freeze))
@@ -221,7 +221,7 @@ class MultiBlock(AbsBody):
     def _get_bottleneck(self, mask:List[int]) -> nn.Module:
         layers = [nn.Linear(len(mask), self.bottleneck_sz)]
         if self.bottleneck_act is None:
-            init = self.lookup_init('linear', len(mask), self.bottleneck_sz) 
+            init = self.lookup_init('linear', len(mask), self.bottleneck_sz)
         else:
             init = self.lookup_init(self.bottleneck_act, len(mask), self.bottleneck_sz)
             layers.append(self.lookup_act(self.bottleneck_act))
