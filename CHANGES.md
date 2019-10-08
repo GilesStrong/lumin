@@ -4,6 +4,7 @@
 
 - Moved to Pandas 0.25.0
 - Moved to Seaborn 0.9.0
+- Moved to Scikit-learn 0.21.0
 
 ## Breaking
 
@@ -40,6 +41,7 @@
 - Improved `plot_lr_finders`
 - Moved to Pandas 0.25.0
 - Moved to Seaborn 0.9.0
+- Moved to Scikit-learn 0.21.0
 
 ## Depreciations
 
