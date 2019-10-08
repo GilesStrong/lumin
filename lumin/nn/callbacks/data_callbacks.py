@@ -198,9 +198,11 @@ class FeatureSubsample(Callback):
     Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns
     as trainig data. 
 
-    .. Attention:: This callback is now deprecieated in favour of passing `cont_subsample_rate` and  `guaranteed_feats` to
+    .. Attention:: This callback is now depreciated in favour of passing `cont_subsample_rate` and  `guaranteed_feats` to
         :class:`~lumin.nn.models.model_builder.ModelBuilder` as these offer greater functionality and are compatable with using a
         :class:`~luminnn.models.blocks.body.MultiBlock` body. Will be removed in `V0.5`.
+
+    .. Caution:: This callback is incompatable with using a :class:`~luminnn.models.blocks.body.MultiBlock` body
 
     Arguments:
         cont_feats: list of all continuous features in input data. Order must match.
