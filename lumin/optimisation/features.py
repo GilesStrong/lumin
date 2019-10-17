@@ -111,7 +111,8 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
                           n_estimators:int=40, n_rfs:int=1, rf_params:Optional[Dict[str,Any]]=None) -> Dict[str,float]:
     r'''
     Checks whether features can be removed from the set of training features without degrading model performance using Random Forests
-    Computes scores for model with all training features then for each feature listed in `check_feats` computes scores for a model trained on all training features except that feature
+    Computes scores for model with all training features then for each feature listed in `check_feats` computes scores for a model trained on all training
+    features except that feature
     E.g. if two features are highly correlated this function could be used to check whether one of them could be removed.
     
     Arguments:
@@ -186,23 +187,27 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
 
 def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps:int, min_frac_import:float, objective:str,
                               train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None, strat_key:Optional[str]=None,
-                              importance_cut:float=0.0, n_estimators:int=40, n_rfs:int=1, n_max_display:int=30,
+                              resample_val:bool=True, importance_cut:float=0.0, n_estimators:int=40, n_rfs:int=1, n_max_display:int=30,
                               savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[str],pd.DataFrame]:
     r'''
-    Runs :meth:`~lumin.optimisation.features.rf_rank_features` multiple times on bootstrap resamples of training data and computes the fraction of times each feature passes the importance cut.
+    Runs :meth:`~lumin.optimisation.features.rf_rank_features` multiple times on bootstrap resamples of training data and computes the fraction of times each
+    feature passes the importance cut.
     Then returns a list features which are have a fractional selection as important great than some number.
-    I.e. in cases where :meth:`~lumin.optimisation.features.rf_rank_features` can be unstable (list of important features changes each run), this method can be used to help stabailse the list of important features
+    I.e. in cases where :meth:`~lumin.optimisation.features.rf_rank_features` can be unstable (list of important features changes each run), this method can be 
+    used to help stabailse the list of important features
     
     Arguments:
         train_df: training data as Pandas DataFrame
         val_df: validation data as Pandas DataFrame
         n_reps: number of times to resample and run :meth:`~lumin.optimisation.features.rf_rank_features`
-        min_frac_import: minimum fraction of times feature must be selected as important by :meth:`~lumin.optimisation.features.rf_rank_features` in order to be considered generally important
+        min_frac_import: minimum fraction of times feature must be selected as important by :meth:`~lumin.optimisation.features.rf_rank_features` in order to be
+            considered generally important
         objective: string representation of objective: either 'classification' or 'regression'
         train_feats: complete list of training features
         targ_name: name of column containing target data
         wgt_name: name of column containing weight data. If set, will use weights for training and evaluation, otherwise will not
-        strat_key: name of column to use to stratify data when resampling 
+        strat_key: name of column to use to stratify data when resampling
+        resample_val: whether to also resample the validation set, or use the original set for all evaluations
         importance_cut: minimum importance required to be considered an 'important feature'
         n_estimators: number of trees to use in each forest
         n_rfs: number of trainings to perform on all training features in order to compute importances
@@ -219,7 +224,21 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
     for i in progress_bar(range(n_reps)):
         print(f'Repition {i}')
         tmp_df = train_df.loc[resample(train_df.index, replace=True, stratify=None if strat_key is None else train_df[strat_key])]
-        import_feats = rf_rank_features(tmp_df, val_df, objective=objective, train_feats=train_feats,
+        tmp_val = val_df if not resample_val else val_df.loc[resample(val_df.index, replace=True, stratify=None if strat_key is None else val_df[strat_key])]
+        
+        # Reweight resampled data
+        if wgt_name is not None:
+            if 'class' in objective.lower():
+                for c in tmp_df[targ_name].unique():
+                    tmp_df.loc[tmp_df[targ_name] == c, wgt_name] *= train_df.loc[train_df[targ_name] == c, wgt_name].sum() / \
+                        tmp_df.loc[tmp_df[targ_name] == c, wgt_name].sum()
+                    if resample_val: tmp_val.loc[tmp_val[targ_name] == c, wgt_name] *= val_df.loc[val_df[targ_name] == c, wgt_name].sum() / \
+                        tmp_val.loc[tmp_val[targ_name] == c, wgt_name].sum()
+                else:
+                    tmp_df[wgt_name] *= train_df[wgt_name].sum() / tmp_df[wgt_name].sum()
+                    if resample_val: tmp_val[wgt_name] *= val_df[wgt_name].sum() / tmp_val[wgt_name].sum()
+
+        import_feats = rf_rank_features(tmp_df, tmp_val, objective=objective, train_feats=train_feats,
                                         importance_cut=importance_cut, targ_name=targ_name, n_rfs=n_rfs, wgt_name=wgt_name,
                                         plot_results=False, retrain_on_import_feats=False, verbose=False)
         for f in import_feats: selections.loc[selections.Feature == f, 'N_Selections'] += 1

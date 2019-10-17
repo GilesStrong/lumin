@@ -255,6 +255,10 @@ class ModelBuilder(object):
             Instantiated head nn.Module
         '''
 
+        if not hasattr(self, 'use_conts'):
+            self.use_conts = self.cont_feats  # Backwards compatability with pre-v0.3.2 saves
+            self.input_mask = None
+
         return self.head(cont_feats=self.use_conts, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
 
     def get_body(self, n_in:int, feat_map:List[str]) -> AbsBody:

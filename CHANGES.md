@@ -12,7 +12,7 @@
 
 - `rf_check_feat_removal` method to check whether one of several (correlated) features can safely be ignored
 - `rf_rank_features`:
-    -`n_max_display` to `rf_rank_features` to adjucst number of features displayed in plot
+    -`n_max_display` to `rf_rank_features` to adjust number of features displayed in plot
     - `plot_results`, `retrain_on_import_feats`, and `verbose` to control printed outputs of function
 - Control over x-axis label in `plot_importance`
 - `repeated_rf_rank_features`
@@ -25,6 +25,7 @@
     - Method to list columns in foldfile
     - option to initialise using a string or path for the foldfile
     - close method to close the foldfile 
+- New methods to `hep_proc` focussing on vectoriesed transformations and operatins of Lorentz Vectors
 
 ## Removals
 
