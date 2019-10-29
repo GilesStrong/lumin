@@ -12,8 +12,9 @@
 
 - `rf_check_feat_removal` method to check whether one of several (correlated) features can safely be ignored
 - `rf_rank_features`:
-    -`n_max_display` to `rf_rank_features` to adjust number of features displayed in plot
+    - `n_max_display` to `rf_rank_features` to adjust number of features displayed in plot
     - `plot_results`, `retrain_on_import_feats`, and `verbose` to control printed outputs of function
+    - Can now take preset RF params, rather than optimising each time
 - Control over x-axis label in `plot_importance`
 - `repeated_rf_rank_features`
 - `get_df` function to `LRFinder`
@@ -26,6 +27,12 @@
     - option to initialise using a string or path for the foldfile
     - close method to close the foldfile 
 - New methods to `hep_proc` focussing on vectoriesed transformations and operatins of Lorentz Vectors
+- `subsample_df` to sub sample a data frame (with optional stratification and replacement)
+- Callbacks during prediction:
+    - `on_pred_begin` and `on_pred_end` methods added to `AbsCallback` which are called during `Model.predict_array`
+    - `Model.predict`, `Model.predict_folds`, `Model.predict_array` now take a list of instantiated callbacks to apply during prediciton
+    - `Ensemble.predict`, `Ensemble.predict_folds`, `Ensemble.predict_array` now take a list of instantiated callbacks to apply during prediciton
+- `ParametrisedPrediction` callback for setting a single parameterisation feature to a set value during model prediction
 
 ## Removals
 
@@ -37,6 +44,8 @@
 - `rf_rank_features` importance cut now >= threshold, was previously >
 - `plot_rank_order_dendrogram` now clusters by absolute Spearman's rank correlation coeficient
 - `feat_map` to `self.feat_map` in `MultiBlock.__init__`
+- Bias initialisation for sigmoids in `ClassRegMulti` corrected to zero, was 0.5
+- Removed uncertainties from the moments shown by `plot_feat` when plotting with weights; uncertainties were underestimated
 
 ## Changes
 

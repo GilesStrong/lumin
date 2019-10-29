@@ -60,7 +60,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
 
     with sns.axes_style(**settings.style):
         plt.figure(figsize=(settings.w_small, settings.h_small))
-        sns.heatmap(to_np(embed['weight']), annot=True, linewidths=.5, cmap=settings.div_palette, annot_kws={'fontsize':settings.leg_sz})
+        sns.heatmap(to_np(embed['weight']), annot=True, fmt='.1f', linewidths=.5, cmap=settings.div_palette, annot_kws={'fontsize':settings.leg_sz})
         plt.xlabel("Embedding", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel(feat, fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)

@@ -38,8 +38,8 @@ class FoldYielder:
         self.input_feats = self.cont_feats + self.cat_feats
         self.augmented,self.aug_mult,self.train_time_aug,self.test_time_aug = False,0,False,False
         self.set_foldfile(foldfile)
-        if isinstance(self.input_pipe, str): self.add_input_pipe_from_file(self.input_pipe)
-        if isinstance(self.output_pipe, str): self.add_output_pipe_from_file(self.output_pipe)
+        if isinstance(self.input_pipe, str) or isinstance(self.input_pipe, Path): self.add_input_pipe_from_file(self.input_pipe)
+        if isinstance(self.output_pipe, str) or isinstance(self.input_pipe, Path): self.add_output_pipe_from_file(self.output_pipe)
         if ignore_feats is not None: self.add_ignore(ignore_feats)
 
     def __repr__(self) -> str: return f'FoldYielder with {self.n_folds} folds, containing {self.columns()}'

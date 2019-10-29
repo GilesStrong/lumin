@@ -78,7 +78,8 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
                 std = uncert_round(moms[2], moms[3])
-                label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
+                if wgt_name is None: label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
+                else:                label += r' $\bar{x}=$' + f'{mean[0]}' + r', $\sigma_x=$' + f'{std[0]}'
 
             sns.distplot(plot_data, label=label, **tmp_plot_params)
 
@@ -88,6 +89,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         plt.ylabel(ax_labels['y'], fontsize=settings.lbl_sz, color=settings.lbl_col)
         x_lbl = feat if ax_labels['x'] is None else ax_labels['x']
         plt.xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
+        print(settings.savepath/f'{savename}{settings.format}')
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 
@@ -200,6 +202,8 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
+
+    # TODO: update to sns 9
 
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))

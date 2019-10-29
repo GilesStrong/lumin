@@ -176,7 +176,8 @@ class Model(AbsModel):
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
-    def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], as_np:bool=True, mask_inputs:bool=True) -> Union[np.ndarray, Tensor]:
+    def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], as_np:bool=True, mask_inputs:bool=True,
+                      callbacks:Optional[List[AbsCallback]]=None) -> Union[np.ndarray, Tensor]:
         r'''
         Pass inputs through network and obtain predictions.
 
@@ -184,29 +185,35 @@ class Model(AbsModel):
             inputs: input data as Numpy array, Pandas DataFrame, or tensor on device
             as_np: whether to return predictions as Numpy array (otherwise tensor)
             mask_inputs: whether to apply input mask if one has been set
+            callbacks: list of any callbacks to use during evaluation
 
         Returns:
             Model prediction(s) per datapoint
         '''
         
         self.model.eval()
+        if callbacks is None: callbacks = []
+        for c in callbacks: c.on_pred_begin(inputs=inputs)
         if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
         if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
         if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
         pred = self.model(to_device(inputs.float()))
+        for c in callbacks: c.on_pred_end(pred=pred)        
         if as_np:
             if 'multiclass' in self.objective: return np.exp(to_np(pred))
             else:                              return to_np(pred)
         else:
             return pred
 
-    def predict_folds(self, fy:FoldYielder, pred_name:str='pred') -> None:
+    def predict_folds(self, fy:FoldYielder, pred_name:str='pred', callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True) -> None:
         r'''
         Apply model to all dataaccessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as new group in fold file
 
         Arguments:
             fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             pred_name: name of group to which to save predictions
+            callbacks: list of any callbacks to use during evaluation
+            verbose: whether to print average prediction timings
         '''
 
         times = []
@@ -215,22 +222,23 @@ class Model(AbsModel):
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold)
+                pred = self.predict_array(fold, callbacks=callbacks)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold))
+                    tmpPred.append(self.predict_array(fold, callbacks=callbacks))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
             else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
         times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
-        print(f'Mean time per event = {times[0]}±{times[1]}')
+        if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
 
-    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred') -> Union[np.ndarray, Tensor, None]:
+    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
+                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True) -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
         A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`, depending on input type.
@@ -239,12 +247,14 @@ class Model(AbsModel):
             inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
             as_np: whether to return predictions as Numpy array (otherwise tensor) if inputs are a Numpy array, Pandas DataFrame, or tensor
             pred_name: name of group to which to save predictions if inputs are a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
+            callbacks: list of any callbacks to use during evaluation
+            verbose: whether to print average prediction timings
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np)
-        self.predict_folds(inputs, pred_name)
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, callbacks=callbacks)
+        self.predict_folds(inputs, pred_name, callbacks=callbacks, verbose=verbose)
 
     def get_weights(self) -> OrderedDict:
         r'''
