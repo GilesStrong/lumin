@@ -89,7 +89,6 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         plt.ylabel(ax_labels['y'], fontsize=settings.lbl_sz, color=settings.lbl_col)
         x_lbl = feat if ax_labels['x'] is None else ax_labels['x']
         plt.xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
-        print(settings.savepath/f'{savename}{settings.format}')
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
 

@@ -20,7 +20,8 @@ from ..utils.statistics import uncert_round
 from ..utils.misc import subsample_df
 from ..utils.multiprocessing import mp_run
 
-__all__ = ['get_rf_feat_importance', 'rf_rank_features', 'rf_check_feat_removal', 'repeated_rf_rank_features']
+__all__ = ['get_rf_feat_importance', 'rf_rank_features', 'rf_check_feat_removal', 'repeated_rf_rank_features', 'auto_filter_on_linear_correlation',
+           'auto_filter_on_mutual_dependence']
 
 
 def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
@@ -479,7 +480,7 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
                                          n_estimators=n_estimators, verbose=True, params=rf_params)
         
     while len(checks) > 0:
-        print(f'Checking {checks}')
+        print(f'\nChecking {checks}')
         res = rf_check_feat_removal(check_feats=checks, train_df=train_df, objective=objective, train_feats=[f for f in check_feats if f not in remove],
                                     targ_name=targ_name, wgt_name=wgt_name, rf_params=rf_params, val_df=val_df, n_rfs=5, subsample_rate=subsample_rate,
                                     strat_key=strat_key)
