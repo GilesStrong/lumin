@@ -5,7 +5,7 @@ from fastprogress import progress_bar
 from rfpimp import importances
 from prettytable import PrettyTable
 import timeit
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from rfpimp import feature_dependence_matrix, plot_dependence_heatmap
 import multiprocessing as mp
 
@@ -188,33 +188,32 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
                                              w_val=None if wgt_name is None else val_df[wgt_name], n_estimators=n_estimators, verbose=False)
     else:
         rf_params['n_estimators'] = n_estimators
-        
     rf_params['n_jobs']    = -1
     rf_params['oob_score'] = True
             
     m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
     pt = PrettyTable(['Removed', 'OOB Score', 'Val Score'])
-    results = {}
-    
-    for remove in ['None']+check_feats:
-        feats = train_feats if remove == 'None' else [f for f in train_feats if f != remove]
-        oob,val = [],[]
-        for _ in range(n_rfs):
+    oob,val = defaultdict(list),defaultdict(list)
+    for _ in range(n_rfs):
+        if subsample_rate is not None:
+            tmp_trn = subsample_df(train_df, objective, targ_name, n_samples=int(subsample_rate*len(train_df)), strat_key=strat_key, wgt_name=wgt_name)
+        else:
+            tmp_trn = train_df
+        for remove in ['None']+check_feats:
+            feats = train_feats if remove == 'None' else [f for f in train_feats if f != remove]
             rf = m(**rf_params)
-            if subsample_rate is not None:
-                tmp_trn = subsample_df(train_df, objective, targ_name, n_samples=int(subsample_rate*len(train_df)), strat_key=strat_key, wgt_name=wgt_name)
-            else:
-                tmp_trn = train_df
             rf.fit(tmp_trn[feats], tmp_trn[targ_name], sample_weight=None if wgt_name is None else tmp_trn[wgt_name])
-            oob.append(rf.oob_score_)
-            if val_df is not None: val.append(rf.score(val_df[feats], val_df[targ_name], None if wgt_name is None else val_df[wgt_name]))
-                
-        oob_score, oob_unc = np.mean(oob), np.std(oob, ddof=1)/np.sqrt(n_rfs)
+            oob[remove].append(rf.oob_score_)
+            if val_df is not None: val[remove].append(rf.score(val_df[feats], val_df[targ_name], None if wgt_name is None else val_df[wgt_name]))
+
+    results = {}
+    for remove in ['None']+check_feats:
+        oob_score, oob_unc = np.mean(oob[remove]), np.std(oob[remove], ddof=1)/np.sqrt(n_rfs)
         results[f'{remove}_oob_score'] = oob_score
         results[f'{remove}_oob_unc']   = oob_unc
         oob_round = uncert_round(oob_score, oob_unc)
         if val_df is not None:
-            val_score, val_unc = np.mean(val), np.std(val, ddof=1)/np.sqrt(n_rfs)
+            val_score, val_unc = np.mean(val[remove]), np.std(val[remove], ddof=1)/np.sqrt(n_rfs)
             results[f'{remove}_val_score'] = val_score
             results[f'{remove}_val_unc']   = val_unc
             val_round = uncert_round(val_score, val_unc)
