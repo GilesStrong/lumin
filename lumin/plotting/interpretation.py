@@ -21,7 +21,7 @@ __all__ = ['plot_importance', 'plot_embedding', 'plot_1d_partial_dependence', 'p
            'plot_bottleneck_weighted_inputs']
 
 
-def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty',
+def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty', threshold:Optional[float]=None,
                     x_lbl:str='Importance via feature permutation', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot feature importances as computted via `get_nn_feat_importance`, `get_ensemble_feat_importance`, or `rf_rank_features`
@@ -31,14 +31,19 @@ def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Impo
         feat_name: column name for features
         imp_name: column name for importances
         unc_name: column name for uncertainties (if present)
+        threshold: if set, will draw a line at the threshold hold used for feature importance
+        x_lbl: label to put on the x-axis
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         fig, ax = plt.subplots(figsize=(settings.w_large, (0.75)*settings.lbl_sz))
         xerr = None if unc_name not in df else 'Uncertainty'
-        df.plot(feat_name, imp_name, 'barh', ax=ax, legend=False, xerr=xerr, error_kw={'elinewidth': 3})
+        df.plot(feat_name, imp_name, 'barh', ax=ax, legend=False, xerr=xerr, error_kw={'elinewidth': 3}, color=palette[0])
+        if threshold is not None:
+            ax.axvline(x=threshold, label=f'Threshold {threshold}', color=palette[1], linestyle='--', linewidth=3)
+            plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         ax.set_xlabel(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
         ax.set_ylabel('Feature', fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
@@ -73,6 +78,7 @@ def plot_embedding(embed:OrderedDict, feat:str, savename:Optional[str]=None, set
 def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats:List[str], ignore_feats:Optional[List[str]]=None, input_pipe:Pipeline=None, 
                                sample_sz:Optional[int]=None, wgt_name:Optional[str]=None,  n_clusters:Optional[int]=10, n_points:int=20,
                                pdp_isolate_kargs:Optional[Dict[str,Any]]=None, pdp_plot_kargs:Optional[Dict[str,Any]]=None,
+                               y_lim:Optional[Union[Tuple[float,float],List[float]]]=None, 
                                savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Wrapper for PDPbox to plot 1D dependence of specified feature using provided NN or RF.
@@ -92,6 +98,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats
         n_clusters: number of clusters in which to group dependency lines. Set to None to show all lines
         pdp_isolate_kargs: optional dictionary of keyword arguments to pass to pdp_isolate
         pdp_plot_kargs: optional dictionary of keyword arguments to pass to pdp_plot
+        y_lim: If set, will limit y-axis plot range to tuple
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
@@ -99,16 +106,13 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats
     if pdp_isolate_kargs is None: pdp_isolate_kargs = {}
     if pdp_plot_kargs    is None: pdp_plot_kargs    = {}
 
-    if sample_sz is not None:
+    if sample_sz is not None or wgt_name is not None:
         if wgt_name is None:
             weights = None
         else:
             weights = df[wgt_name].values.astype('float64')
             weights *= 1/np.sum(weights)
-        df = df.sample(sample_sz, weights=weights)
-    elif sample_sz is None and wgt_name is not None:
-        print('''A wgt_name has been specified, but sample_sz is None. Weights will be ignored.
-                 Please set sample_sz if you wish to compute weighted partical dependcies''')
+        df = df.sample(len(df) if sample_sz is None else sample_sz, weights=weights, replace=True)
 
     iso = pdp.pdp_isolate(model, df, [f for f in train_feats if ignore_feats is None or f not in ignore_feats], feat, num_grid_points=n_points,
                           **pdp_isolate_kargs)
@@ -120,6 +124,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats
         ax['title_ax'].remove()
         ax['pdp_ax'].set_xlabel(feat, fontsize=settings.lbl_sz, color=settings.lbl_col)
         ax['pdp_ax'].set_ylabel("Partial dependence", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if y_lim is not None: ax['pdp_ax'].set_ylim(y_lim)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
@@ -157,16 +162,13 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
     if pdp_interact_kargs      is None: pdp_interact_kargs      = {}
     if pdp_interact_plot_kargs is None: pdp_interact_plot_kargs = {}
 
-    if sample_sz is not None:
+    if sample_sz is not None or wgt_name is not None:
         if wgt_name is None:
             weights = None
         else:
             weights = df[wgt_name].values.astype('float64')
             weights *= 1/np.sum(weights)
-        df = df.sample(sample_sz, weights=weights)
-    elif sample_sz is None and wgt_name is not None:
-        print('''A wgt_name has been specified, but sample_sz is None. Weights will be ignored.
-                 Please set sample_sz if you wish to compute weighted partical dependcies''')
+        df = df.sample(len(df) if sample_sz is None else sample_sz, weights=weights, replace=True)
 
     interact = pdp.pdp_interact(model, df, [f for f in train_feats if ignore_feats is None or f not in ignore_feats], feats, num_grid_points=n_points,
                                 **pdp_interact_kargs)

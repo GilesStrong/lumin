@@ -33,6 +33,7 @@
     - `Model.predict`, `Model.predict_folds`, `Model.predict_array` now take a list of instantiated callbacks to apply during prediciton
     - `Ensemble.predict`, `Ensemble.predict_folds`, `Ensemble.predict_array` now take a list of instantiated callbacks to apply during prediciton
 - `ParametrisedPrediction` callback for setting a single parameterisation feature to a set value during model prediction
+- y-axis limit argument to `plot_1d_partial_dependence`
 
 ## Removals
 
@@ -57,6 +58,7 @@
 - Feature subsampling:
     - Moved to `ModelBuilder` rather than `FeatureSubsample` callback: required to handle `MultiBlock` models
     - Now allows a list of features to always be present in model via `ModelBuilder.guaranteed_feats`
+- `plot_1d_partial_dependence` and `plot_2d_partial_dependence` now better handle weighted resampling of data: replacement sampling, and auto fix when `wgt_name` specified but no `sample_sz`
 
 ## Depreciations
 

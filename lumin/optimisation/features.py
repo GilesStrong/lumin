@@ -40,7 +40,8 @@ def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.n
 
 def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
                      train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None,
-                     importance_cut:float=0.0, n_estimators:int=40, rf_params:Optional[Dict[str,Any]]=None, n_rfs:int=1, n_max_display:int=30,
+                     importance_cut:float=0.0, n_estimators:int=40, rf_params:Optional[Dict[str,Any]]=None, optimise_rf:bool=True,
+                     n_rfs:int=1, n_max_display:int=30,
                      plot_results:bool=True, retrain_on_import_feats:bool=True, verbose:bool=True,
                      savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> List[str]:
     r'''
@@ -59,7 +60,9 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
         importance_cut: minimum importance required to be considered an 'important feature'
         n_estimators: number of trees to use in each forest
         rf_params: optional dictionary of keyword parameters for SK-Learn Random Forests
+            Or ordered dictionary mapping parameters to optimise to list of values to consider
             If None and will optimise parameters using :meth:`lumin.optimisation.hyper_param.get_opt_rf_params`
+        optimise_rf: if true will optimise RF params, passing `rf_params` to :meth:`~lumin.optimisation.hyper_param.get_opt_rf_params`
         n_rfs: number of trainings to perform on all training features in order to compute importances
         n_max_display: maximum number of features to display in importance plot
         plot_results: whether to plot the feature importances
@@ -75,49 +78,60 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
     w_trn = None if wgt_name is None else train_df[wgt_name]
     w_val = None if wgt_name is None else val_df[wgt_name]
 
-    if rf_params is None:
-        print('Optimising RF parameters')
-        if verbose: print("Optimising RF")
-        rf_params, rf = get_opt_rf_params(train_df[train_feats], train_df[targ_name], val_df[train_feats], val_df[targ_name],
-                                          objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, verbose=False)
+    if rf_params is None or optimise_rf is True:
+        if verbose: print("Optimising RF parameters")
+        rfp, rf = get_opt_rf_params(train_df[train_feats], train_df[targ_name], val_df[train_feats], val_df[targ_name],
+                                    objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, params=rf_params, verbose=False)
     else:
-        rf_params['n_estimators'] = n_estimators
+        rfp = rf_params
+        rfp['n_estimators'] = n_estimators
         m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
-        rf = m(**rf_params)
+        rf = m(**rfp)
         rf.fit(train_df[train_feats], train_df[targ_name], w_trn)
     
     if verbose: print("Evalualting importances")
     fi = get_rf_feat_importance(rf, train_df[train_feats], train_df[targ_name], w_trn)
-    orig_score = rf.score(val_df[train_feats], val_df[targ_name], w_val)
+    orig_score = [rf.score(val_df[train_feats], val_df[targ_name], w_val)]
     if n_rfs > 1:
         m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
         for _ in progress_bar(range(n_rfs-1)):
-            rf = m(**rf_params)
+            rf = m(**rfp)
             rf.fit(train_df[train_feats], train_df[targ_name], w_trn)
             fi = pd.merge(fi, get_rf_feat_importance(rf, train_df[train_feats], train_df[targ_name], w_trn), on='Feature', how='left')
-            orig_score += rf.score(val_df[train_feats], val_df[targ_name], w_val)
+            orig_score.append(rf.score(val_df[train_feats], val_df[targ_name], w_val))
         fi['Importance']  = np.mean(fi[[f for f in fi.columns if 'Importance' in f]].values, axis=1)
         fi['Uncertainty'] = np.std(fi[[f for f in fi.columns if 'Importance' in f]].values, ddof=1, axis=1)/np.sqrt(n_rfs)
-        orig_score /= n_rfs
         fi.sort_values(by='Importance', ascending=False, inplace=True)
+    orig_score = uncert_round(np.mean(orig_score), np.std(orig_score, ddof=1))
     if verbose: print("Top ten most important features:\n", fi[['Feature', 'Importance']][:min(len(fi), 10)])
-    if plot_results: plot_importance(fi[:min(len(fi), n_max_display)], savename=savename, settings=plot_settings)
+    if plot_results: plot_importance(fi[:min(len(fi), n_max_display)], threshold=importance_cut, savename=savename, settings=plot_settings)
 
     top_feats = list(fi[fi.Importance >= importance_cut].Feature)
     if verbose: print(f"\n{len(top_feats)} features found with importance greater than {importance_cut}:\n", top_feats, '\n')
+    if len(top_feats) == 0:
+        if verbose: print(f"Model score: :\t{orig_score[0]}±{orig_score[1]}")
+        print('No features found to be important, returning all training features. Good luck.')
+        return train_feats
 
     if retrain_on_import_feats:
-        if len(top_feats) == 0:
-            print(f"Model score: :\t{orig_score:.5f}")
-            print('No features found to be important, returning all training features. Good luck.')
-            return train_feats
-        if len(top_feats) < len(train_feats): 
-            print("\nOptimising new RF")
-            _, rf_new = get_opt_rf_params(train_df[top_feats], train_df[targ_name], val_df[top_feats], val_df[targ_name],
-                                          objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, verbose=False)  
+        if len(top_feats) < len(train_feats):
+            new_score = []
+            if rf_params is None or optimise_rf is True:
+                if verbose: print("Optimising new RF")
+                rfp, rf_new = get_opt_rf_params(train_df[top_feats], train_df[targ_name], val_df[top_feats], val_df[targ_name],
+                                                objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, params=rf_params, verbose=False)
+                new_score.append(rf_new.score(val_df[top_feats], val_df[targ_name], w_val))
+            else:
+                rfp = rf_params
+                rfp['n_estimators'] = n_estimators
+            while len(new_score) < n_rfs:
+                rf_new = m(**rfp)
+                rf_new.fit(train_df[top_feats], train_df[targ_name], w_trn)
+                new_score.append(rf_new.score(val_df[top_feats], val_df[targ_name], w_val))
+            new_score = uncert_round(np.mean(new_score), np.std(new_score, ddof=1))
             print("Comparing RF scores, higher = better")                           
-            print(f"All features:\t{orig_score:.5f}")
-            print(f"Top features:\t{rf_new.score(val_df[top_feats], val_df[targ_name], w_val):.5f}")
+            print(f"All features:\t\t{orig_score[0]}±{orig_score[1]}")
+            print(f"Important features:\t{new_score[0]}±{new_score[1]}")
         else:
             print('All training features found to be important')
     return top_feats
@@ -213,10 +227,10 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
     return results
 
 
-def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps:int, min_frac_import:float, objective:str,
-                              train_feats:List[str], targ_name:str='gen_target', wgt_name:Optional[str]=None, strat_key:Optional[str]=None,
-                              resample_val:bool=True, importance_cut:float=0.0, n_estimators:int=40, rf_params:Optional[Dict[str,Any]]=None, n_rfs:int=1,
-                              n_max_display:int=30, n_threads:int=1,
+def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps:int, min_frac_import:float, objective:str, train_feats:List[str],
+                              targ_name:str='gen_target', wgt_name:Optional[str]=None, strat_key:Optional[str]=None, subsample_rate:Optional[float]=None,
+                              resample_val:bool=True, importance_cut:float=0.0, n_estimators:int=40, rf_params:Optional[Dict[str,Any]]=None,
+                              optimise_rf:bool=True, n_rfs:int=1, n_max_display:int=30, n_threads:int=1, retrain_on_import_feats:bool=True,
                               savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[str],pd.DataFrame]:
     r'''
     Runs :meth:`~lumin.optimisation.features.rf_rank_features` multiple times on bootstrap resamples of training data and computes the fraction of times each
@@ -236,12 +250,18 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
         targ_name: name of column containing target data
         wgt_name: name of column containing weight data. If set, will use weights for training and evaluation, otherwise will not
         strat_key: name of column to use to stratify data when resampling
+        subsample_rate: if set, will subsample the training data to the provided fraction. Subsample is repeated per Random Forest training
         resample_val: whether to also resample the validation set, or use the original set for all evaluations
         importance_cut: minimum importance required to be considered an 'important feature'
         n_estimators: number of trees to use in each forest
+        rf_params: optional dictionary of keyword parameters for SK-Learn Random Forests
+            Or ordered dictionary mapping parameters to optimise to list of values to consider
+            If None and will optimise parameters using :meth:`lumin.optimisation.hyper_param.get_opt_rf_params`
+        optimise_rf: if true will optimise RF params, passing `rf_params` to :meth:`~lumin.optimisation.hyper_param.get_opt_rf_params`
         n_rfs: number of trainings to perform on all training features in order to compute importances
         n_max_display: maximum number of features to display in importance plot
         n_threads: number of rankings to run simultaneously
+        retrain_on_import_feats: whether to train a new model on important features to compare to full model
         savename: Optional name of file to which to save the plot of feature importances
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
@@ -251,32 +271,57 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
     '''
 
     def _mp_rank(args:Dict[str,Any], out_q:mp.Queue) -> None:
-        ''' '''
-
-        import_feats = rf_rank_features(args['tmp_df'], args['tmp_val'], objective=objective, train_feats=train_feats,
+        import_feats = rf_rank_features(args['tmp_trn'], args['tmp_val'], objective=objective, train_feats=train_feats,
                                         importance_cut=importance_cut, targ_name=targ_name, n_rfs=n_rfs, wgt_name=wgt_name,
-                                        rf_params=rf_params, n_estimators=n_estimators, plot_results=False, retrain_on_import_feats=False, verbose=False)
+                                        rf_params=rf_params, optimise_rf=optimise_rf, n_estimators=n_estimators, plot_results=False,
+                                        retrain_on_import_feats=False, verbose=False)
         out_q.put({args['name']:import_feats})
+
+    def _resample() -> Tuple[pd.DataFrame,pd.DataFrame]:
+        tmp_trn = subsample_df(train_df, objective, targ_name, n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None,
+                               replace=True, strat_key=strat_key, wgt_name=wgt_name)
+        tmp_val = val_df if not resample_val else subsample_df(val_df, objective, targ_name, replace=True, strat_key=strat_key, wgt_name=wgt_name)
+        return tmp_trn, tmp_val
+
+    def _get_score(feats:List[str]) -> Tuple[float,float]:
+        score = []
+        if rf_params is None or optimise_rf is True:
+            tmp_trn, tmp_val = _resample()
+            w_trn = None if wgt_name is None else tmp_trn[wgt_name]
+            w_val = None if wgt_name is None else tmp_val[wgt_name]
+            rfp, rf = get_opt_rf_params(tmp_trn[feats], tmp_trn[targ_name], tmp_val[feats], tmp_val[targ_name],
+                                        objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, params=rf_params, verbose=False)
+            score.append(rf.score(tmp_val[feats], tmp_val[targ_name], w_val))
+        else:
+            rfp = rf_params
+            rfp['n_estimators'] = n_estimators
+        while len(score) < n_rfs:
+            tmp_trn, tmp_val = _resample()
+            w_trn = None if wgt_name is None else tmp_trn[wgt_name]
+            w_val = None if wgt_name is None else tmp_val[wgt_name]
+            m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
+            rf = m(**rfp)
+            rf.fit(tmp_trn[feats], tmp_trn[targ_name], w_trn)
+            score.append(rf.score(tmp_val[feats], tmp_val[targ_name], w_val))
+        return  uncert_round(np.mean(score), np.std(score, ddof=1))
     
     selections = pd.DataFrame({'Feature':train_feats, 'N_Selections':0})
     if n_threads == 1:
         for i in progress_bar(range(n_reps)):
             print(f'Repition {i}')
-            tmp_df = subsample_df(train_df, objective, targ_name, replace=True, strat_key=strat_key, wgt_name=wgt_name)
-            tmp_val = val_df if not resample_val else subsample_df(val_df, objective, targ_name, replace=True, strat_key=strat_key, wgt_name=wgt_name)
-
-            import_feats = rf_rank_features(tmp_df, tmp_val, objective=objective, train_feats=train_feats,
+            tmp_trn, tmp_val = _resample()
+            import_feats = rf_rank_features(tmp_trn, tmp_val, objective=objective, train_feats=train_feats,
                                             importance_cut=importance_cut, targ_name=targ_name, n_rfs=n_rfs, wgt_name=wgt_name,
-                                            rf_params=rf_params, n_estimators=n_estimators, plot_results=False, retrain_on_import_feats=False, verbose=False)
+                                            rf_params=rf_params, optimise_rf=optimise_rf, n_estimators=n_estimators, plot_results=False,
+                                            retrain_on_import_feats=False, verbose=False)
             for f in import_feats: selections.loc[selections.Feature == f, 'N_Selections'] += 1
     
     else:
         for i in progress_bar(range(0,n_reps,n_threads)):
             args = []
             for j in range(n_threads):
-                tmp_df = subsample_df(train_df, objective, targ_name, replace=True, strat_key=strat_key, wgt_name=wgt_name)
-                tmp_val = val_df if not resample_val else subsample_df(val_df, objective, targ_name, replace=True, strat_key=strat_key, wgt_name=wgt_name)
-                args.append({'name':f'{i}_{j}', 'tmp_df':tmp_df, 'tmp_val': tmp_val})
+                tmp_trn, tmp_val = _resample()
+                args.append({'name':f'{i}_{j}', 'tmp_trn':tmp_trn, 'tmp_val': tmp_val})
             res = mp_run(args, _mp_rank)
             for r in res:
                 for f in res[r]: selections.loc[selections.Feature == f, 'N_Selections'] += 1                               
@@ -284,15 +329,27 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
     selections['Fractional_Selection'] = selections.N_Selections/n_reps
     selections.sort_values(by='Fractional_Selection', ascending=False, inplace=True)
     plot_importance(selections[:min(len(selections), n_max_display)], imp_name='Fractional_Selection',
-                    x_lbl='Fraction of times important', savename=savename, settings=plot_settings)
+                    x_lbl='Fraction of times important', threshold=min_frac_import, savename=savename, settings=plot_settings)
     top_feats = list(selections[selections.Fractional_Selection >= min_frac_import].Feature)
     print(f"\n{len(top_feats)} features found with fractional selection greater than {min_frac_import}:\n", top_feats, '\n')
+    if len(top_feats) == 0:
+        print('No features found to pass minimum fractional selection threshold, returning all training features. Good luck.')
+        return train_feats, selections
+
+    if retrain_on_import_feats:
+        if len(top_feats) < len(train_feats):
+            old_score, new_score = _get_score(train_feats), _get_score(top_feats)
+            print("Comparing RF scores, higher = better")                           
+            print(f"All features:\t\t{old_score[0]}±{old_score[1]}")
+            print(f"Selected features:\t{new_score[0]}±{new_score[1]}")
+        else:
+            print('All training features found to be important')
     return top_feats, selections
 
 
 def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame, check_feats:List[str], objective:str, targ_name:str,
                                       strat_key:Optional[str]=None, wgt_name:Optional[str]=None, corr_threshold:float=0.8,
-                                      n_estimators:int=40, rf_params:Optional[Union[Dict,OrderedDict]]=None, optimse_rf:bool=True, n_rfs:int=5,
+                                      n_estimators:int=40, rf_params:Optional[Union[Dict,OrderedDict]]=None, optimise_rf:bool=True, n_rfs:int=5,
                                       subsample_rate:Optional[float]=None, savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> List[str]:
 
     r'''
@@ -330,7 +387,7 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
         rf_params: either: a dictionare of keyword hyper-parameters to use for the Random Forests, if optimse_rf is False;
             or an `OrderedDict` of a range of hyper-parameters to test during optimisation. See :meth:`~lumin.optimisation.hyper_param.get_opt_rf_params` for
             more details.
-        optimse_rf: whether to optimise the Random Forest hyper-parameters for the (sub-sambled) dataset
+        optimise_rf: whether to optimise the Random Forest hyper-parameters for the (sub-sambled) dataset
         n_rfs: number of trainings to perform during each perfromance impact test
         subsample_rate: float between 0 and 1. If set will subsample the trainng data to the requested fraction
         savename: Optional name of file to which to save the first plot of feature clustering
@@ -351,7 +408,7 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
         print(f'{len(pairs)} pairs of features found to pass correlation threshold of {corr_threshold}:')
         print(pairs)
     
-    if optimse_rf:  # Roughly optimise a Random Forest for the (subsampled) data
+    if optimise_rf:  # Roughly optimise a Random Forest for the (subsampled) data
         print("\nOptimising RF")
         tmp_trn = subsample_df(train_df, objective=objective, targ_name=targ_name, strat_key=strat_key, wgt_name=wgt_name,
                                n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None)
@@ -394,7 +451,7 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
 
 def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame, check_feats:List[str], objective:str, targ_name:str,
                                      strat_key:Optional[str]=None, wgt_name:Optional[str]=None, md_threshold:float=0.8,
-                                     n_estimators:int=40, rf_params:Optional[OrderedDict]=None, optimse_rf:bool=True, n_rfs:int=5,
+                                     n_estimators:int=40, rf_params:Optional[OrderedDict]=None, optimise_rf:bool=True, n_rfs:int=5,
                                      subsample_rate:Optional[float]=None, plot_settings:PlotSettings=PlotSettings()) -> List[str]:
     r'''
     Filters a list of possible training features via mutual dependence: By identifying features whose values can be accurately predicted using the other
@@ -436,7 +493,7 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
         rf_params: either: a dictionare of keyword hyper-parameters to use for the Random Forests, if optimse_rf is False;
             or an `OrderedDict` of a range of hyper-parameters to test during optimisation. See :meth:`~lumin.optimisation.hyper_param.get_opt_rf_params` for
             more details.
-        optimse_rf: whether to optimise the Random Forest hyper-parameters for the (sub-sambled) dataset
+        optimise_rf: whether to optimise the Random Forest hyper-parameters for the (sub-sambled) dataset
         n_rfs: number of trainings to perform during each perfromance impact test
         subsample_rate: float between 0 and 1. If set will subsample the trainng data to the requested fraction
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
@@ -470,7 +527,7 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
         print(f'No features found to pass mutual dependence threshold of {md_threshold}')
         return check_feats
     
-    if optimse_rf:  # Roughly optimise a Random Forest for the (subsampled) data
+    if optimise_rf:  # Roughly optimise a Random Forest for the (subsampled) data
         print("\nOptimising RF")
         tmp_trn = subsample_df(train_df, objective=objective, targ_name=targ_name,
                                n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None, strat_key=strat_key, wgt_name=wgt_name)
