@@ -141,16 +141,6 @@ def compare_events(events:list) -> None:
         fig.show()
 
 
-def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
-    r'''
-    .. Attention:: Depreciated as renamed to :meth:`~lumin.plotting.data_viewing.plot_rank_order_dendrogram`. Will be removed in `v0.4`.
-    '''
-    
-    # XXX Remove in v0.4
-    warnings.warn('''plot_dendrogram has been renamed to plot_rank_order_dendrogram. plot_dendrogram is now depreciated and will be removed in v0.4''')
-    return plot_rank_order_dendrogram(df=df, savename=savename, settings=settings)
-
-
 def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> List[List[str]]:
     r'''
     Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient.

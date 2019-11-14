@@ -31,9 +31,6 @@ class ModelBuilder(object):
     r'''
     Class to build models to specified architecture on demand along with an optimiser.
 
-    .. Attention:: cat_args is now depreciated in favour of cat_embedder and will be removed in `v0.4`
-    .. Attention:: n_cont_in is now depreciated in favour of cont_feats and will be removed in `v0.4`
-
     Arguments:
         objective: string representation of network objective, i.e. 'classification', 'regression', 'multiclass'
         n_out: number of outputs required
@@ -53,8 +50,6 @@ class ModelBuilder(object):
         pretrain_file: if set, will load saved parameters for entire network from saved model
         freeze_head: whether to start with the head parameters set to untrainable
         freeze_body: whether to start with the body parameters set to untrainable
-        cat_args: depreciated in place of cat_embedder
-        n_cont_in: depreciated in favour of cont_feats
 
 
     Examples::
@@ -106,8 +101,7 @@ class ModelBuilder(object):
                  loss:Any='auto', head:AbsHead=CatEmbHead, body:AbsBody=FullyConnected, tail:AbsTail=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
-                 freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
-                 cat_args:Dict[str,Any]=None, n_cont_in:Optional[int]=None):
+                 freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False):
         self.objective,self.cont_feats,self.n_out,self.cat_embedder = objective.lower(),cont_feats,n_out,cat_embedder
         self.cont_subsample_rate,self.guaranteed_feats = cont_subsample_rate,guaranteed_feats
         self.head,self.body,self.tail = head,body,tail
@@ -116,20 +110,7 @@ class ModelBuilder(object):
         self._parse_loss(loss)
         self._parse_model_args(model_args)
         self._parse_opt_args(opt_args)
-        # XXX Remove in v0.4
-        if self.cont_feats is None and n_cont_in is not None:
-            warnings.warn('''Passing n_cont_in (number of continuous input features) is depreciated and will be removed in v0.4.
-                             Please move to passing a list of names of continuous input features to cont_feats.
-                             This is necessary for using certain classes, e.g. MultiBlock body.''')
-            self.cont_feats = [str(i) for i in range(n_cont_in)]
         self._subsample()
-        # XXX Remove in v0.4
-        if self.cat_embedder is None and  cat_args is not None:
-            warnings.warn('''Passing cat_args (dictionary of lists for embedding categorical features) is depreciated and will be removed in v0.4.
-                             Please move to passing a CatEmbedder class to cat_embedder''')
-            cat_args = {k:cat_args[k] for k in cat_args if k != 'n_cat_in'}
-            if 'emb_szs' in cat_args: cat_args['emb_szs'] = cat_args['emb_szs'][:,-1]
-            self.cat_embedder = CatEmbedder(**cat_args)
 
     @classmethod
     def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,

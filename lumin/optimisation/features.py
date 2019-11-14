@@ -229,7 +229,7 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
 def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps:int, min_frac_import:float, objective:str, train_feats:List[str],
                               targ_name:str='gen_target', wgt_name:Optional[str]=None, strat_key:Optional[str]=None, subsample_rate:Optional[float]=None,
                               resample_val:bool=True, importance_cut:float=0.0, n_estimators:int=40, rf_params:Optional[Dict[str,Any]]=None,
-                              optimise_rf:bool=True, n_rfs:int=1, n_max_display:int=30, n_threads:int=1, retrain_on_import_feats:bool=True,
+                              optimise_rf:bool=True, n_rfs:int=1, n_max_display:int=30, n_threads:int=1,
                               savename:Optional[str]=None, plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[str],pd.DataFrame]:
     r'''
     Runs :meth:`~lumin.optimisation.features.rf_rank_features` multiple times on bootstrap resamples of training data and computes the fraction of times each
@@ -260,7 +260,6 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
         n_rfs: number of trainings to perform on all training features in order to compute importances
         n_max_display: maximum number of features to display in importance plot
         n_threads: number of rankings to run simultaneously
-        retrain_on_import_feats: whether to train a new model on important features to compare to full model
         savename: Optional name of file to which to save the plot of feature importances
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
@@ -335,14 +334,13 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
         print('No features found to pass minimum fractional selection threshold, returning all training features. Good luck.')
         return train_feats, selections
 
-    if retrain_on_import_feats:
-        if len(top_feats) < len(train_feats):
-            old_score, new_score = _get_score(train_feats), _get_score(top_feats)
-            print("Comparing RF scores, higher = better")                           
-            print(f"All features:\t\t{old_score[0]}±{old_score[1]}")
-            print(f"Selected features:\t{new_score[0]}±{new_score[1]}")
-        else:
-            print('All training features found to be important')
+    if len(top_feats) < len(train_feats):
+        old_score, new_score = _get_score(train_feats), _get_score(top_feats)
+        print("Comparing RF scores, higher = better")                           
+        print(f"All features:\t\t{old_score[0]}±{old_score[1]}")
+        print(f"Selected features:\t{new_score[0]}±{new_score[1]}")
+    else:
+        print('All training features found to be important')
     return top_feats, selections
 
 
@@ -444,6 +442,26 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
     else:
         print(f'{len(pairs)} pairs of features still found to pass correlation threshold of {corr_threshold}.', 
               'You may wish to rerun this function on the filtered features.')
+
+    def _get_score(feats:List[str]) -> Tuple[float,float]:
+        score = []
+        w_val = val_df[wgt_name] if wgt_name is not None else wgt_name
+        m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
+        while len(score) < n_rfs:
+            tmp_trn = subsample_df(train_df, objective=objective, targ_name=targ_name, strat_key=strat_key, wgt_name=wgt_name,
+                                   n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None)
+            w_trn = None if wgt_name is None else tmp_trn[wgt_name]
+            rf = m(**rf_params)
+            rf.fit(tmp_trn[feats], tmp_trn[targ_name], w_trn)
+            score.append(rf.score(val_df[feats], val_df[targ_name], w_val))
+        return uncert_round(np.mean(score), np.std(score, ddof=1))
+    
+    if len(filtered) < len(check_feats):
+        old_score, new_score = _get_score(check_feats), _get_score(filtered)
+        print("\nComparing RF scores, higher = better")                           
+        print(f"All features:\t\t{old_score[0]}±{old_score[1]}")
+        print(f"Filtered features:\t{new_score[0]}±{new_score[1]}")
+    
     print(f'\nFiltering took {timeit.default_timer()-tmr:.3f} seconds')
     return filtered
 
@@ -547,13 +565,32 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
             else:
                 skip.append(c)
         checks = _get_checks(remove, skip)
-    print('\nAll check completed')
+    print('\nAll checks completed')
     
     filtered = [f for f in check_feats if f not in remove]
-    print(f'\n{len(remove)} features removed from starting list of {len(check_feats)}, {len(filtered)} features remain')
+    print(f'{len(remove)} features removed from starting list of {len(check_feats)}, {len(filtered)} features remain')
     
     print("Recomputing mutual dependencies")
     _get_checks(remove, skip, True)
+
+    def _get_score(feats:List[str]) -> Tuple[float,float]:
+        score = []
+        w_val = val_df[wgt_name] if wgt_name is not None else wgt_name
+        m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
+        while len(score) < n_rfs:
+            tmp_trn = subsample_df(train_df, objective=objective, targ_name=targ_name, strat_key=strat_key, wgt_name=wgt_name,
+                                   n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None)
+            w_trn = None if wgt_name is None else tmp_trn[wgt_name]
+            rf = m(**rf_params)
+            rf.fit(tmp_trn[feats], tmp_trn[targ_name], w_trn)
+            score.append(rf.score(val_df[feats], val_df[targ_name], w_val))
+        return uncert_round(np.mean(score), np.std(score, ddof=1))
+
+    if len(filtered) < len(check_feats):
+        old_score, new_score = _get_score(check_feats), _get_score(filtered)
+        print("Comparing RF scores, higher = better")                           
+        print(f"All features:\t\t{old_score[0]}±{old_score[1]}")
+        print(f"Filtered features:\t{new_score[0]}±{new_score[1]}")
     
     print(f'\nFiltering took {timeit.default_timer()-tmr:.3f} seconds')
     return filtered

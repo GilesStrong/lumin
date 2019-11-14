@@ -1,4 +1,4 @@
-# Targeting V0.3.2
+# Targeting V0.4
 
 ## Important changes
 
@@ -36,6 +36,13 @@
 - y-axis limit argument to `plot_1d_partial_dependence`
 
 ## Removals
+
+- Passing `eta` argument to `to_pt_eta_phi`: now inferred from data
+- `Embedder` renamed to `CatEmbedder`
+- `cat_args` and `n_cont_in` arguments in `ModelBuilder`: Use `cat_embedder` and `cont_feats` instead
+- `callback_args` argument in `fold_train_ensemble`: Use `callback_partials` instead
+- `binary_class_cut` renamed to `binary_class_cut_by_ams`
+- `plot_dendrogram` renamed to `plot_rank_order_dendrogram`
 
 ## Fixes
 

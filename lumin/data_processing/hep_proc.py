@@ -40,22 +40,15 @@ def to_cartesian(df:pd.DataFrame, vec:str, drop:bool=False) -> None:
         if z: df.drop(columns=[f"{vec}_eta"], inplace=True)
 
 
-def to_pt_eta_phi(df:pd.DataFrame, vec:str, eta:Optional[bool]=None, drop:bool=False) -> None:
+def to_pt_eta_phi(df:pd.DataFrame, vec:str, drop:bool=False) -> None:
     r'''
-    Vectoriesed conversion of 3-momenta to pT,eta,phi coordinates inplace, optionally dropping old px,py,pz features
-
-    .. Attention:: eta is now deprecieated as it is now infered from `df`. Will be removed in `V0.4`
+    Vectorised conversion of 3-momenta to pT,eta,phi coordinates inplace, optionally dropping old px,py,pz features
 
     Arguments:
             df: DataFrame to alter
             vec: column prefix of vector components to alter, e.g. 'muon' for columns ['muon_px', 'muon_py', 'muon_pz']
-            eta: depreciated as now infered
             drop: Whether to remove original columns and just keep the new ones
     '''
-
-    # XXX Remove in v0.4
-    if eta is not None: warnings.warn('''Passing eta is now no longer required, it is infered from DF.
-                                         The eta argument is now depreciated and will be removed in v0.4''')
 
     eta = f'{vec}_pz' in df.columns
     px = df[f"{vec}_px"]
