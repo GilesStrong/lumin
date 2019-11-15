@@ -368,8 +368,8 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
     any weights in the data are automatically renormalised to the original weight sum (within each class).
 
     .. Attention:: This function combines :meth:`~lumin.plotting.data_viewing.plot_rank_order_dendrogram` with
-    :meth:`~lumin.optimisation.features.rf_check_feat_removal`. This is purely for convenience and should not be treated as a 'black box'. We encourage users to
-    convince themselves that it is really is reasonable to remove the features which are identified as redundant.
+        :meth:`~lumin.optimisation.features.rf_check_feat_removal`. This is purely for convenience and should not be treated as a 'black box'. We encourage users to
+        convince themselves that it is really is reasonable to remove the features which are identified as redundant.
 
     Arguments:
         train_df: training data as Pandas DataFrame
@@ -489,13 +489,13 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
     any weights in the data are automatically renormalised to the original weight sum (within each class).
 
     .. Attention:: This function combines RFPImp's `feature_dependence_matrix` with :meth:`~lumin.optimisation.features.rf_check_feat_removal`.
-    This is purely for convenience and should not be treated as a 'black box'. We encourage users to convince themselves that it is really is reasonable to
-    remove the features which are identified as redundant.
+        This is purely for convenience and should not be treated as a 'black box'. We encourage users to convince themselves that it is really is reasonable to
+        remove the features which are identified as redundant.
 
     .. Note:: Technicalities related to RFPImp's use of SVG for plots mean that the mutual dependence plots can have low resolution when shown or saved.
-    Therefore this function does not take a `savename` argument. Users wiching to save the plots as PNG or PDF should compute the dependence matrix themselves
-    using `feature_dependence_matrix` and then plot using `plot_dependence_heatmap`, calling `.save([savename])` on the retunred object. The plotting backend
-    might need to be set to SVG, using: `%config InlineBackend.figure_format = 'svg'`.
+        Therefore this function does not take a `savename` argument. Users wiching to save the plots as PNG or PDF should compute the dependence matrix themselves
+        using `feature_dependence_matrix` and then plot using `plot_dependence_heatmap`, calling `.save([savename])` on the retunred object. The plotting backend
+        might need to be set to SVG, using: `%config InlineBackend.figure_format = 'svg'`.
 
     Arguments:
         train_df: training data as Pandas DataFrame
