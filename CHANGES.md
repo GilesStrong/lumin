@@ -34,6 +34,8 @@
     - `Ensemble.predict`, `Ensemble.predict_folds`, `Ensemble.predict_array` now take a list of instantiated callbacks to apply during prediciton
 - `ParametrisedPrediction` callback for setting a single parameterisation feature to a set value during model prediction
 - y-axis limit argument to `plot_1d_partial_dependence`
+- `auto_filter_on_linear_correlation`
+- `auto_filter_on_mutual_dependence`
 
 ## Removals
 
