@@ -1,7 +1,9 @@
 
 from typing import Dict, Union, Any, Callable, Tuple, Optional, List, Iterator
 import pickle
-import  warnings
+import warnings
+import math
+import numpy as np
 
 import torch.nn as nn
 import torch.optim as optim
@@ -29,9 +31,6 @@ class ModelBuilder(object):
     r'''
     Class to build models to specified architecture on demand along with an optimiser.
 
-    .. Attention:: cat_args is now depreciated in favour of cat_embedder and will be removed in `v0.4`
-    .. Attention:: n_cont_in is now depreciated in favour of cont_feats and will be removed in `v0.4`
-
     Arguments:
         objective: string representation of network objective, i.e. 'classification', 'regression', 'multiclass'
         n_out: number of outputs required
@@ -40,6 +39,8 @@ class ModelBuilder(object):
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
             Currently, only ADAM (default), RAdam, Ranger, and SGD are available.
         cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` for embedding categorical inputs
+        cont_subsample_rate: if between in range (0, 1), will randomly select a fraction of continuous features (rounded upwards) to use as inputs
+        guaranteed_feats: if subsampling features, will always include the features listed here, which count towards the subsample fraction
         loss: either and uninstantiated loss class, or leave as 'auto' to select loss according to objective
         head: uninstantiated class which can receive input data and upscale it to model width
         body: uninstantiated class which implements the main bulk of the model's hidden layers
@@ -49,8 +50,6 @@ class ModelBuilder(object):
         pretrain_file: if set, will load saved parameters for entire network from saved model
         freeze_head: whether to start with the head parameters set to untrainable
         freeze_body: whether to start with the body parameters set to untrainable
-        cat_args: depreciated in place of cat_embedder
-        n_cont_in: depreciated in favour of cont_feats
 
 
     Examples::
@@ -98,32 +97,20 @@ class ModelBuilder(object):
 
     def __init__(self, objective:str, n_out:int, cont_feats:Optional[List[str]]=None,
                  model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,
+                 cont_subsample_rate:Optional[float]=None, guaranteed_feats:Optional[List[str]]=None,
                  loss:Any='auto', head:AbsHead=CatEmbHead, body:AbsBody=FullyConnected, tail:AbsTail=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
-                 freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
-                 cat_args:Dict[str,Any]=None, n_cont_in:Optional[int]=None):
+                 freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False):
         self.objective,self.cont_feats,self.n_out,self.cat_embedder = objective.lower(),cont_feats,n_out,cat_embedder
+        self.cont_subsample_rate,self.guaranteed_feats = cont_subsample_rate,guaranteed_feats
         self.head,self.body,self.tail = head,body,tail
         self.lookup_init,self.lookup_act,self.pretrain_file, = lookup_init,lookup_act,pretrain_file
         self.freeze_head,self.freeze_body,self.freeze_tail = freeze_head,freeze_body,freeze_tail
         self._parse_loss(loss)
         self._parse_model_args(model_args)
         self._parse_opt_args(opt_args)
-        # XXX Remove in v0.4
-        if self.cont_feats is None and n_cont_in is not None:
-            warnings.warn('''Passing n_cont_in (number of continuous input features) is depreciated and will be removed in v0.4.
-                             Please move to passing a list of names of continuous input features to cont_feats.
-                             This is necessary for using certain classes, e.g. MultiBlock body.''')
-            self.cont_feats = [str(i) for i in range(n_cont_in)]
-        self.n_cont_in = len(self.cont_feats)
-        # XXX Remove in v0.4
-        if self.cat_embedder is None and  cat_args is not None:
-            warnings.warn('''Passing cat_args (dictionary of lists for embedding categorical features) is depreciated and will be removed in v0.4.
-                             Please move to passing a CatEmbedder class to cat_embedder''')
-            cat_args = {k:cat_args[k] for k in cat_args if k != 'n_cat_in'}
-            if 'emb_szs' in cat_args: cat_args['emb_szs'] = cat_args['emb_szs'][:,-1]
-            self.cat_embedder = CatEmbedder(**cat_args)
+        self._subsample()
 
     @classmethod
     def from_model_builder(cls, model_builder, pretrain_file:Optional[str]=None, freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False,
@@ -169,8 +156,10 @@ class ModelBuilder(object):
         if isinstance(model_builder, str):
             with open(model_builder, 'rb') as fin: model_builder = pickle.load(fin)
         model_args = {'head': model_builder.head_kargs, 'body': model_builder.body_kargs, 'tail': model_builder.tail_kargs}
+        if not hasattr(model_builder, 'cont_subsample_rate'): model_builder.cont_subsample_rate,model_builder.guaranteed_feats = None,None  # <0.3.2 compat
         return cls(objective=model_builder.objective, cont_feats=model_builder.cont_feats, n_out=model_builder.n_out,
                    cat_embedder=model_builder.cat_embedder, model_args=model_args, opt_args=opt_args if opt_args is not None else {},
+                   cont_subsample_rate=model_builder.cont_subsample_rate, guaranteed_feats=model_builder.guaranteed_feats,
                    loss=model_builder.loss if loss is None else loss, head=model_builder.head, body=model_builder.body, tail=model_builder.tail,
                    pretrain_file=pretrain_file, freeze_head=freeze_head, freeze_body=freeze_body, freeze_tail=freeze_tail)
             
@@ -201,6 +190,23 @@ class ModelBuilder(object):
         else:
             self.opt = opt_args['opt'] if not isinstance(opt_args['opt'], str) else self._interp_opt(opt_args['opt'])
 
+    def _subsample(self) -> None:
+        if self.cont_subsample_rate is not None:
+            self.use_conts = self.guaranteed_feats if self.guaranteed_feats is not None else []
+            n = math.ceil(len(self.cont_feats)*self.cont_subsample_rate)-len(self.use_conts)
+            np.random.seed()  # Is this necessary?
+            self.use_conts += list(np.random.choice([f for f in self.cont_feats if f not in self.use_conts], size=n, replace=False))
+            self.n_cont_in = len(self.use_conts)
+            cont_idxs = np.array([self.cont_feats.index(f) for f in self.use_conts])
+            cat_idxs  = len(self.cont_feats)+np.arange(self.cat_embedder.n_cat_in)
+            self.input_mask = np.hstack((cont_idxs, cat_idxs))
+            self.input_mask.sort()
+            
+        else:
+            self.use_conts = self.cont_feats
+            self.n_cont_in = len(self.cont_feats)
+            self.input_mask = None
+
     @staticmethod
     def _interp_opt(opt:str) -> Callable[[Iterator, Optional[Any]], optim.Optimizer]:
         opt = opt.lower()
@@ -228,7 +234,11 @@ class ModelBuilder(object):
             Instantiated head nn.Module
         '''
 
-        return self.head(cont_feats=self.cont_feats, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
+        if not hasattr(self, 'use_conts'):
+            self.use_conts = self.cont_feats  # Backwards compatability with pre-v0.3.2 saves
+            self.input_mask = None
+
+        return self.head(cont_feats=self.use_conts, cat_embedder=self.cat_embedder, lookup_init=self.lookup_init, freeze=self.freeze_head, **self.head_kargs)
 
     def get_body(self, n_in:int, feat_map:List[str]) -> AbsBody:
         r'''
@@ -290,7 +300,7 @@ class ModelBuilder(object):
         if self.pretrain_file is not None: self.load_pretrained(model)
         model = to_device(model)
         opt = self._build_opt(model)
-        return model, opt, self.loss
+        return model, opt, self.loss, self.input_mask
 
     def get_out_size(self) -> int:
         r'''

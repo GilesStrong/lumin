@@ -13,6 +13,7 @@ from sklearn.pipeline import Pipeline
 from torch.tensor import Tensor
 
 from .abs_ensemble import AbsEnsemble
+from ..callbacks.abs_callback import AbsCallback
 from ..models.model import Model
 from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
@@ -245,7 +246,8 @@ class Ensemble(AbsEnsemble):
         self.n_out = self.models[0].get_out_size()
         self.results = results
         
-    def predict_array(self, arr:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None, display:bool=True) -> np.ndarray:
+    def predict_array(self, arr:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None, display:bool=True, 
+                      callbacks:Optional[List[AbsCallback]]=None) -> np.ndarray:
         r'''
         Apply ensemble to Numpy array and get predictions. If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
         Inputs are expected to be preprocessed; i.e. any input pipe added to the ensemble is not used.
@@ -256,6 +258,7 @@ class Ensemble(AbsEnsemble):
                 By default, entire ensemble is used.
             parent_bar: not used when calling the method directly
             display: whether to display a progress bar for model evaluations
+            callbacks: list of any callbacks to use during evaluation
 
         Returns:
             Numpy array of predictions
@@ -272,12 +275,13 @@ class Ensemble(AbsEnsemble):
         
         arr = Tensor(arr)
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
-            tmp_pred = m.predict(arr)
+            tmp_pred = m.predict(arr, callbacks=callbacks)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred
     
-    def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred') -> None:
+    def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred', callbacks:Optional[List[AbsCallback]]=None,
+                      verbose:bool=True) -> None:
         r'''
         Apply ensemble to data accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as a new group per fold in the foldfile.
         If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
@@ -289,6 +293,8 @@ class Ensemble(AbsEnsemble):
             n_models: number of models to use in predictions as ranked by the metric which was used when constructing the :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
                 By default, entire ensemble is used.
             pred_name: name for new group of predictions
+            callbacks: list of any callbacks to use during evaluation
+            verbose: whether to print average prediction timings
 
         Examples::
             >>> ensemble.predict_array(test_fy, pred_name='pred_tta')
@@ -301,22 +307,23 @@ class Ensemble(AbsEnsemble):
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold, n_models, mb, display=True)
+                pred = self.predict_array(fold, n_models, mb, display=True, callbacks=callbacks)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold, n_models, display=False))
+                    tmpPred.append(self.predict_array(fold, n_models, display=False, callbacks=callbacks))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
             else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
         times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
-        print(f'Mean time per event = {times[0]}±{times[1]}')
+        if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
 
-    def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred') -> Union[None,np.ndarray]:
+    def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred',
+                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True) -> Union[None,np.ndarray]:
         r'''
         Compatability method for predicting data contained in either a Numpy array or a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
         Will either pass inputs to :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_array` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_folds`.
@@ -327,6 +334,8 @@ class Ensemble(AbsEnsemble):
                 :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
                 By default, entire ensemble is used.
             pred_name: name for new group of predictions if passed a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
+            callbacks: list of any callbacks to use during evaluation
+            verbose: whether to print average predicition timings
 
         Returns:
             If passed a Numpy array will return predictions.
@@ -337,8 +346,8 @@ class Ensemble(AbsEnsemble):
             >>> ensemble.predict(test_fy)
         '''
         
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models, display=True)
-        self.predict_folds(inputs, n_models, pred_name)
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models, display=True, callbacks=callbacks)
+        self.predict_folds(inputs, n_models, pred_name, callbacks=callbacks, verbose=verbose)
     
     def save(self, name:str, feats:Optional[Any]=None, overwrite:bool=False) -> None:
         r'''

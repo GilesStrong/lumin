@@ -59,7 +59,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
 
     # TODO: make plot show uncertainty bands
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         if isinstance(data, pd.DataFrame):
             data = [data]
         if labels      is None:             labels      = [f'{i}' for i in range(len(data))] if len(data) > 1 else ['' for i in range(len(data))]
@@ -137,7 +137,7 @@ def plot_binary_class_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str=
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for targ in sorted(set(df[targ_name])):
             cut = df[targ_name] == targ
@@ -198,7 +198,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
     else:
         width_scale = 1
     
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette, 1+max([sample2col[x] for x in sample2col])):
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette, 1+max([sample2col[x] for x in sample2col])):
         fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid)) if zoom_args is None else plt.subplots(figsize=(width_scale*settings.w_mid, settings.h_mid))
         if zoom_args is not None: axins = inset_axes(ax, width_zoom, height_zoom, loc='right', bbox_to_anchor=anchor, bbox_transform=ax.figure.transFigure)
         ax.hist([df[df[sample_name] == sample][pred_name] for sample in bkg_samples],

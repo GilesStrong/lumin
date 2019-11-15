@@ -4,6 +4,7 @@ import h5py
 from typing import Dict, Optional, Union, List
 import pickle
 import warnings
+from pathlib import Path
 
 from sklearn.pipeline import Pipeline
 
@@ -15,7 +16,7 @@ class FoldYielder:
     Interface class for accessing data from foldfiles created by :meth:`~lumin.data_processing.file_proc.df2foldfile`
 
     Arguments:
-        foldfile: filename of hdf5 file
+        foldfile: filename of hdf5 file or opened hdf5 file
         cont_feats: list of names of continuous features present in input data
         cat_feats: list of names of categorical features present in input data
         ignore_feats: optional list of input features which should be ignored
@@ -30,18 +31,18 @@ class FoldYielder:
 
     # TODO: Add ability to load file from string name
 
-    def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
+    def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
         self.orig_cont_feats,self.orig_cat_feat,self._ignore_feats = self.cont_feats,self.cat_feats,[]
         self.input_feats = self.cont_feats + self.cat_feats
         self.augmented,self.aug_mult,self.train_time_aug,self.test_time_aug = False,0,False,False
         self.set_foldfile(foldfile)
-        if isinstance(self.input_pipe, str): self.add_input_pipe_from_file(self.input_pipe)
-        if isinstance(self.output_pipe, str): self.add_output_pipe_from_file(self.output_pipe)
+        if isinstance(self.input_pipe, str) or isinstance(self.input_pipe, Path): self.add_input_pipe_from_file(self.input_pipe)
+        if isinstance(self.output_pipe, str) or isinstance(self.input_pipe, Path): self.add_output_pipe_from_file(self.output_pipe)
         if ignore_feats is not None: self.add_ignore(ignore_feats)
 
-    def __repr__(self) -> str: return f'FoldYielder with {self.n_folds} folds, containing {[k for k in self.foldfile["fold_0"].keys()]}'
+    def __repr__(self) -> str: return f'FoldYielder with {self.n_folds} folds, containing {self.columns()}'
     
     def __len__(self) -> int: return self.n_folds
     
@@ -49,6 +50,16 @@ class FoldYielder:
     
     def __iter__(self) -> Dict[str,np.ndarray]:
         for i in range(self.n_folds): yield self.get_fold(i)
+
+    def columns(self) -> List[str]:
+        r'''
+        Returns list of columns present in foldfile
+
+        Returns:
+            list of columns present in foldfile
+        '''
+
+        return [k for k in self.foldfile["fold_0"].keys()]
 
     def add_ignore(self, feats:List[str]) -> None:
         r'''
@@ -72,15 +83,23 @@ class FoldYielder:
         
         return self._ignore_feats
 
-    def set_foldfile(self, foldfile:h5py.File) -> None:
+    def set_foldfile(self, foldfile:Union[str,Path,h5py.File]) -> None:
         r'''
         Sets the file from which to access data
 
         Arguments:
-            foldfile: opened h5py file
+            foldfile: filname of h5py file or opened h5py file
         '''
         
+        if not isinstance(foldfile,  h5py.File): foldfile = h5py.File(foldfile, "r+")
         self.foldfile, self.n_folds = foldfile, len(foldfile)
+
+    def close(self) -> None:
+        r'''
+        Closes the foldfile
+        '''
+
+        self.foldfile.close()
 
     def add_input_pipe(self, input_pipe:Pipeline) -> None:
         r'''
@@ -266,7 +285,7 @@ class HEPAugFoldYielder(FoldYielder):
     Specialised version of :class:`~lumin.nn.data.fold_yielder.FoldYielder` providing HEP specific data augmetation at train and test time.
 
     Arguments:
-        foldfile: filename of hdf5 file
+        foldfile: filename of hdf5 file or opened hdf5 file
         cont_feats: list of names of continuous features present in input data
         cat_feats: list of names of categorical features present in input data
         ignore_feats: optional list of input features which should be ignored
@@ -290,7 +309,7 @@ class HEPAugFoldYielder(FoldYielder):
     '''
 
     '''Accessing data from foldfile and apply HEP specific data augmentation during training and testing'''
-    def __init__(self, foldfile:h5py.File, cont_feats:List[str], cat_feats:List[str],
+    def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,

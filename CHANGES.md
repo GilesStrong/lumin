@@ -1,3 +1,78 @@
+# Targeting V0.4 Hypothetically Useful But Of Limited Actual Utility
+
+## Important changes
+
+- Moved to Pandas 0.25.0
+- Moved to Seaborn 0.9.0
+- Moved to Scikit-learn 0.21.0
+
+## Breaking
+
+## Additions
+
+- `rf_check_feat_removal` method to check whether one of several (correlated) features can safely be ignored
+- `rf_rank_features`:
+    - `n_max_display` to `rf_rank_features` to adjust number of features displayed in plot
+    - `plot_results`, `retrain_on_import_feats`, and `verbose` to control printed outputs of function
+    - Can now take preset RF params, rather than optimising each time
+- Control over x-axis label in `plot_importance`
+- `repeated_rf_rank_features`
+- `get_df` function to `LRFinder`
+- Ability to use dictionaries for `PlotSettings.style`
+- `plot_rank_order_dendrogram`:
+    - added threshold param to control plotting colour and return
+    - returns list of paris of correlated features
+- `FoldYielder`
+    - Method to list columns in foldfile
+    - option to initialise using a string or path for the foldfile
+    - close method to close the foldfile 
+- New methods to `hep_proc` focussing on vectoriesed transformations and operatins of Lorentz Vectors
+- `subsample_df` to sub sample a data frame (with optional stratification and replacement)
+- Callbacks during prediction:
+    - `on_pred_begin` and `on_pred_end` methods added to `AbsCallback` which are called during `Model.predict_array`
+    - `Model.predict`, `Model.predict_folds`, `Model.predict_array` now take a list of instantiated callbacks to apply during prediciton
+    - `Ensemble.predict`, `Ensemble.predict_folds`, `Ensemble.predict_array` now take a list of instantiated callbacks to apply during prediciton
+- `ParametrisedPrediction` callback for setting a single parameterisation feature to a set value during model prediction
+- y-axis limit argument to `plot_1d_partial_dependence`
+
+## Removals
+
+- Passing `eta` argument to `to_pt_eta_phi`: now inferred from data
+- `Embedder` renamed to `CatEmbedder`
+- `cat_args` and `n_cont_in` arguments in `ModelBuilder`: Use `cat_embedder` and `cont_feats` instead
+- `callback_args` argument in `fold_train_ensemble`: Use `callback_partials` instead
+- `binary_class_cut` renamed to `binary_class_cut_by_ams`
+- `plot_dendrogram` renamed to `plot_rank_order_dendrogram`
+
+## Fixes
+
+- Remove mutable default paramert for `get_opt_rf_params`
+- Missing `n_estimators` in call to `get_opt_rf_params` to `rf_rank_features`
+- Added string interpretation check when loading `ModelBuilder` saved in pre-v0.3.1 versions
+- `rf_rank_features` importance cut now >= threshold, was previously >
+- `plot_rank_order_dendrogram` now clusters by absolute Spearman's rank correlation coeficient
+- `feat_map` to `self.feat_map` in `MultiBlock.__init__`
+- Bias initialisation for sigmoids in `ClassRegMulti` corrected to zero, was 0.5
+- Removed uncertainties from the moments shown by `plot_feat` when plotting with weights; uncertainties were underestimated
+
+## Changes
+
+- Improved `plot_lr_finders`
+- Moved to Pandas 0.25.0
+- Moved to Seaborn 0.9.0
+- Moved to Scikit-learn 0.21.0
+- `model_builder.get_model` now returns a 4th object, an input_mask
+- Feature subsampling:
+    - Moved to `ModelBuilder` rather than `FeatureSubsample` callback: required to handle `MultiBlock` models
+    - Now allows a list of features to always be present in model via `ModelBuilder.guaranteed_feats`
+- `plot_1d_partial_dependence` and `plot_2d_partial_dependence` now better handle weighted resampling of data: replacement sampling, and auto fix when `wgt_name` specified but no `sample_sz`
+
+## Depreciations
+
+- `FeatureSubsample` in favour of `guaranteed_feats` and `cont_subsample_rate` in `ModelBuilder`. Will be removed in v0.5.
+
+## Comments
+
 # V0.3.1 Tears in Rain - micro update
 
 ## Important changes

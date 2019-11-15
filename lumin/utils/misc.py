@@ -3,11 +3,13 @@ from typing import Union, List, Tuple, Optional
 import pandas as pd
 import sympy
 
+from sklearn.utils import resample
+
 from torch.tensor import Tensor
 import torch
 import torch.nn as nn
 
-__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'FowardHook']
+__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'FowardHook', 'subsample_df']
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')  # TODO: make device choosable by user
 
@@ -147,3 +149,31 @@ class FowardHook():
         '''
 
         self.hook.remove()
+
+
+def subsample_df(df:pd.DataFrame, objective:str, targ_name:str, n_samples:Optional[int]=None, replace:bool=False, strat_key:Optional[str]=None,
+                 wgt_name:Optional[str]=None) -> pd.DataFrame:
+    r'''
+    Subsamples, or samples with replacement, a DataFrame.
+    Will automatically reweight data such that weight sums remain the same as the original DataFrame (per class)
+
+    Arguments:
+        df: DataFrame to sample
+        objective: string representation of objective: either 'classification' or 'regression'
+        targ_name: name of column containing target data
+        n_samples: If set, will sample that number of data points, otherwise will sample with replacement a new DataFRame of the same size as the original
+        replace: whether to sample with replacement
+        strat_key: column name to use for stratified subsampling, if desired
+        wgt_name: name of column containing weight data. If set, will reweight subsampled data, otherwise will not
+    '''
+
+    tmp_df = df.loc[resample(df.index, replace=replace, n_samples=n_samples, stratify=None if strat_key is None else df[strat_key])]
+    
+    # Reweight resampled data
+    if wgt_name is not None:
+        if 'class' in objective.lower():
+            for c in tmp_df[targ_name].unique():
+                tmp_df.loc[tmp_df[targ_name] == c, wgt_name] *= df.loc[df[targ_name] == c, wgt_name].sum() / tmp_df.loc[tmp_df[targ_name] == c, wgt_name].sum()
+        else:
+            tmp_df[wgt_name] *= df[wgt_name].sum() / tmp_df[wgt_name].sum()
+    return tmp_df

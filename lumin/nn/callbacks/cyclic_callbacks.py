@@ -7,7 +7,6 @@ from ...plotting.plot_settings import PlotSettings
 
 import seaborn as sns
 import matplotlib.pyplot as plt
-sns.set_style("whitegrid")
 
 __all__ = ['AbsCyclicCallback', 'CycleLR', 'CycleMom', 'OneCycle']
 

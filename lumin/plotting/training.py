@@ -26,7 +26,7 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         ignore_trn: whether to ignore training loss
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, history in enumerate(histories):
             if i == 0:
@@ -56,12 +56,20 @@ def plot_lr_finders(lr_finders:List[LRFinder], loss='loss', cut=-10, settings:Pl
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
+    
+    if loss_range == 'auto':  # Max loss = 1.1 * max mean-loss at LR less than LR at min mean-loss
+        agg = df.groupby(by='LR').agg(mean_loss=pd.NamedAgg(column='Loss', aggfunc='mean'))
+        agg.reset_index(inplace=True)
+        argmin_lr = agg.loc[agg.mean_loss.idxmin(), 'LR']
+        loss_range = 1.1*agg.loc[agg.LR < argmin_lr, 'mean_loss'].max()
+        
+    with sns.axes_style('whitegrid'), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         min_len = np.min([len(lr_finders[x].history[loss][:cut]) for x in range(len(lr_finders))])
         sns.tsplot([lr_finders[x].history[loss][:min_len] for x in range(len(lr_finders))], time=lr_finders[0].history['lr'][:min_len], ci='sd')
         plt.xscale('log')
-        plt.grid(True, which="both")
+        plt.grid(b=True, which="both", axis="both")
+        if loss_range is not None: plt.ylim((0,loss_range) if isinstance(loss_range, float) else loss_range)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.xlabel("Learning rate", fontsize=settings.lbl_sz, color=settings.lbl_col)

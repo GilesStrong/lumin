@@ -46,8 +46,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         train_on_weights:bool=True, eval_on_weights:bool=True, patience:int=10, max_epochs:int=200,
                         plots:List[str]=['history', 'realtime'], shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
-                        plot_settings:PlotSettings=PlotSettings(), callback_args:Optional[List[Dict[str,Any]]]=None
-                        ) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
+                        plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
     Main training method for :class:`~lumin.nn.models.model.Model`.
     Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a
@@ -63,8 +62,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         - Or a callback triggers trainign to stop, e.g. :class:`~lumin.nn.callbacks.cyclic_callbacks.OneCycle`
         
     Once training is finished, the state with the lowest validation loss is loaded, evaluated, and saved.
-
-    .. Attention:: callback_args is now depreciated in favour of callback_partials and will be removed in `v0.4`
 
     Arguments:
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing ot training data
@@ -90,7 +87,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         verbose: whether to print out extra information during training
         log_output: whether to save printed results to a log file rather than printing them
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
-        callback_args: depreciated in favour of callback_partials
 
     Returns:
         - results list of validation losses and other eval_metrics results, ordered by model training. Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
@@ -107,13 +103,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         old_stdout = sys.stdout
         log_file = open(savepath/'training_log.log', 'w')
         sys.stdout = log_file
-
-    # XXX remove in v0.4
-    if callback_args is None: callback_args = []
-    if len(callback_partials) == 0 and len(callback_args) > 0:
-        warnings.warn('''Passing callback_args (list of dictionaries containing callback and kargs) is depreciated and will be removed in v0.4.
-                         Please move to passing callback_partials (list of partials yielding callbacks''')
-        for c in callback_args: callback_partials.append(partial(c['callback'], **c['kargs']))
 
     train_tmr = timeit.default_timer()
     results,histories,cycle_losses = [],[],[]
@@ -228,7 +217,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
-    print("______________________________________\n")                
+    print("______________________________________\n")
     if log_output:
         sys.stdout = old_stdout
         log_file.close()
