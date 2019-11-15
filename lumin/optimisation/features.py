@@ -64,20 +64,15 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
             If None and will optimise parameters using :meth:`lumin.optimisation.hyper_param.get_opt_rf_params`
         optimise_rf: if true will optimise RF params, passing `rf_params` to :meth:`~lumin.optimisation.hyper_param.get_opt_rf_params`
         n_rfs: number of trainings to perform on all training features in order to compute importances
-        n_max_display: maximum number of features to display in importance plot
-        plot_results: whether to plot the feature importances
-        retrain_on_import_feats: whether to train a new model on important features to compare to full model
-        verbose: whether to report results and progress
         savename: Optional name of file to which to save the plot of feature importances
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        List of features passing importance_cut, ordered by decreasing importance
+        List of features passing importance_cut, ordered by importance
     '''
 
     w_trn = None if wgt_name is None else train_df[wgt_name]
     w_val = None if wgt_name is None else val_df[wgt_name]
-
     if rf_params is None or optimise_rf is True:
         if verbose: print("Optimising RF parameters")
         rfp, rf = get_opt_rf_params(train_df[train_feats], train_df[targ_name], val_df[train_feats], val_df[targ_name],
@@ -102,6 +97,7 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
         fi['Importance']  = np.mean(fi[[f for f in fi.columns if 'Importance' in f]].values, axis=1)
         fi['Uncertainty'] = np.std(fi[[f for f in fi.columns if 'Importance' in f]].values, ddof=1, axis=1)/np.sqrt(n_rfs)
         fi.sort_values(by='Importance', ascending=False, inplace=True)
+
     orig_score = uncert_round(np.mean(orig_score), np.std(orig_score, ddof=1))
     if verbose: print("Top ten most important features:\n", fi[['Feature', 'Importance']][:min(len(fi), 10)])
     if plot_results: plot_importance(fi[:min(len(fi), n_max_display)], threshold=importance_cut, savename=savename, settings=plot_settings)

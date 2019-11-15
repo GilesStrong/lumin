@@ -23,6 +23,7 @@ __all__ = ['plot_importance', 'plot_embedding', 'plot_1d_partial_dependence', 'p
 
 def plot_importance(df:pd.DataFrame, feat_name:str='Feature', imp_name:str='Importance',  unc_name:str='Uncertainty', threshold:Optional[float]=None,
                     x_lbl:str='Importance via feature permutation', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+
     r'''
     Plot feature importances as computted via `get_nn_feat_importance`, `get_ensemble_feat_importance`, or `rf_rank_features`
 

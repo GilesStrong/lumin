@@ -214,9 +214,7 @@ class ModelBuilder(object):
         elif opt == 'sgd':    return optim.SGD
         else: raise ValueError(f"Optimiser {opt} not interpretable from string, please pass as class")
 
-    def _build_opt(self, model:nn.Module) -> optim.Optimizer:
-        if isinstance(self.opt, str): self.opt = self._interp_opt(self.opt)  # Backwards compatability with pre-v0.3.1 saves
-        return self.opt(model.parameters(), **self.opt_args)
+    def _build_opt(self, model:nn.Module) -> optim.Optimizer: return self.opt(model.parameters(), **self.opt_args)
 
     def set_lr(self, lr:float) -> None:
         r'''

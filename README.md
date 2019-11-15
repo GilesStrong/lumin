@@ -150,7 +150,7 @@ With just one main developer, I'm simply focussing on the data types and applica
 
 ### Future
 
-The current priority is to imporve the documentation, add unit tests, and expand the examples.
+The current priority is to get documentation written, tests added, and expand the examples.
 
 The next step will be to try and increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
 

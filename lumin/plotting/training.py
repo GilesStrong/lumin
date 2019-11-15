@@ -1,7 +1,7 @@
-from typing import Optional, List, Dict, Union, Tuple
+import numpy as np
+from typing import Optional, List, Dict
 import seaborn as sns
 import matplotlib.pyplot as plt
-import pandas as pd
 
 from .plot_settings import PlotSettings
 from ..nn.callbacks.opt_callbacks import LRFinder
@@ -45,30 +45,18 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         plt.show()
 
 
-def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
-                    settings:PlotSettings=PlotSettings()) -> None:
+def plot_lr_finders(lr_finders:List[LRFinder], loss='loss', cut=-10, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by
-    :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`.
+    Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`.
 
     Arguments:
-        lr_finders: list of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks used during training (e.g. as returned by
-            :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`)
-        lr_range: limits the range of learning rates plotted on the x-axis: if float, maximum LR; if tuple, minimum & maximum LR
-        loss_range: limits the range of losses plotted on the x-axis:
-            if float, maximum loss;
-            if tuple, minimum & maximum loss;
-            if None, no limits;
-            if 'auto', computes an upper limit automatically
+        lr_finders: list of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks used during training (e.g. as returned by :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`)
+        loss: string representation of loss to plot
+        cut: number of final iterations to cut
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
-    
-    df = pd.DataFrame()
-    for lrf in lr_finders: df = df.append(lrf.get_df(), ignore_index=True)
-    if lr_range is not None:
-        if isinstance(lr_range, float): lr_range = (0, lr_range)
-        df = df[(df.LR >= lr_range[0]) & (df.LR < lr_range[1])]
 
+    
     if loss_range == 'auto':  # Max loss = 1.1 * max mean-loss at LR less than LR at min mean-loss
         agg = df.groupby(by='LR').agg(mean_loss=pd.NamedAgg(column='Loss', aggfunc='mean'))
         agg.reset_index(inplace=True)
@@ -77,7 +65,8 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
         
     with sns.axes_style('whitegrid'), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
-        sns.lineplot(x='LR', y='Loss', data=df, ci='sd')
+        min_len = np.min([len(lr_finders[x].history[loss][:cut]) for x in range(len(lr_finders))])
+        sns.tsplot([lr_finders[x].history[loss][:min_len] for x in range(len(lr_finders))], time=lr_finders[0].history['lr'][:min_len], ci='sd')
         plt.xscale('log')
         plt.grid(b=True, which="both", axis="both")
         if loss_range is not None: plt.ylim((0,loss_range) if isinstance(loss_range, float) else loss_range)
