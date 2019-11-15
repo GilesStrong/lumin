@@ -94,19 +94,6 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
 - LUMIN aims to feel fast to use - liberal use of progress bars mean you're able to always know when tasks will finish, and get live updates of training
 - Guaranteed to spark joy (in its current beta state, LUMIN may instead ignite rage, despair, and frustration - *dev.*)
 
-## Examples
-
-Several examples are present in the form of Jupyter Notebooks in the `examples` folder. These can be run also on Google Colab to allow you to quickly try out the package.
-
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Classification_of_earnings.ipynb) `examples/Classification_of_earnings.ipynb`: Very basic binary-classification example
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Binary_Classification.ipynb) `examples/Binary_Classification.ipynb`: Binary-classification example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Multiclass_Classification.ipynb) `examples/Multiclass_Classification.ipynb`: Multiclass-classification example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Single_Target_Regression.ipynb) `examples/Single_Target_Regression.ipynb`: Single-target regression example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Multi_Target_Regression.ipynb) `examples/Multi_Target_Regression.ipynb`: Multi-target regression example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Feature_Selection.ipynb) `examples/Feature_Selection.ipynb`: In-depth walkthrough for automated feature-selection
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Advanced_Model_Building.ipynb) `examples/Advanced_Model_Building.ipynb`: In-depth look at building more complicated models and a few advanced interpretation techniques
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0/examples/Model_Exporting.ipynb) `examples/Model_Exporting.ipynb`: Walkthough for exporting a trained model to ONNX and TensorFlow
-
 ## Installation
 
 Due to some strict version requirements on packages, it is recommended to install LUMIN in its own Python environment, e.g `conda create -n lumin python=3.6`

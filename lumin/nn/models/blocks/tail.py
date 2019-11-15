@@ -80,7 +80,7 @@ class ClassRegMulti(AbsTail):
         self.y_range = y_range
         if self.y_range is not None:
             if not isinstance(self.y_range, np.ndarray): self.y_range = np.array(self.y_range)
-            self.y_min = np.array(np.min(self.y_range, axis=-1), dtype='float32')
+            self.y_min = np.array(np.min(self.y_range, axis=-1))
             self.y_diff = np.abs(self.y_range.take([1], axis=-1)-self.y_range.take([0], axis=-1)).ravel()
             self.y_min, self.y_diff = to_device(Tensor(self.y_min)), to_device(Tensor(self.y_diff))
         self._build_layers()
@@ -101,7 +101,7 @@ class ClassRegMulti(AbsTail):
             else:
                 self.act = nn.Sigmoid()
                 init = self.lookup_init('sigmoid', self.n_in, self.n_out)
-                bias = 0 if self.bias_init is None else self.bias_init
+                bias = 0.5 if self.bias_init is None else self.bias_init
         else:
             if self.y_range is None:
                 self.act = lambda x: x
@@ -110,7 +110,7 @@ class ClassRegMulti(AbsTail):
             else:
                 self.act = nn.Sigmoid()
                 init = self.lookup_init('sigmoid', self.n_in, self.n_out)
-                bias = 0 if self.bias_init is None else self.bias_init
+                bias = 0.5 if self.bias_init is None else self.bias_init
         init(self.dense.weight)
         nn.init.constant_(self.dense.bias, val=bias)
 

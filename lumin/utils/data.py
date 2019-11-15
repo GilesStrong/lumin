@@ -18,7 +18,7 @@ def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional
     Trainings are run once per fold and averaged.'''
     n = min(train_fy.n_folds, val_fy.n_folds)
     if test_fy is not None: n = min(n, test_fy.n_folds)
-    if n_folds is not None: n = min(n, n_folds)
+    if n_folds is not None:  n = min(n, n_folds)
     train_feats = None
         
     samples = {'train': train_fy} if test_fy is None else {'train': train_fy, 'test': test_fy}

@@ -5,7 +5,18 @@ import warnings
 
 from ..data.fold_yielder import FoldYielder
 
-__all__ = ['CatEmbedder']
+__all__ = ['CatEmbedder', 'Embedder']
+
+
+def Embedder(cat_names:List[str], cat_szs:List[int], emb_szs:Optional[List[int]]=None, max_emb_sz:int=50,
+             emb_load_path:Optional[Union[Path,str]]=None):
+    r'''
+    .. Attention:: Depreciated in favour of :class:`~lumin.nn.models.helpers.CatEmbedder` and will be removed in `v0.4`.
+    '''
+    
+    # XXX Remove in v0.4
+    warnings.warn('''Embedder has been renamed to CatEmbedder. Embedder is now depreciated and will be removed in v0.4''')
+    return CatEmbedder(cat_names=cat_names, cat_szs=cat_szs, emb_szs=emb_szs, max_emb_sz=max_emb_sz, emb_load_path=emb_load_path)
 
 
 class CatEmbedder():

@@ -1,6 +1,6 @@
 from typing import Union, Tuple, Callable, Optional, List
 import numpy as np
-import pandas as pd
+from pathlib import Path
 
 import torch
 from torch import Tensor
@@ -195,14 +195,7 @@ class FeatureSubsample(Callback):
     r'''
     Callback for training a model on a random sub-sample of the range of possible input features.
     Only sub-samples continuous features. Number of continuous inputs infered from model.
-    Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns
-    as trainig data. 
-
-    .. Attention:: This callback is now depreciated in favour of passing `cont_subsample_rate` and  `guaranteed_feats` to
-        :class:`~lumin.nn.models.model_builder.ModelBuilder` as these offer greater functionality and are compatable with using a
-        :class:`~luminnn.models.blocks.body.MultiBlock` body. Will be removed in `V0.5`.
-
-    .. Caution:: This callback is incompatable with using a :class:`~luminnn.models.blocks.body.MultiBlock` body
+    Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns as trainig data. 
 
     Arguments:
         cont_feats: list of all continuous features in input data. Order must match.
@@ -211,6 +204,8 @@ class FeatureSubsample(Callback):
     Examples::
         >>> feat_subsample = FeatureSubsample(cont_feats=['pT', 'eta', 'phi'])
     '''
+
+    # TODO cont feat names no longer required only number; move to infer number of cont feats from model_builder and batch_yielder
 
     def __init__(self, cont_feats:List[str], model:Optional[AbsModel]=None):
         super().__init__(model=model)
@@ -229,44 +224,13 @@ class FeatureSubsample(Callback):
         np.random.seed()  # Is this necessary?
         self._sample_feats()
         self.model.set_input_mask(self.feat_idxs)
-
-
-class ParametrisedPrediction(Callback):
-    r'''
-    Callback for running predictions for a parametersied network (https://arxiv.org/abs/1601.07913); one which has been trained using one of more inputs which
-    represent e.g. different hypotheses for the classes such as an unknown mass of some new particle.
-    In such a scenario, multiple signal datasets could be used for training, with background receiving a random mass. During prediction one then needs to set
-    these parametrisation features all to the same values to evaluat the model's response for that hypothesis.
-    This callback can be passed to the predict method of the model/ensemble to adjust the parametrisation features to the desired values.
-
-    Arguments:
-        feats: list of feature names used during training (in the same order)
-        param_feat: the feature name which is to be adjusted
-        param_val: the value to which to set the paramertisation feature
-        model: unused, purely for compatability, just leave it as None
-
-    Examples::
-        >>> mass_param = ParametrisedPrediction(train_feats, 'res_mass', 300)
-        >>> model.predict(fold_yeilder, pred_name=f'pred_mass_300', callbacks=[mass_param])
-        >>>
-        >>> mass_param = ParametrisedPrediction(train_feats, 'res_mass', 300)
-        >>> spin_param = ParametrisedPrediction(train_feats, 'spin', 1)
-        >>> model.predict(fold_yeilder, pred_name=f'pred_mass_300', callbacks=[mass_param, spin_param])
-
-    '''
-
-    def __init__(self, feats:List[str], param_feat:str, param_val:float, model:Optional[AbsModel]=None):
-        super().__init__(model=model)
-        self.feats,self.param_feat,self.param_val = feats,param_feat,param_val
-        self.param_idx = self.feats.index(self.param_feat)
         
-    def on_pred_begin(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], **kargs) -> None:
+    def on_epoch_begin(self, by:BatchYielder, **kargs) -> None:
         r'''
-        Adjusts the data to be passed to the model by setting in place the parameterisation feature to the preset value
+        Masks input data to remove non-selected features
 
         Arguments:
-            inputs: data which will later be passed to the model
+            by: BatchYielder providing data for the upcoming epoch
         '''
-
-        if isinstance(inputs, pd.DataFrame): inputs[self.param_feat] = self.param_val
-        else: inputs[:, self.param_idx] = self.param_val
+        
+        by.inputs = by.inputs[:,self.feat_idxs]

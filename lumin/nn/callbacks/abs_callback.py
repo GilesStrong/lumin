@@ -18,6 +18,3 @@ class AbsCallback(ABC):
     def on_eval_end(self,   **kargs):          pass
     def on_backwards_begin(self, **kargs):     pass
     def on_backwards_end(self,   **kargs):     pass
-    def on_pred_begin(self, **kargs):          pass
-    def on_pred_end(self,   **kargs):          pass
-    

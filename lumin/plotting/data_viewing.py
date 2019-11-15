@@ -49,7 +49,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
     if plot_params is None: plot_params = {}
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
     
-    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
         for i in range(len(cuts)):
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
@@ -78,8 +78,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
                 std = uncert_round(moms[2], moms[3])
-                if wgt_name is None: label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
-                else:                label += r' $\bar{x}=$' + f'{mean[0]}' + r', $\sigma_x=$' + f'{std[0]}'
+                label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
 
             sns.distplot(plot_data, label=label, **tmp_plot_params)
 
@@ -141,39 +140,37 @@ def compare_events(events:list) -> None:
         fig.show()
 
 
-def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> List[List[str]]:
+def plot_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient.
-    Also returns a list pairs of features with correlation coefficients greater than the threshold
+    .. Attention:: Depreciated as renamed to :meth:`~lumin.plotting.data_viewing.plot_rank_order_dendrogram`. Will be removed in `v0.4`.
+    '''
+    
+    # XXX Remove in v0.4
+    warnings.warn('''plot_dendrogram has been renamed to plot_rank_order_dendrogram. plot_dendrogram is now depreciated and will be removed in v0.4''')
+    return plot_rank_order_dendrogram(df=df, savename=savename, settings=settings)
+
+
+def plot_rank_order_dendrogram(df:pd.DataFrame, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient
 
     Arguments:
         df: Pandas DataFrame containing data
-        threshold: Threshold on correlation coefficient
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
-
-    Returns:
-        List of pairs of features with correlation coefficients greater than the threshold
     '''
 
-    corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
-    corr_condensed = hc.distance.squareform(1-np.abs(corr))  # Abs because negtaive of a feature is a trvial transformation: information unaffected
-    z = hc.linkage(corr_condensed, method='average')
-
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
+        corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
+        corr_condensed = hc.distance.squareform(1-corr)
+        z = hc.linkage(corr_condensed, method='average')
+
         plt.figure(figsize=(settings.w_large, (0.5*len(df.columns))))
-        hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz, color_threshold=1-threshold)
-        plt.xlabel("Distance (1 - |Spearman's Rank Correlation Coefficient|)", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        hc.dendrogram(z, labels=df.columns, orientation='left', leaf_font_size=settings.lbl_sz)
+        plt.xlabel('Distance', fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
-
-    feats = df.columns
-    pairs = []
-    for r in z:
-        if 1-r[2] < threshold: break
-        if r[0] < len(feats) and r[1] < len(feats): pairs.append([feats[r[0]],feats[r[1]]])
-    return pairs
 
 
 def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,Dict[str,Any]], 
@@ -192,9 +189,7 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    # TODO: update to sns 9
-
-    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
+    with sns.axes_style(settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, name in enumerate(name2args):
             if 'color' not in name2args[name]: name2args[name]['color'] = palette[i]
