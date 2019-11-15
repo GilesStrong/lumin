@@ -1,4 +1,4 @@
-# Targeting V0.4 Hypothetically Useful But Of Limited Actual Utility 
+# Targeting V0.4 Hypothetically Useful But Of Limited Actual Utility
 
 ## Important changes
 
