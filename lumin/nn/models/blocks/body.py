@@ -98,10 +98,10 @@ class FullyConnected(AbsBody):
                                    fan_out=max(1,self.width+int(self.width*d*self.growth_rate))))
             self.layers = nn.ModuleList(self.layers)
         else:
-            self.layers = nn.ModuleList([self._get_layer(idx=d, fan_in=self.width+int(self.width*(d-1)*self.growth_rate),
-                                                         fan_out=self.width+int(self.width*d*self.growth_rate))
-                                         if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
-                                         for d in range(self.depth)])
+            self.layers = nn.Sequential(*[self._get_layer(idx=d, fan_in=self.width+int(self.width*(d-1)*self.growth_rate),
+                                                          fan_out=self.width+int(self.width*d*self.growth_rate))
+                                          if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
+                                          for d in range(self.depth)])
             
         if self.freeze: self.freeze_layers
 
@@ -127,13 +127,13 @@ class FullyConnected(AbsBody):
         if self.dense:
             for l in self.layers[:-1]: x = torch.cat((l(x), x), -1)
             x = self.layers[-1](x)
-        else:
+        elif self.res:
             for i, l in enumerate(self.layers):
-                if self.res and i > 0:
+                if i > 0:
                     x = l(x)+x
                     x = self.res_bns[i-1](x)  # Renormalise after addition
-                else:
-                    x = l(x)
+        else:
+            x = self.layers(x)
         return x
     
     def get_out_size(self) -> int:
