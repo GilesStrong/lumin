@@ -90,7 +90,7 @@ class CatEmbHead(AbsHead):
         if self.freeze: self.freeze_layers()
         self._map_outputs()
 
-    def _map_outputs(self) -> Dict[str,List[int]]:
+    def _map_outputs(self):
         self.feat_map = {}
         for i, f in enumerate(self.cont_feats): self.feat_map[f] = [i]
         offset = self.n_cont_in

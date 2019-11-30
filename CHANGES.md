@@ -1,3 +1,23 @@
+# Targeting V0.4.1
+
+## Important changes
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+- Slight optimisation in `FullyConnected` when not using dense or residual networks 
+
+## Depreciations
+
+## Comments
+
 # Targeting V0.4 Hypothetically Useful But Of Limited Actual Utility
 
 ## Important changes
