@@ -98,16 +98,17 @@ class CatEmbHead(AbsHead):
             self.feat_map[f] = list(range(offset, offset+sz))
             offset += sz
         
-    def forward(self, x_in:Tensor) -> Tensor:
+    def forward(self, x:Tensor) -> Tensor:
+        x_out = x
         if self.cat_embedder.n_cat_in > 0:
-            x_cat = x_in[:,self.n_cont_in:].long()
-            x = torch.cat([emb(x_cat[:,i]) for i, emb in enumerate(self.embeds)], dim=1)
+            x_cat = x[:,self.n_cont_in:].long()
+            x_out = torch.cat([emb(x_cat[:,i]) for i, emb in enumerate(self.embeds)], dim=1)
             if self.do_cat > 0: x = self.emb_do(x)
         if self.n_cont_in > 0:
-            x_cont = x_in[:,:self.n_cont_in]
+            x_cont = x[:,:self.n_cont_in]
             if self.do_cont > 0: x_cont = self.cont_in_do(x_cont) 
-            x = torch.cat((x_cont, x), dim=1) if self.cat_embedder.n_cat_in > 0 else x_cont
-        return x
+            x_out = torch.cat((x_cont, x_out), dim=1) if self.cat_embedder.n_cat_in > 0 else x_cont
+        return x_out
     
     def _load_embeds(self, path:Optional[Path]=None) -> None:
         path = self.cat_embedder.emb_load_path if path is None else path

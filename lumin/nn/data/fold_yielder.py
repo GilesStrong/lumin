@@ -22,6 +22,8 @@ class FoldYielder:
         ignore_feats: optional list of input features which should be ignored
         input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
+        # TODO matrix args
+
 
     Examples::
         >>> fy = FoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'],
@@ -32,14 +34,19 @@ class FoldYielder:
     # TODO: Add ability to load file from string name
 
     def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:List[str], cat_feats:List[str],
-                 ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None):
+                 ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None,
+                 yield_matrix:bool=True, matrix_feats:Optional[List[List[str]]]=None, matrix_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
         self.orig_cont_feats,self.orig_cat_feat,self._ignore_feats = self.cont_feats,self.cat_feats,[]
+        self.yield_matrix,self.matrix_feats,self.matrix_pipe = yield_matrix,matrix_feats,matrix_pipe
         self.input_feats = self.cont_feats + self.cat_feats
         self.augmented,self.aug_mult,self.train_time_aug,self.test_time_aug = False,0,False,False
         self.set_foldfile(foldfile)
+        self.has_matrix = 'matrix_inputs' in self.columns()
         if isinstance(self.input_pipe, str) or isinstance(self.input_pipe, Path): self.add_input_pipe_from_file(self.input_pipe)
         if isinstance(self.output_pipe, str) or isinstance(self.input_pipe, Path): self.add_output_pipe_from_file(self.output_pipe)
+        if isinstance(self.matrix_pipe, str) or isinstance(self.matrix_pipe, Path): self.add_matrix_pipe_from_file(self.matrix_pipe)
+
         if ignore_feats is not None: self.add_ignore(ignore_feats)
 
     def __repr__(self) -> str: return f'FoldYielder with {self.n_folds} folds, containing {self.columns()}'
@@ -110,6 +117,16 @@ class FoldYielder:
         '''
         
         self.input_pipe  = input_pipe
+    
+    def add_matrix_pipe(self, matrix_pipe:Pipeline) -> None:
+        r'''
+        Adds an matrix pipe to the FoldYielder for use when deprocessing data
+
+        Arguments:
+            matrix_pipe: Pipeline which was used for preprocessing the input data
+        '''
+        
+        self.matrix_pipe  = matrix_pipe
 
     def add_output_pipe(self, output_pipe:Pipeline) -> None:
         r'''
@@ -130,6 +147,16 @@ class FoldYielder:
         '''
 
         with open(name, 'rb') as fin: self.input_pipe = pickle.load(fin)
+
+    def add_matrix_pipe_from_file(self, name:str) -> None:
+        r'''
+        Adds an matrix pipe from a pkl file to the FoldYielder for use when deprocessing data
+
+        Arguments:
+            name: name of pkl file containing Pipeline which was used for preprocessing the matrix data
+        '''
+
+        with open(name, 'rb') as fin: self.matrix_pipe = pickle.load(fin)
 
     def add_output_pipe_from_file(self, name:str) -> None:
         r'''
@@ -154,14 +181,18 @@ class FoldYielder:
             tuple of inputs, targets, and weights as Numpy arrays
         '''
 
+        def _append_matrix(data):
+            data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
+            return data
+
         data = self.get_data(n_folds=1, fold_idx=idx)
         if len(self._ignore_feats) == 0:
-            return data
+            return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
         else:
             inputs = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/inputs']), columns=self.input_feats)
             inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
             data['inputs'] = np.nan_to_num(inputs.values)
-            return data
+            return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
 
     def get_column(self, column:str, n_folds:Optional[int]=None, fold_idx:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
         r'''
@@ -203,12 +234,13 @@ class FoldYielder:
             tuple of inputs, targets, and weights as Numpy arrays
         '''
 
-        return {'inputs': np.nan_to_num(self.get_column('inputs',  n_folds=n_folds, fold_idx=fold_idx)),
-                'targets':              self.get_column('targets', n_folds=n_folds, fold_idx=fold_idx, add_newaxis=True),
-                'weights':              self.get_column('weights', n_folds=n_folds, fold_idx=fold_idx, add_newaxis=True)}
+        return {'inputs':  np.nan_to_num(self.get_column('inputs',  n_folds=n_folds, fold_idx=fold_idx)),
+                'targets':               self.get_column('targets', n_folds=n_folds, fold_idx=fold_idx, add_newaxis=True),
+                'weights':               self.get_column('weights', n_folds=n_folds, fold_idx=fold_idx, add_newaxis=True)}
 
     def get_df(self, pred_name:str='pred', targ_name:str='targets', wgt_name:str='weights', n_folds:Optional[int]=None, fold_idx:Optional[int]=None,
-               inc_inputs:bool=False, inc_ignore:bool=False, deprocess:bool=False, verbose:bool=True, suppress_warn:bool=False) -> pd.DataFrame:
+               inc_inputs:bool=False, inc_ignore:bool=False, deprocess:bool=False, verbose:bool=True, suppress_warn:bool=False,
+               inc_matrix:bool=False) -> pd.DataFrame:
         r'''
         Get a Pandas DataFrameof the data in the foldfile. Will add columns for inputs (if requested), targets, weights, and predictions (if present)
 
@@ -223,17 +255,23 @@ class FoldYielder:
             deprocess: whether to deprocess inputs and targets if pipelines have been
             verbose: whether to print the number of datapoints loaded
             suppress_warn: whether to supress the warning about missing columns
+            # TODO matrix args
 
         Returns:
             Pandas DataFrame with requested data
         '''
 
         if inc_inputs:
-            inputs = self.get_column('inputs',  n_folds=n_folds, fold_idx=fold_idx)
+            inputs = self.get_column('inputs', n_folds=n_folds, fold_idx=fold_idx)
             if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:,:len(self.orig_cont_feats)]),
                                                                              inputs[:,len(self.orig_cont_feats):]))
             data = pd.DataFrame(np.nan_to_num(inputs), columns=self.input_feats)
             if len(self._ignore_feats) > 0 and not inc_ignore: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
+            if self.has_matrix and inc_matrix:
+                mat = np.nan_to_num(self.get_column('matrix_inputs', n_folds=n_folds, fold_idx=fold_idx))
+                shape = ((len(mat),mat.shape[1]*mat.shape[2]))
+                data = data.join(pd.DataFrame(mat.reshape(shape),
+                                              columns=np.array(self.matrix_feats).reshape(shape[1]) if self.matrix_feats is not None else None))
         else:
             data = pd.DataFrame()
 
@@ -314,9 +352,11 @@ class HEPAugFoldYielder(FoldYielder):
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
                  train_time_aug:bool=True, test_time_aug:bool=True,
-                 input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None):
+                 input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None,
+                 yield_matrix:bool=True, matrix_feats:Optional[List[List[str]]]=None, matrix_pipe:Optional[Union[str,Pipeline]]=None):
         super().__init__(foldfile=foldfile, cont_feats=cont_feats, cat_feats=cat_feats,
-                         ignore_feats=ignore_feats, input_pipe=input_pipe, output_pipe=output_pipe)
+                         ignore_feats=ignore_feats, input_pipe=input_pipe, output_pipe=output_pipe,
+                         yield_matrix=yield_matrix, matrix_feats=matrix_feats, matrix_pipe=matrix_pipe)
 
         if rot_mult > 0 and not random_rot and rot_mult % 2 != 0:
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')
@@ -381,6 +421,10 @@ class HEPAugFoldYielder(FoldYielder):
             tuple of inputs, targets, and weights as Numpy arrays
         '''
 
+        def _append_matrix(data):
+            data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
+            return data
+
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data
         inputs = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/inputs']), columns=self.input_feats)
@@ -404,7 +448,7 @@ class HEPAugFoldYielder(FoldYielder):
         if self.targ_feats is not None:
             targets = targets[self.targ_feats]
             data['targets'] = np.nan_to_num(targets.values)
-        return data
+        return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
 
     def _get_ref_idx(self, aug_idx:int) -> str:
         n_axes = len(self.reflect_axes)
@@ -426,6 +470,10 @@ class HEPAugFoldYielder(FoldYielder):
         Returns:
             tuple of inputs, targets, and weights as Numpy arrays
         '''
+
+        def _append_matrix(data):
+            data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
+            return data
 
         if aug_idx >= self.aug_mult: raise ValueError(f"Invalid augmentation idx passed {aug_idx}")
         data = self.get_data(n_folds=1, fold_idx=idx)
@@ -479,4 +527,4 @@ class HEPAugFoldYielder(FoldYielder):
             
             targets = targets[self.targ_feats]
             data['targets'] = np.nan_to_num(targets.values)
-        return data
+        return _append_matrix(data) if self.has_matrix and self.yield_matrix else data

@@ -20,7 +20,7 @@ from ..models.model_builder import ModelBuilder
 from ..models.model import Model
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.model_callbacks import AbsModelCallback
-from ...utils.misc import to_tensor
+from ...utils.misc import to_tensor, to_device
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history
@@ -140,7 +140,12 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         for c in callbacks: c.on_train_begin(model_num=model_num, savepath=savepath)
 
         # Validation data
-        val_x, val_y, val_w = Tensor(val_fold['inputs']), Tensor(val_fold['targets']), to_tensor(val_fold['weights']) if train_on_weights else None
+        if fy.has_matrix and fy.yield_matrix:
+            val_x = (to_device(Tensor(val_fold['inputs'][0]).float()), to_device(Tensor(val_fold['inputs'][1]).float())) 
+        else:
+            val_x =  to_device(Tensor(val_fold['inputs']).float())
+        val_y = to_device(Tensor(val_fold['targets']))
+        val_w = to_device(to_tensor(val_fold['weights'])) if train_on_weights else None
         if 'multiclass' in model_builder.objective: val_y = val_y.long().squeeze()
         else:                                       val_y = val_y.float()
 

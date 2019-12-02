@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
@@ -147,15 +147,16 @@ class Model(AbsModel):
         for c in callbacks: c.on_epoch_end(losses=losses)
         return np.mean(losses)
               
-    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None, callbacks:Optional[List[AbsCallback]]=None,
+    def evaluate(self, inputs:Union[Tensor,np.ndarray,Tuple[Tensor,Tensor],Tuple[np.ndarray,np.ndarray]], targets:Union[Tensor,np.ndarray],
+                 weights:Optional[Union[Tensor,np.ndarray]]=None, callbacks:Optional[List[AbsCallback]]=None,
                  mask_inputs:bool=True) -> float:
         r'''
         Compute loss on provided data.
 
         Arguments:
-            inputs: input data as tensor on device
-            targets: targets as tensor on device
-            weights: Optional weights as tensor on device
+            inputs: input data
+            targets: targets
+            weights: Optional weights
             callbacks: list of any callbacks to use during evaluation
             mask_inputs: whether to apply input mask if one has been set
 
@@ -165,18 +166,30 @@ class Model(AbsModel):
 
         if callbacks is None: callbacks = []
         self.model.eval()
+        if not isinstance(inputs, Tensor):
+            if isinstance(inputs, tuple):
+                if not isinstance(inputs[0], Tensor): inputs = (to_device(Tensor(inputs[0]).float()),to_device(Tensor(inputs[1]).float()))
+            else:
+                inputs = to_device(Tensor(inputs).float())
         for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
-        if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
-        y_pred = self.model(to_device(inputs.float()))
+        if self.input_mask is not None and mask_inputs:
+            if isinstance(inputs, tuple):
+                inputs[0] = inputs[0][:,self.input_mask]
+            else:
+                inputs = inputs[:,self.input_mask]
+        y_pred = self.model(inputs)
+
+        if not isinstance(targets, Tensor): targets = to_device(Tensor(targets))
+        if weights is not None and not isinstance(weights, Tensor): weights = to_device(Tensor(weights))
 
         if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
         elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
 
-        loss = self.loss(weight=to_device(weights))(y_pred, to_device(targets)) if weights is not None else self.loss()(y_pred, to_device(targets))
+        loss = self.loss(weight=weights)(y_pred, targets) if weights is not None else self.loss()(y_pred, targets)
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
-    def predict_array(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], as_np:bool=True, mask_inputs:bool=True,
+    def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
                       callbacks:Optional[List[AbsCallback]]=None) -> Union[np.ndarray, Tensor]:
         r'''
         Pass inputs through network and obtain predictions.
@@ -194,10 +207,18 @@ class Model(AbsModel):
         self.model.eval()
         if callbacks is None: callbacks = []
         for c in callbacks: c.on_pred_begin(inputs=inputs)
-        if self.input_mask is not None and mask_inputs: inputs = inputs[:,self.input_mask]
-        if isinstance(inputs, pd.DataFrame): inputs = Tensor(inputs.values)
-        if not isinstance(inputs, Tensor): inputs = Tensor(inputs)
-        pred = self.model(to_device(inputs.float()))
+        if isinstance(inputs, pd.DataFrame): inputs = to_device(Tensor(inputs.values).float())
+        if self.input_mask is not None and mask_inputs:
+            if isinstance(inputs, tuple):
+                inputs[0] = inputs[0][:,self.input_mask]
+            else:
+                inputs = inputs[:,self.input_mask]
+        if not isinstance(inputs, Tensor):
+            if isinstance(inputs, tuple):
+               if not isinstance(inputs[0], Tensor): inputs = (to_device(Tensor(inputs[0]).float()),to_device(Tensor(inputs[1]).float()))
+            else:
+                inputs = to_device(Tensor(inputs).float())
+        pred = self.model(inputs)
         for c in callbacks: c.on_pred_end(pred=pred)        
         if as_np:
             if 'multiclass' in self.objective: return np.exp(to_np(pred))
