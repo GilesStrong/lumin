@@ -83,8 +83,9 @@ class BatchYielder:
             for i in range(0, len(inputs)-self.bs+1, self.bs):
                 if 'multiclass' in self.objective: y = Tensor(targets[i:i+self.bs]).long().squeeze()
                 else:                              y = Tensor(targets[i:i+self.bs])
-                x = to_device(inputs[i:i+self.bs]) if matrix_inputs is None else (to_device(inputs[i:i+self.bs]),to_device(matrix_inputs[i:i+self.bs]))
-                w = to_device(weights[i:i+self.bs]) if self.weights is not None and self.use_weights else None
+                if matrix_inputs is None: x = to_device(Tensor(inputs[i:i+self.bs]))
+                else:                     x = (to_device(Tensor(inputs[i:i+self.bs])),to_device(Tensor(matrix_inputs[i:i+self.bs])))
+                w = to_device(Tensor(weights[i:i+self.bs])) if self.weights is not None and self.use_weights else None
                 yield x, y, w
 
     def __len__(self): return len(self.inputs)//self.bs
