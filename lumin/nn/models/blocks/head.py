@@ -26,6 +26,8 @@ class AbsHead(AbsBlock):
         self.cont_feats,self.cat_embedder = cont_feats,cat_embedder
         self.n_cont_in = len(cont_feats)
 
+    # TODO Make abtsract wrt data format
+
     @abstractmethod
     def _map_outputs(self) -> Dict[str,List[int]]: pass
 

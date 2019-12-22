@@ -71,7 +71,8 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
-                strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None):
+                strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None,
+                matrix_feats:Optional[Union[List[List[str]],np.ndarray]]=None) -> None:
     r'''
     Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
     
@@ -86,6 +87,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         strat_key (optional): column to use for stratified splitting
         misc_feats (optional): any extra columns to save
         wgt_feat (optional): column to save as data weights
+        matrix_feats: 2-D Array of feature values to store as a matrix in relevant positions. Features listed but not present in df will be replaced with NaN.
     '''
 
     savename = str(savename)
@@ -102,5 +104,5 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
     for fold_idx, (_, fold) in enumerate(folds):
         print(f"Saving fold {fold_idx} with {len(fold)} events")
         fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
-                      targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat)
+                      targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat, matrix_feats=matrix_feats)
                       
