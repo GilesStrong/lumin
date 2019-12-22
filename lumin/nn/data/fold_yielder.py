@@ -22,7 +22,9 @@ class FoldYielder:
         ignore_feats: optional list of input features which should be ignored
         input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
-        # TODO matrix args
+        yield_matrix: whether to actually yield matrix data if present
+        matrix_feats: name of features stored as a matrix
+        matrix_pipe: preprocessing pipe for matrix data
 
 
     Examples::
@@ -31,7 +33,7 @@ class FoldYielder:
         ...                  input_pipe='input_pipe.pkl')
     '''
 
-    # TODO: Add ability to load file from string name
+    # TODO: Matrix example
 
     def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:List[str], cat_feats:List[str],
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None,
@@ -255,20 +257,22 @@ class FoldYielder:
             deprocess: whether to deprocess inputs and targets if pipelines have been
             verbose: whether to print the number of datapoints loaded
             suppress_warn: whether to supress the warning about missing columns
-            # TODO matrix args
+            inc_matrix: whether to include flattened matrix data in output, if present
 
         Returns:
             Pandas DataFrame with requested data
         '''
 
+        # TODO Decide how to handle missing features when deprocessing matrix data
+
         if inc_inputs:
             inputs = self.get_column('inputs', n_folds=n_folds, fold_idx=fold_idx)
             if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:,:len(self.orig_cont_feats)]),
                                                                              inputs[:,len(self.orig_cont_feats):]))
-            data = pd.DataFrame(np.nan_to_num(inputs), columns=self.input_feats)
+            data = pd.DataFrame(inputs, columns=self.input_feats)
             if len(self._ignore_feats) > 0 and not inc_ignore: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
             if self.has_matrix and inc_matrix:
-                mat = np.nan_to_num(self.get_column('matrix_inputs', n_folds=n_folds, fold_idx=fold_idx))
+                mat = self.get_column('matrix_inputs', n_folds=n_folds, fold_idx=fold_idx)
                 shape = ((len(mat),mat.shape[1]*mat.shape[2]))
                 data = data.join(pd.DataFrame(mat.reshape(shape),
                                               columns=np.array(self.matrix_feats).reshape(shape[1]) if self.matrix_feats is not None else None))
@@ -338,6 +342,9 @@ class HEPAugFoldYielder(FoldYielder):
         test_time_aug: whether to apply augmentations at test time
         input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
+        yield_matrix: whether to actually yield matrix data if present
+        matrix_feats: name of features stored as a matrix
+        matrix_pipe: preprocessing pipe for matrix data
 
     Examples::
         >>> fy = HEPAugFoldYielder('train.h5',

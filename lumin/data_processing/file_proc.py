@@ -28,7 +28,8 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
 
 def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
                   cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:Any,
-                  misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None) -> None:
+                  misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None,
+                  matrix_feats:Optional[Union[List[List[str]],np.ndarray]]=None) -> None:
     r'''
     Save fold of data into an h5py Group
 
@@ -38,10 +39,11 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
         fold_idx: ID for the fold; used name h5py group according to 'fold_{fold_idx}'
         cont_feats: list of columns in df to save as continuous variables
         cat_feats: list of columns in df to save as discreet variables
-        targ_feats (list of) column(s) in df to save as target feature(s)
+        targ_feats: (list of) column(s) in df to save as target feature(s)
         targ_type: type of target feature, e.g. int,'float32'
-        misc_feats (optional): any extra columns to save
-        wgt_feat (optional): column to save as data weights
+        misc_feats: any extra columns to save
+        wgt_feat: column to save as data weights
+        matrix_feats: 2-D Array of feature values to store as a matrix in relevant positions. Features listed but not present in df will be replaced with NaN.
     '''
 
     # TODO infer target type automatically
@@ -51,7 +53,20 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
     save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
     if wgt_feat is not None: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
     if misc_feats is not None:
-        for f in misc_feats: save_to_grp(df[f].values, grp, f)  
+        for f in misc_feats: save_to_grp(df[f].values, grp, f)
+
+    if isinstance(matrix_feats, list): matrix_feats = np.array(matrix_feats)
+    x = df[matrix_feats.flatten()].values
+    mat = np.zeros((len(df),len(matrix_feats),len(matrix_feats[0])))
+    k = 0 
+    for i in range(len(matrix_feats)):
+        for j,f in enumerate(matrix_feats[i]):
+            if f in df.columns:
+                mat[:,i,j] = x[:,k]
+                k += 1
+            else:
+                mat[:,i,j] = np.NaN
+    save_to_grp(mat, grp, 'matrix_inputs')
 
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],

@@ -6,9 +6,13 @@
 
 ## Additions
 
+- Added support for processing and embedding of matrix data
+
 ## Removals
 
 ## Fixes
+
+- `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros
 
 ## Changes
 
