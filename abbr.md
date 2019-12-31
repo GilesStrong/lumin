@@ -81,6 +81,7 @@
 |Percentage|perc||
 |Identification number|id||
 |Batch Yielder|by||
+|Shape|shp|(n_rows,n_cols)|
 
 
 
