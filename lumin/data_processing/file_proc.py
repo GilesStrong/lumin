@@ -55,18 +55,19 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
     if misc_feats is not None:
         for f in misc_feats: save_to_grp(df[f].values, grp, f)
 
-    if isinstance(matrix_feats, list): matrix_feats = np.array(matrix_feats)
-    x = df[matrix_feats.flatten()].values
-    mat = np.zeros((len(df),len(matrix_feats),len(matrix_feats[0])))
-    k = 0 
-    for i in range(len(matrix_feats)):
-        for j,f in enumerate(matrix_feats[i]):
-            if f in df.columns:
-                mat[:,i,j] = x[:,k]
-                k += 1
-            else:
-                mat[:,i,j] = np.NaN
-    save_to_grp(mat, grp, 'matrix_inputs')
+    if matrix_feats is not None:
+        if isinstance(matrix_feats, list): matrix_feats = np.array(matrix_feats)
+        x = df[matrix_feats.flatten()].values
+        mat = np.zeros((len(df),len(matrix_feats),len(matrix_feats[0])))
+        k = 0 
+        for i in range(len(matrix_feats)):
+            for j,f in enumerate(matrix_feats[i]):
+                if f in df.columns:
+                    mat[:,i,j] = x[:,k]
+                    k += 1
+                else:
+                    mat[:,i,j] = np.NaN
+        save_to_grp(mat, grp, 'matrix_inputs')
 
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],

@@ -242,7 +242,7 @@ class FoldYielder:
 
     def get_df(self, pred_name:str='pred', targ_name:str='targets', wgt_name:str='weights', n_folds:Optional[int]=None, fold_idx:Optional[int]=None,
                inc_inputs:bool=False, inc_ignore:bool=False, deprocess:bool=False, verbose:bool=True, suppress_warn:bool=False,
-               inc_matrix:bool=False) -> pd.DataFrame:
+               nan_to_num:bool=False, inc_matrix:bool=False) -> pd.DataFrame:
         r'''
         Get a Pandas DataFrameof the data in the foldfile. Will add columns for inputs (if requested), targets, weights, and predictions (if present)
 
@@ -257,6 +257,7 @@ class FoldYielder:
             deprocess: whether to deprocess inputs and targets if pipelines have been
             verbose: whether to print the number of datapoints loaded
             suppress_warn: whether to supress the warning about missing columns
+            nan_to_num: whether to pass input data through `np.nan_to_num`
             inc_matrix: whether to include flattened matrix data in output, if present
 
         Returns:
@@ -269,6 +270,7 @@ class FoldYielder:
             inputs = self.get_column('inputs', n_folds=n_folds, fold_idx=fold_idx)
             if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:,:len(self.orig_cont_feats)]),
                                                                              inputs[:,len(self.orig_cont_feats):]))
+            if nan_to_num: inputs = np.nan_to_num(inputs)
             data = pd.DataFrame(inputs, columns=self.input_feats)
             if len(self._ignore_feats) > 0 and not inc_ignore: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
             if self.has_matrix and inc_matrix:
