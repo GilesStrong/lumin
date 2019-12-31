@@ -43,7 +43,9 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
         - Tail - Scales down the body to the desired number of outputs
         - Endcap - Optional layer for use post-training to provide further computation on model outputs; useful when training on a proxy objective
     - Easy loading and saving of pre-trained embedding weights
-    - Modern architectures like residual and dense(-like) networks ([He et al. 2015](https://arxiv.org/abs/1512.03385) & [Huang et al. 2016](https://arxiv.org/abs/1608.06993))
+    - Modern architectures like:
+        -residual and dense(-like) networks ([He et al. 2015](https://arxiv.org/abs/1512.03385) & [Huang et al. 2016](https://arxiv.org/abs/1608.06993))
+        - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222) & [Moreno et al., 2019](https://arxiv.org/abs/1908.05318)
 - HEP-specific losses, e.g. Asimov loss [Elwood & Krücker, 2018](https://arxiv.org/abs/1806.00322)
 - Easy training and inference of ensembles of models:
     - Default training method `fold_train_ensemble`, trains a specified number of models as well as just a single model
@@ -57,6 +59,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
 
 - Dendrograms
 - Feature importance via auto-optimised SK-Learn random forests
+- Mutual dependance (RFPImp) 
 
 ### Interpretation
 
