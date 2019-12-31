@@ -7,12 +7,14 @@
 ## Additions
 
 - Added support for processing and embedding of matrix data
+- `__repr__` of `Model` now detail information about input variables
 
 ## Removals
 
 ## Fixes
 
 - `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros
+- Typing of head, body, and tail in `ModelBuilder.init`
 
 ## Changes
 

@@ -44,7 +44,26 @@ class AbsBlock(nn.Module):
         for p in self.parameters(): p.requires_grad = True
     
     @abstractmethod
-    def forward(self, x:Tensor) -> Tensor: pass
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Pass tensor through block
+
+        Arguments:
+            x: input tensor
+        
+        Returns
+            Resulting tensor
+        '''
+
+        pass
 
     @abstractmethod
-    def get_out_size(self) -> int: pass
+    def get_out_size(self) -> int:
+        r'''
+        Get size width of output layer
+
+        Returns:
+            Width of output layer
+        '''
+
+        pass

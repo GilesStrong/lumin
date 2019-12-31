@@ -49,7 +49,10 @@ class Model(AbsModel):
             self.parameters = self.model.parameters
 
     def __repr__(self) -> str:
-        return f'''Model:\n{self.model.parameters}
+        return f'''Inputs:\n{self.head.n_cont_in} Continuous: {self.head.cont_feats}
+                   \n{self.head.n_cat_in}  Categorical: {self.head.cat_feats}
+                   \n{self.head.n_matrix_in}  Matrix elements: {self.head.matrix_feats}
+                   \n\nModel:\n{self.model.parameters}
                    \n\nNumber of trainable parameters: {self.get_param_count()}
                    \n\nOptimiser:\n{self.opt}
                    \n\nLoss:\n{self.loss}'''
@@ -376,6 +379,8 @@ class Model(AbsModel):
             name: filename for exported file
             bs: batch size for exported models
         '''
+
+        # TODO: Pass FoldYielder to get example dummy input, or account for matrix inputs
         
         warnings.warn("""ONNX export of LUMIN models has not been fully explored or sufficiently tested yet.
                          Please use with caution, and report any trouble""")

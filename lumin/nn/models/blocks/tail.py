@@ -18,20 +18,6 @@ class AbsTail(AbsBlock):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.n_out,self.objective,self.bias_init = n_in,n_out,objective,bias_init
 
-    @abstractmethod
-    def forward(self, x:Tensor) -> Tensor:
-        r'''
-        Pass tensor through tail
-
-        Arguments:
-            x: incoming tensor
-        
-        Returns
-            Resulting tensor of model outputs
-        '''
-
-        pass
-
 
 class ClassRegMulti(AbsTail):
     r'''

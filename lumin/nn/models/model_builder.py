@@ -93,11 +93,12 @@ class ModelBuilder(object):
     # TODO: Make opt use partials rather than strings
     # TODO: Classmethod from_fy
     # TODO: Check examples
+    # TODO: Factor out cat_embedder to head
 
     def __init__(self, objective:str, n_out:int, cont_feats:Optional[List[str]]=None,
                  model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,
-                 cont_subsample_rate:Optional[float]=None, guaranteed_feats:Optional[List[str]]=None,
-                 loss:Any='auto', head:AbsHead=CatEmbHead, body:AbsBody=FullyConnected, tail:AbsTail=ClassRegMulti,
+                 cont_subsample_rate:Optional[float]=None, guaranteed_feats:Optional[List[str]]=None, loss:Any='auto',
+                 head:Callable[[Any],AbsHead]=CatEmbHead, body:Callable[[Any],AbsBody]=FullyConnected, tail:Callable[[Any],AbsTail]=ClassRegMulti,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],nn.Module]=lookup_act, pretrain_file:Optional[str]=None,
                  freeze_head:bool=False, freeze_body:bool=False, freeze_tail:bool=False):

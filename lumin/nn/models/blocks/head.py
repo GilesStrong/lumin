@@ -25,25 +25,13 @@ class AbsHead(AbsBlock):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.cont_feats,self.cat_embedder = cont_feats,cat_embedder
         self.n_cont_in = len(cont_feats)
+        self.n_cat_in,self.cat_feats = (self.cat_embedder.n_cat_in,self.cat_embedder.cat_names) if self.cat_embedder is not None else (0,[])
+        self.n_matrix_in,self.matrix_feats = 0,[]
 
     # TODO Make abtsract wrt data format
 
     @abstractmethod
     def _map_outputs(self) -> Dict[str,List[int]]: pass
-
-    @abstractmethod
-    def forward(self, x:Tensor) -> Tensor:
-        r'''
-        Pass tensor through head
-
-        Arguments:
-            x: input tensor
-        
-        Returns
-            Resulting tensor
-        '''
-
-        pass
 
 
 class CatEmbHead(AbsHead):

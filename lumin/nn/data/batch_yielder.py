@@ -89,7 +89,3 @@ class BatchYielder:
                 yield x, y, w
 
     def __len__(self): return len(self.inputs)//self.bs
-
-    def add_matrix_input(self, matrix=np.ndarray, keep:Optional[np.ndarray]=None) -> None:
-        self.matrix_inputs = matrix
-        if keep is not None: self.inputs = self.inputs[:,keep]

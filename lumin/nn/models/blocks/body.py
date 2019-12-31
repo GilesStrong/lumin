@@ -20,20 +20,6 @@ class AbsBody(AbsBlock):
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.feat_map,self.lookup_act = n_in,feat_map,lookup_act
-
-    @abstractmethod
-    def forward(self, x:Tensor) -> Tensor:
-        r'''
-        Pass tensor through body
-
-        Arguments:
-            x: incoming tensor
-        
-        Returns
-            Resulting tensor
-        '''
-
-        pass
     
 
 class FullyConnected(AbsBody):
