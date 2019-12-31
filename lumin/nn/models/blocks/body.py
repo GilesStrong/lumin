@@ -1,7 +1,6 @@
 from typing import Optional, Callable, Any, List, Dict
 import numpy as np
 from functools import partial
-from abc import abstractmethod
 
 import torch.nn as nn
 import torch
