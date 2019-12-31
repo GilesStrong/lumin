@@ -94,6 +94,7 @@ class ModelBuilder(object):
     # TODO: Classmethod from_fy
     # TODO: Check examples
     # TODO: Factor out cat_embedder to head
+    # TODO: Add matrix example
 
     def __init__(self, objective:str, n_out:int, cont_feats:Optional[List[str]]=None,
                  model_args:Optional[Dict[str,Dict[str,Any]]]=None, opt_args:Optional[Dict[str,Any]]=None, cat_embedder:Optional[CatEmbedder]=None,

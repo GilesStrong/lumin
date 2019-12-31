@@ -18,7 +18,7 @@ from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
 from ....utils.misc import to_device
 
-__all__ = ['CatEmbHead']
+__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet']
 
 
 class AbsHead(AbsBlock):
@@ -33,7 +33,15 @@ class AbsHead(AbsBlock):
     # TODO Make abtsract wrt data format
 
     @abstractmethod
-    def _map_outputs(self) -> Dict[str,List[int]]: pass
+    def _map_outputs(self) -> Dict[str,List[int]]:
+        r'''
+        Returns a one-to-one/many mapping of features to output nodes of block
+
+        Returns:
+            Dictionary mapping feature names to associated output nodes
+        '''
+
+        pass
 
 
 class AbsMatrixHead(AbsHead):
@@ -46,6 +54,11 @@ class AbsMatrixHead(AbsHead):
         self._build_lookup()
             
     def _build_lookup(self) -> None:
+        r'''
+        Builds lookup-tables necessary to map flattened data to correct locations for reshaping into a matrix.
+        Also handles missing data, i.e. elements in the matrix which do not exist in the flattened data
+        '''
+
         shp = (self.n_v,self.n_fpv) if self.row_wise else (self.n_fpv,self.n_v)
         lookup = torch.zeros(shp, dtype=torch.long)
         missing = torch.zeros(shp, dtype=torch.uint8)
@@ -65,24 +78,48 @@ class AbsMatrixHead(AbsHead):
         self.missing,self.lookup = to_device(missing.flatten()),to_device(lookup.flatten())
     
     def _get_matrix(self, x:Tensor) -> Tensor:
+        r'''
+        Converts flat data to matrix via lookup-and-reshaping, elements not present in flat data are set to zero
+
+        Arguments:
+            x: flat data
+
+        Returns:
+            2D matrix on device
+        '''
+
         mat = x[:,self.lookup]
         mat[:,self.missing] = 0
         mat = mat.reshape((x.size(0),len(self.vecs),len(self.fpv)) if self.row_wise else (x.size(0),len(self.fpv),len(self.vecs))) 
         return to_device(mat)
 
     @abstractmethod
-    def forward(self, x:Tensor, to_matrix:bool=False) -> Tensor:
+    def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
         r'''
         Pass tensor through head
 
         Arguments:
-            x: input tensor
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
         
-        Returns
+        Returns:
             Resulting tensor
         '''
 
         pass
+
+    def _process_input(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Processes input data, converting to matrix if necessary.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
+        
+        Returns:
+            Relevant data in matrix form
+        '''
+
+        if isinstance(x, tuple): x = x[1]
+        return self._get_matrix(x) if len(x.shape) <= 2 else x
 
 
 class CatEmbHead(AbsHead):
@@ -203,7 +240,24 @@ class CatEmbHead(AbsHead):
 
 class MultiHead(AbsHead):
     r'''
+    Wrapper head to handel data containing flat continuous and categorical features, and matrix data.
+    Flat inputs are passed through `flat_head`, and matrix inputs are passed through `matrix_head`. The outputs of both blocks are then concatenated together.
+    Incoming data can either be: Completely flat, in which case the `matrix_head` should construct its own matrix from the data;
+    or a tuple of flat data and the matrix, in which case the `matrix_head` will receive the data already in matrix format.
 
+    Arguments:
+        cont_feats: list of names of continuous and matrix input features
+        matrix_head: Uninitialised (partial) head to handle matrix data e.g. :class:`~lumin.nn.models.blocks.head.InteractionNet`
+        flat_head: Uninitialised (partial) head to handle flat data e.g. :class:`~lumin.nn.models.blocks.head.CatEmbHead`
+        cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` providing details of how to embed categorical inputs
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        freeze: whether to start with module parameters set to untrainable
+
+    Examples::
+    >>> inet = partial(InteractionNet, intfunc_depth=2,intfunc_width=4,intfunc_out_sz=3,
+    ...        outfunc_depth=2,outfunc_width=5,outfunc_out_sz=4,agg_method='flatten',
+    ...        feats_per_vec=feats_per_vec,vecs=vecs, act='swish')
+    ... multihead = MultiHead(cont_feats=cont_feats+matrix_feats, matrix_head=inet, cat_embedder=CatEmbedder.from_fy(train_fy))
     '''
 
     def __init__(self, cont_feats:List[str], matrix_head:Callable[[Any],AbsMatrixHead], flat_head:Callable[[Any],AbsHead]=CatEmbHead,
@@ -219,6 +273,14 @@ class MultiHead(AbsHead):
         self._build_lookups()
         
     def _set_feats(self, matrix_head:Callable[[Any],AbsMatrixHead]) -> None:
+        r'''
+        Sorts out which features will be sent to the flat and matrix heads.
+        Feature usage is (currently) exclusive, i.e. the same feature cannot be used as a matrix element and a flat-continuous input.
+
+        Arguments:
+            matrix_head: The unititialised `matrix_head`, which should have `vecs` and `feats_per_vec` keyword arguments
+        '''
+
         self.feats = self.cont_feats+self.cat_feats
         self.matrix_feats,tmp_fs = [],[]
         for v in matrix_head.keywords['vecs']:
@@ -230,17 +292,37 @@ class MultiHead(AbsHead):
         self.flat_feats = [f for f in self.feats if f not in self.matrix_feats]
         
     def _map_outputs(self) -> None:
+        r'''
+        Combines `feat_maps` of the matrix and flat heads, offsetting to indeces to account for the concatenated outputs.
+        '''
+
         self.feat_map = {**self.flat_head.feat_map}
         for f in self.matrix_head.feat_map:
             self.feat_map[f] = [self.matrix_head.feat_map[f][i]+self.flat_head.get_out_size() for i in self.matrix_head.feat_map[f]]
         
     def _build_lookups(self) -> None:
+        r'''
+        Build lookup tables to direct flat and matrix features to correct heads when input is supplied as a single, fully flat tensor.
+        '''
+        
         self.flat_lookup = torch.zeros(len(self.flat_feats), dtype=torch.long)
         for i,f in enumerate(self.flat_feats): self.flat_lookup[i] = self.feats.index(f)
         self.matrix_lookup = torch.zeros(len(self.matrix_feats), dtype=torch.long)
         for i,f in enumerate(self.matrix_feats): self.matrix_lookup[i] = self.matrix_feats.index(f)
     
     def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Pass incoming data through flat and matrix heads.
+        If `x` is a `Tuple` then the first element is passed to the flat head and the secons is sent to the matrix head.
+        Else the elements corresponding to flat dta are sent to the flat head and the elements corresponding to matrix elements are sent to the matrix head.
+
+        Arguments:
+            x: input data as either a flat `Tensor` or a `Tuple` of the form `[flat Tensor, matrix Tensor]`
+
+        Returns:
+            Concetanted outout of flat and matrix heads
+        '''
+
         if isinstance(x, tuple):
             return torch.cat((self.flat_head(x[0]),self.matrix_head(x[1])), 1)
         else:
@@ -248,10 +330,10 @@ class MultiHead(AbsHead):
     
     def get_out_size(self) -> int:
         r'''
-        Get size width of output layer
+        Get size of output
 
         Returns:
-            Width of output layer
+            Output size of flat head + output size of matrix head
         '''
         
         return self.flat_head.get_out_size()+self.matrix_head.get_out_size()
@@ -259,7 +341,56 @@ class MultiHead(AbsHead):
 
 class InteractionNet(AbsMatrixHead):
     r'''
+    Implementation of the Interaction Graph-Network (https://arxiv.org/abs/1612.00222).
+    Shown to be applicable for embedding many 4-momenta in e.g. https://arxiv.org/abs/1908.05318
+
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly into matrix form.
+    Matrices should/will be column-wise: each column is a seperate object (e.g. particle and jet) and each row is a feature (e.g. energy and mometum component).
+    Matrix elements are expected to be named according to `{object}_{feature}`, e.g. `photon_energy`.
+    `vecs` (vectors) should then be a list of objects, i.e. column headers, feature prefixes.
+    `feats_per_vec` should be a list of features, i.e. row headers, feature suffixes.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+
+    The penultimate stage of processing in the interaction net is a matrix, this must be processed into a flat tensor. `agg_method` controls how this is done:
+    'sum' will sum over the embedded representations of each object meaning that the objects can be placed in any order, however some information will be lost
+    during the aggregation. 'flatten' will flatten out the matrix preserving all the information, however the objects must be placed in some order each time.
+    Additionally, the 'flatten' mode can potentially become quite large if many objects are embedded. A future comprimise might be to feed the embeddings into
+    a recurrent layer to provide a smaller output which preserves more information than the summing.
+
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. column headers, feature prefixes
+        feats_per_vec: list of features, i.e. row headers, feature suffixes
+        intfunc_depth: number of layers in the interaction-representation network
+        intfunc_width: width of hidden layers in the interaction-representation network
+        intfunc_out_sz: width of output layer of the interaction-representation network, i.e. the size of each interaction representation
+        outfunc_depth: number of layers in the post-interaction network
+        outfunc_width: width of hidden layers in the post-interaction network
+        outfunc_out_sz: width of output layer of the post-interaction network, i.e. the size of each output representation
+        agg_method: how to transform the output matrix, currently either 'sum' to sum across objects, or 'flatten' to flatten out the matrix
+        do: dropout rate to be applied to hidden layers in the interaction-representation and post-interaction networks
+        bn: whether batch normalisation should be applied to hidden layers in the interaction-representation and post-interaction networks
+        act: activation function to apply to hidden layers in the interaction-representation and post-interaction networks
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+        freeze: whether to start with module parameters set to untrainable
     
+    Examples::
+        >>> inet = InteractionNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
+        ...                       intfunc_depth=2,intfunc_width=4,intfunc_out_sz=3,
+        ...                       outfunc_depth=2,outfunc_width=5,outfunc_out_sz=4,agg_method='flatten')
+        >>>
+        >>> inet = InteractionNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
+        ...                       intfunc_depth=2,intfunc_width=4,intfunc_out_sz=6,
+        ...                       outfunc_depth=2,outfunc_width=5,outfunc_out_sz=8,agg_method='sum')
+        >>>
+        >>> inet = InteractionNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
+        ...                       intfunc_depth=3,intfunc_width=4,intfunc_out_sz=3,
+        ...                       outfunc_depth=3,outfunc_width=5,outfunc_out_sz=4,agg_method='flatten',
+        ...                       do=0.1, bn=True, act='swish', lookup_init=lookup_uniform_init)
     '''
 
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
@@ -316,8 +447,17 @@ class InteractionNet(AbsMatrixHead):
         return to_device(mat_rr),to_device(mat_rs)
 
     def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
-        if isinstance(x, tuple): x = x[1]
-        mat_i = self._get_matrix(x) if len(x.shape) <= 2 else x
+        r'''
+        Passes input through the interaction network and aggregates out down to a flat tensor.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
+        
+        Returns:
+            Resulting tensor
+        '''
+
+        mat_i = self._process_input(x)
         mat_o = torch.cat((mat_i@self.mat_rr, mat_i@self.mat_rs), 1)
         
         # Transpose+reshape trick from https://github.com/eric-moreno/IN/blob/master/gnn.py
@@ -336,10 +476,10 @@ class InteractionNet(AbsMatrixHead):
     
     def get_out_size(self) -> int:
         r'''
-        Get size width of output layer
+        Get size of output
 
         Returns:
-            Width of output layer
+            Width of output representation
         '''
         
         if self.agg_method == 'sum':       return self.outfunc_out_sz
