@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List, Optional
+from typing import List, Optional, Union, Tuple
 
 from ...utils.misc import to_device
 
@@ -29,10 +29,11 @@ class BatchYielder:
         bulk_move: whether to move all data to device at once. Default is true (saves time), but if device has low memory you can set to False.
     '''
 
-    def __init__(self, inputs:np.ndarray, targets:np.ndarray, bs:int, objective:str,
+    def __init__(self, inputs:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], targets:np.ndarray, bs:int, objective:str,
                  weights:Optional[np.ndarray]=None, shuffle=True, use_weights:bool=True, bulk_move=True):
-        self.inputs,self.targets,self.weights,self.bs,self.objective,self.shuffle,self.use_weights,self.bulk_move = \
-            inputs,targets,weights,bs,objective,shuffle,use_weights,bulk_move
+        self.inputs,self.targets,self.weights,self.bs,self.objective,self.shuffle,self.use_weights,self.bulk_move,self.matrix_inputs = \
+            inputs,targets,weights,bs,objective,shuffle,use_weights,bulk_move,None
+        if isinstance(self.inputs, tuple): self.inputs,self.matrix_inputs = self.inputs
 
     def __iter__(self) -> List[Tensor]:
         r'''
@@ -44,15 +45,25 @@ class BatchYielder:
 
         if self.shuffle:
             if self.weights is not None and self.use_weights:
-                data = list(zip(self.inputs, self.targets, self.weights))
-                np.random.shuffle(data)
-                inputs, targets, weights = zip(*data)
+                if self.matrix_inputs is not None:
+                    data = list(zip(self.inputs, self.targets, self.weights, self.matrix_inputs))
+                    np.random.shuffle(data)
+                    inputs, targets, weights, matrix_inputs = zip(*data)
+                else:
+                    data = list(zip(self.inputs, self.targets, self.weights))
+                    np.random.shuffle(data)
+                    inputs, targets, weights = zip(*data)
             else:
-                data = list(zip(self.inputs, self.targets))
-                np.random.shuffle(data)
-                inputs, targets = zip(*data)
+                if self.matrix_inputs is not None:
+                    data = list(zip(self.inputs, self.targets, self.matrix_inputs))
+                    np.random.shuffle(data)
+                    inputs, targets, matrix_inputs = zip(*data)
+                else:
+                    data = list(zip(self.inputs, self.targets))
+                    np.random.shuffle(data)
+                    inputs, targets = zip(*data)
         else:
-            inputs, targets, weights = self.inputs, self.targets, self.weights
+            inputs, targets, weights, matrix_inputs = self.inputs, self.targets, self.weights, self.matrix_inputs
 
         if self.bulk_move:
             inputs = to_device(Tensor(inputs))
@@ -60,18 +71,21 @@ class BatchYielder:
             else:                              targets = to_device(Tensor(targets))
             if self.weights is not None and self.use_weights: weights = to_device(Tensor(weights))
             else:                                             weights = None
-            
+            if self.matrix_inputs is not None: matrix_inputs = to_device(Tensor(matrix_inputs))
+            else:                                              matrix_inputs = None
+
             for i in range(0, len(inputs)-self.bs+1, self.bs):
-                if weights is None: yield inputs[i:i+self.bs], targets[i:i+self.bs], None
-                else:               yield inputs[i:i+self.bs], targets[i:i+self.bs], weights[i:i+self.bs]                    
+                x = inputs[i:i+self.bs] if matrix_inputs is None else (inputs[i:i+self.bs],matrix_inputs[i:i+self.bs])
+                w = None if weights is None else weights[i:i+self.bs]
+                yield x, targets[i:i+self.bs], w              
 
         else:
             for i in range(0, len(inputs)-self.bs+1, self.bs):
                 if 'multiclass' in self.objective: y = Tensor(targets[i:i+self.bs]).long().squeeze()
                 else:                              y = Tensor(targets[i:i+self.bs])
-                if self.weights is not None and self.use_weights:
-                    yield to_device(Tensor(inputs[i:i+self.bs])), to_device(y), to_device(Tensor(weights[i:i+self.bs]))
-                else:
-                    yield to_device(Tensor(inputs[i:i+self.bs])), to_device(y), None
+                if matrix_inputs is None: x = to_device(Tensor(inputs[i:i+self.bs]))
+                else:                     x = (to_device(Tensor(inputs[i:i+self.bs])),to_device(Tensor(matrix_inputs[i:i+self.bs])))
+                w = to_device(Tensor(weights[i:i+self.bs])) if self.weights is not None and self.use_weights else None
+                yield x, y, w
 
     def __len__(self): return len(self.inputs)//self.bs

@@ -6,9 +6,18 @@
 
 ## Additions
 
+- Added support for processing and embedding of matrix data
+- `__repr__` of `Model` now detail information about input variables
+- `MultiHead` to allow the use of multiple head blocks to handle input data containing flat and matrix inputs
+- `AbsMatrixHead` abstract class for head blocks designed to process matrix data
+-  `InteractionNet` a new head block to apply interaction graph-nets to objects in matrix form
+
 ## Removals
 
 ## Fixes
+
+- `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros
+- Typing of head, body, and tail in `ModelBuilder.init`
 
 ## Changes
 

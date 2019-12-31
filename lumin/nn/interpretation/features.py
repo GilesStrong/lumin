@@ -47,22 +47,28 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
         ...                             eval_metric=AMS(n_total=100000))
     '''
 
+    # TODO extend to work over matrix data
+
     feats = fy.cont_feats + fy.cat_feats
     scores = []
     fold_bar = progress_bar(range(fy.n_folds), parent=pb_parent)
     for fold_idx in fold_bar:  # Average over folds
         val_fold = fy.get_fold(fold_idx)
         if val_fold['weights'] is not None: val_fold['weights'] /= val_fold['weights'].sum()
-        targs = Tensor(val_fold['targets'])
-        weights = to_tensor(val_fold['weights'])
-        if eval_metric is None: nom = model.evaluate(Tensor(val_fold['inputs']), targs, weights=weights)
-        else:                   nom = eval_metric.evaluate(fy, fold_idx, model.predict(Tensor(val_fold['inputs'])))
+        targs = val_fold['targets']
+        weights = val_fold['weights']
+        if eval_metric is None: nom = model.evaluate(val_fold['inputs'], targs, weights=weights)
+        else:                   nom = eval_metric.evaluate(fy, fold_idx, model.predict(val_fold['inputs']))
         tmp = []
         for i in range(len(feats)):
-            x = val_fold['inputs'].copy()
-            x[:,i] = sklearn.utils.shuffle(x[:,i])
-            if eval_metric is None: tmp.append(model.evaluate(Tensor(x), targs, weights=weights))
-            else:                   tmp.append(eval_metric.evaluate(fy, fold_idx, model.predict(Tensor(x))))
+            if isinstance(val_fold['inputs'], tuple):
+                x = (val_fold['inputs'][0].copy(),val_fold['inputs'][1])
+                x[0][:,i] = sklearn.utils.shuffle(x[0][:,i])
+            else:
+                x = val_fold['inputs'].copy()
+                x[:,i] = sklearn.utils.shuffle(x[:,i])
+            if eval_metric is None: tmp.append(model.evaluate(x, targs, weights=weights))
+            else:                   tmp.append(eval_metric.evaluate(fy, fold_idx, model.predict(x)))
 
         if eval_metric is None: tmp = (np.array(tmp)-nom)/nom
         else:                   tmp = (np.array(tmp)-nom)/nom if eval_metric.lower_metric_better else (nom-np.array(tmp))/nom

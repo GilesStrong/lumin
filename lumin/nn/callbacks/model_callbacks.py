@@ -153,9 +153,9 @@ class SWA(AbsModelCallback):
     def _compare_averages(self) -> None:
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            self.loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+            self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'])
         self.test_model.set_weights(self.weights_new)
-        new_loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+        new_loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'])
         
         if self.verbose: print(f"Checking renewal of swa model, current model: {self.loss}, new model: {new_loss}")
         if new_loss < self.loss:
@@ -184,5 +184,5 @@ class SWA(AbsModelCallback):
 
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            self.loss = self.test_model.evaluate(Tensor(self.val_fold['inputs']), Tensor(self.val_fold['targets']), to_tensor(self.val_fold['weights']))
+            self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'])
         return self.loss

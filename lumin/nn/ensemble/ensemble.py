@@ -20,6 +20,7 @@ from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...utils.statistics import uncert_round
+from ...utils.misc import to_device
 
 __all__ = ['Ensemble']
 
@@ -266,14 +267,19 @@ class Ensemble(AbsEnsemble):
         Examples::
             >>> preds = ensemble.predict_array(inputs)
         '''
-
-        pred = np.zeros((len(arr), self.n_out))
+        
         n_models = len(self.models) if n_models is None else n_models
         models = self.models[:n_models]
         weights = self.weights[:n_models]
         weights = weights/weights.sum()
         
-        arr = Tensor(arr)
+        if isinstance(arr, tuple):
+            arr = (to_device(Tensor(arr[0])),to_device(Tensor(arr[1])))
+            pred = np.zeros((len(arr[0]), self.n_out))
+        else:
+            to_device(Tensor(arr))
+            pred = np.zeros((len(arr), self.n_out))
+
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
             tmp_pred = m.predict(arr, callbacks=callbacks)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
