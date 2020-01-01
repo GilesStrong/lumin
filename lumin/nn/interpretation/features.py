@@ -4,7 +4,6 @@ import pandas as pd
 import sklearn.utils
 from typing import Optional
 
-from ...utils.misc import to_tensor
 from ...utils.statistics import bootstrap_stats
 from ...utils.multiprocessing import mp_run
 from ...plotting.interpretation import plot_importance
@@ -13,8 +12,6 @@ from ..ensemble.abs_ensemble import AbsEnsemble
 from ..data.fold_yielder import FoldYielder
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.plot_settings import PlotSettings
-
-from torch import Tensor
 
 __all__ = ['get_nn_feat_importance', 'get_ensemble_feat_importance']
 

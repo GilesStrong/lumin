@@ -4,7 +4,6 @@ import numpy as np
 from collections import OrderedDict
 import timeit
 from functools import partial
-import math
 
 from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
