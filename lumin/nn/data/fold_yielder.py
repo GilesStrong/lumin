@@ -5,6 +5,8 @@ from typing import Dict, Optional, Union, List
 import pickle
 import warnings
 from pathlib import Path
+from collections import OrderedDict
+import json
 
 from sklearn.pipeline import Pipeline
 
@@ -17,38 +19,39 @@ class FoldYielder:
 
     Arguments:
         foldfile: filename of hdf5 file or opened hdf5 file
-        cont_feats: list of names of continuous features present in input data
-        cat_feats: list of names of categorical features present in input data
+        cont_feats: list of names of continuous features present in input data, not required if foldfile contains meta data already
+        cat_feats: list of names of categorical features present in input data, not required if foldfile contains meta data already
         ignore_feats: optional list of input features which should be ignored
         input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
         yield_matrix: whether to actually yield matrix data if present
-        matrix_feats: name of features stored as a matrix
         matrix_pipe: preprocessing pipe for matrix data
 
 
     Examples::
-        >>> fy = FoldYielder('train.h5', cont_feats=['pT','eta','phi','mass'],
-        ...                  cat_feats=['channel'], ignore_feats=['phi'],
-        ...                  input_pipe='input_pipe.pkl')
+        >>> fy = FoldYielder('train.h5')
+        >>>
+        >>> fy = FoldYielder('train.h5', ignore_feats=['phi'], input_pipe='input_pipe.pkl')
+        >>>
+        >>> fy = FoldYielder('train.h5', input_pipe=input_pipe, matrix_pipe=matrix_pipe)
+        >>>
+        >>> fy = FoldYielder('train.h5', input_pipe=input_pipe, yield_matrix=False)
     '''
 
     # TODO: Matrix example
 
-    def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:List[str], cat_feats:List[str],
+    def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:Optional[List[str]]=None, cat_feats:Optional[List[str]]=None,
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None,
-                 yield_matrix:bool=True, matrix_feats:Optional[List[List[str]]]=None, matrix_pipe:Optional[Union[str,Pipeline]]=None):
+                 yield_matrix:bool=True, matrix_pipe:Optional[Union[str,Pipeline]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
-        self.orig_cont_feats,self.orig_cat_feat,self._ignore_feats = self.cont_feats,self.cat_feats,[]
-        self.yield_matrix,self.matrix_feats,self.matrix_pipe = yield_matrix,matrix_feats,matrix_pipe
-        self.input_feats = self.cont_feats + self.cat_feats
+        self.yield_matrix,self.matrix_pipe = yield_matrix,matrix_pipe
         self.augmented,self.aug_mult,self.train_time_aug,self.test_time_aug = False,0,False,False
-        self.set_foldfile(foldfile)
-        self.has_matrix = 'matrix_inputs' in self.columns()
+        self._set_foldfile(foldfile)
+        self.input_feats = self.cont_feats + self.cat_feats
+        self.orig_cont_feats,self.orig_cat_feat,self._ignore_feats = self.cont_feats,self.cat_feats,[]
         if isinstance(self.input_pipe, str) or isinstance(self.input_pipe, Path): self.add_input_pipe_from_file(self.input_pipe)
         if isinstance(self.output_pipe, str) or isinstance(self.input_pipe, Path): self.add_output_pipe_from_file(self.output_pipe)
         if isinstance(self.matrix_pipe, str) or isinstance(self.matrix_pipe, Path): self.add_matrix_pipe_from_file(self.matrix_pipe)
-
         if ignore_feats is not None: self.add_ignore(ignore_feats)
 
     def __repr__(self) -> str: return f'FoldYielder with {self.n_folds} folds, containing {self.columns()}'
@@ -92,16 +95,30 @@ class FoldYielder:
         
         return self._ignore_feats
 
-    def set_foldfile(self, foldfile:Union[str,Path,h5py.File]) -> None:
+    def _set_foldfile(self, foldfile:Union[str,Path,h5py.File]) -> None:
         r'''
         Sets the file from which to access data
 
         Arguments:
-            foldfile: filname of h5py file or opened h5py file
+            foldfile: filename of h5py file or opened h5py file
         '''
         
         if not isinstance(foldfile,  h5py.File): foldfile = h5py.File(foldfile, "r+")
         self.foldfile, self.n_folds = foldfile, len(foldfile)
+        self.has_matrix = 'matrix_inputs' in self.columns()
+        if 'meta_data' in self.foldfile: self._load_meta_data()
+
+    def _load_meta_data(self) -> None:
+        if self.cont_feats is not None:
+            warnings.warn("Fold file contains meta data information, explicit passing of continuous and categorical feature lists is no longer required.")
+        self.cont_feats = json.loads(self.foldfile['meta_data/cont_feats'][()])
+        self.cat_feats  = json.loads(self.foldfile['meta_data/cat_feats'][()])
+        self.targ_feats = json.loads(self.foldfile['meta_data/targ_feats'][()])
+        if 'wgt_feat' in self.foldfile['meta_data']: self.wgt_feat = json.loads(self.foldfile['meta_data/wgt_feat'][()])
+        if 'cat_maps' in self.foldfile['meta_data']: self.cat_maps = OrderedDict(json.loads(self.foldfile['meta_data/cat_maps'][()]))
+        if self.has_matrix:
+            self.matrix_feats = json.loads(self.foldfile['meta_data/matrix_feats'][()])
+            self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=np.bool)
 
     def close(self) -> None:
         r'''
@@ -118,7 +135,7 @@ class FoldYielder:
             input_pipe: Pipeline which was used for preprocessing the input data
         '''
         
-        self.input_pipe  = input_pipe
+        self.input_pipe = input_pipe
     
     def add_matrix_pipe(self, matrix_pipe:Pipeline) -> None:
         r'''
@@ -214,7 +231,7 @@ class FoldYielder:
 
         if fold_idx is None:
             data = []
-            for i, fold in enumerate(self.foldfile):
+            for i, fold in enumerate([f for f in self.foldfile if 'fold_' in f]):
                 if n_folds is not None and i >= n_folds: break
                 data.append(np.array(self.foldfile[f'{fold}/{column}']))
             data = np.concatenate(data)
@@ -264,20 +281,31 @@ class FoldYielder:
             Pandas DataFrame with requested data
         '''
 
-        # TODO Decide how to handle missing features when deprocessing matrix data
+        # TODO Decide how to handle deprocessing matrix data: option for object by object, flattened out?
 
         if inc_inputs:
             inputs = self.get_column('inputs', n_folds=n_folds, fold_idx=fold_idx)
-            if deprocess and self.input_pipe is not None: inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:,:len(self.orig_cont_feats)]),
-                                                                             inputs[:,len(self.orig_cont_feats):]))
+            if deprocess and self.input_pipe is not None:
+                try:
+                    inputs = np.hstack((self.input_pipe.inverse_transform(inputs[:,:len(self.orig_cont_feats)]), inputs[:,len(self.orig_cont_feats):]))
+                except ValueError:
+                    if self.has_matrix:
+                        print('Deprocessing of flat data failed, possible due to the input_pipe expecting to also transform matrix data. Deprocessing of matrix'
+                              'is not currently implemented, and deprocessing of flat data using an input_pipe which expects matrix data as well is difficult '
+                              'due to loss of variable ordering. In future please use separate pipes to preprocess flat data and matrix data. Returning inputs '
+                              'as processed.')
+                    else:
+                        print('Deprocessing of flat data failed, returning inputs as processed.')
+                        
             if nan_to_num: inputs = np.nan_to_num(inputs)
             data = pd.DataFrame(inputs, columns=self.input_feats)
             if len(self._ignore_feats) > 0 and not inc_ignore: data = data[[f for f in self.input_feats if f not in self._ignore_feats]]
             if self.has_matrix and inc_matrix:
-                mat = self.get_column('matrix_inputs', n_folds=n_folds, fold_idx=fold_idx)
-                shape = ((len(mat),mat.shape[1]*mat.shape[2]))
-                data = data.join(pd.DataFrame(mat.reshape(shape),
-                                              columns=np.array(self.matrix_feats).reshape(shape[1]) if self.matrix_feats is not None else None))
+                mat = self.get_column('matrix_inputs', n_folds=n_folds, fold_idx=fold_idx).reshape(len(inputs),np.multiply(*self.matrix_feats['shape']))
+                mat = mat[:,np.logical_not(self.matrix_feats['missing'])]
+                # if deprocess and self.matrix_pipe is not None: mat = self.matrix_pipe.inverse_transform(mat)
+                if nan_to_num: mat = np.nan_to_num(mat)
+                data = data.join(pd.DataFrame(mat, columns=self.matrix_feats['present_feats']))
         else:
             data = pd.DataFrame()
 
@@ -330,8 +358,8 @@ class HEPAugFoldYielder(FoldYielder):
 
     Arguments:
         foldfile: filename of hdf5 file or opened hdf5 file
-        cont_feats: list of names of continuous features present in input data
-        cat_feats: list of names of categorical features present in input data
+        cont_feats: list of names of continuous features present in input data, not required if foldfile contains meta data already
+        cat_feats: list of names of categorical features present in input data, not required if foldfile contains meta data already
         ignore_feats: optional list of input features which should be ignored
         targ_feats: optional list of target features to also be transformed
         rot_mult: number of rotations of event in phi to make at test-time (currently must be even).
@@ -345,7 +373,6 @@ class HEPAugFoldYielder(FoldYielder):
         input_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the inputs
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
         yield_matrix: whether to actually yield matrix data if present
-        matrix_feats: name of features stored as a matrix
         matrix_pipe: preprocessing pipe for matrix data
 
     Examples::
@@ -356,16 +383,16 @@ class HEPAugFoldYielder(FoldYielder):
     '''
 
     '''Accessing data from foldfile and apply HEP specific data augmentation during training and testing'''
-    def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:List[str], cat_feats:List[str],
+    def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:Optional[List[str]]=None, cat_feats:Optional[List[str]]=None,
                  ignore_feats:Optional[List[str]]=None, targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
                  train_time_aug:bool=True, test_time_aug:bool=True,
                  input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None,
-                 yield_matrix:bool=True, matrix_feats:Optional[List[List[str]]]=None, matrix_pipe:Optional[Union[str,Pipeline]]=None):
+                 yield_matrix:bool=True, matrix_pipe:Optional[Union[str,Pipeline]]=None):
         super().__init__(foldfile=foldfile, cont_feats=cont_feats, cat_feats=cat_feats,
                          ignore_feats=ignore_feats, input_pipe=input_pipe, output_pipe=output_pipe,
-                         yield_matrix=yield_matrix, matrix_feats=matrix_feats, matrix_pipe=matrix_pipe)
+                         yield_matrix=yield_matrix, matrix_pipe=matrix_pipe)
 
         if rot_mult > 0 and not random_rot and rot_mult % 2 != 0:
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')

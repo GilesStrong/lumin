@@ -60,9 +60,7 @@ class AbsMatrixHead(AbsHead):
         '''
 
         shp = (self.n_v,self.n_fpv) if self.row_wise else (self.n_fpv,self.n_v)
-        lookup = torch.zeros(shp, dtype=torch.long)
-        missing = torch.zeros(shp, dtype=torch.uint8)
-        
+        lookup,missing = torch.zeros(shp, dtype=torch.long),torch.zeros(shp, dtype=torch.uint8)
         if self.row_wise:
             for i, v in enumerate(self.vecs):
                 for j, c in enumerate(self.fpv):

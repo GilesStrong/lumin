@@ -10,7 +10,11 @@
 - `__repr__` of `Model` now detail information about input variables
 - `MultiHead` to allow the use of multiple head blocks to handle input data containing flat and matrix inputs
 - `AbsMatrixHead` abstract class for head blocks designed to process matrix data
--  `InteractionNet` a new head block to apply interaction graph-nets to objects in matrix form
+- `InteractionNet` a new head block to apply interaction graph-nets to objects in matrix form
+- Meta data:
+    - `FoldYielder` now checks its foldfile for a `meta_data` group which contains information about the features and inputs in the data
+    - `cont_feats` and `cat_feats` now no longer need to be passed to `FoldYielder` during initialisation of the foldfile contains meta data
+    - `add_meta_data` function added to write meta data to foldfiles and is automatically called by `df2foldfile` 
 
 ## Removals
 
@@ -22,6 +26,7 @@
 ## Changes
 
 - Slight optimisation in `FullyConnected` when not using dense or residual networks 
+- `FoldYielder.set_foldfile` is now a private function `FoldYielder._set_foldfile`
 
 ## Depreciations
 
