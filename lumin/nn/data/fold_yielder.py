@@ -104,7 +104,7 @@ class FoldYielder:
         '''
         
         if not isinstance(foldfile,  h5py.File): foldfile = h5py.File(foldfile, "r+")
-        self.foldfile, self.n_folds = foldfile, len(foldfile)
+        self.foldfile, self.n_folds = foldfile, len([f for f in foldfile if 'fold_' in f])
         self.has_matrix = 'matrix_inputs' in self.columns()
         if 'meta_data' in self.foldfile: self._load_meta_data()
 
