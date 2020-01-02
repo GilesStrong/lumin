@@ -411,6 +411,7 @@ class InteractionNet(AbsMatrixHead):
         self.fr = self._get_nn(fan_in=2*self.n_fpv, width=self.intfunc_width, fan_out=self.intfunc_out_sz, depth=self.intfunc_depth)
         self.fo = self._get_nn(fan_in=self.n_fpv+self.intfunc_out_sz, width=self.outfunc_width, fan_out=self.outfunc_out_sz, depth=self.outfunc_depth)
         self._map_outputs()
+        if self.freeze: self.freeze_layers()
     
     def _map_outputs(self) -> None:
         self.feat_map = {}
@@ -535,6 +536,7 @@ class RecurrentHead(AbsMatrixHead):
         try:              self.rnn = p(nonlinearity=act)
         except TypeError: self.rnn = p()
         self._map_outputs()
+        if self.freeze: self.freeze_layers()
             
     def _map_outputs(self) -> None:
         self.feat_map = {}

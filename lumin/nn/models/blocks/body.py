@@ -88,7 +88,7 @@ class FullyConnected(AbsBody):
                                           if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
                                           for d in range(self.depth)])
             
-        if self.freeze: self.freeze_layers
+        if self.freeze: self.freeze_layers()
 
     def _get_layer(self, idx:int, fan_in:Optional[int]=None, fan_out:Optional[int]=None) -> nn.Module:
         fan_in  = self.width if fan_in  is None else fan_in
