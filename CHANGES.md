@@ -21,7 +21,7 @@
 ## Fixes
 
 - `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros unless `nan_to_num` is set to `True`
-- Typing of head, body, and tail in `ModelBuilder.init`
+- Various typing fixes`
 
 ## Changes
 

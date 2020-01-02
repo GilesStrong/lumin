@@ -30,7 +30,7 @@ class BatchYielder:
     '''
 
     def __init__(self, inputs:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], targets:np.ndarray, bs:int, objective:str,
-                 weights:Optional[np.ndarray]=None, shuffle=True, use_weights:bool=True, bulk_move=True):
+                 weights:Optional[np.ndarray]=None, shuffle:bool=True, use_weights:bool=True, bulk_move:bool=True):
         self.inputs,self.targets,self.weights,self.bs,self.objective,self.shuffle,self.use_weights,self.bulk_move,self.matrix_inputs = \
             inputs,targets,weights,bs,objective,shuffle,use_weights,bulk_move,None
         if isinstance(self.inputs, tuple): self.inputs,self.matrix_inputs = self.inputs
