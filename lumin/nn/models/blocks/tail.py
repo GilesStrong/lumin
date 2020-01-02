@@ -70,7 +70,7 @@ class ClassRegMulti(AbsTail):
             self.y_diff = np.abs(self.y_range.take([1], axis=-1)-self.y_range.take([0], axis=-1)).ravel()
             self.y_min, self.y_diff = to_device(Tensor(self.y_min)), to_device(Tensor(self.y_diff))
         self._build_layers()
-        if self.freeze: self.freeze_layers
+        if self.freeze: self.freeze_layers()
 
     def __getitem__(self, key:int) -> nn.Module:
         if key == 0: return self.dense

@@ -5,6 +5,7 @@ from collections import OrderedDict
 from pathlib import Path
 import os
 from abc import abstractmethod
+from functools import partial
 
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -18,7 +19,7 @@ from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
 from ....utils.misc import to_device
 
-__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet']
+__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead']
 
 
 class AbsHead(AbsBlock):
@@ -342,7 +343,7 @@ class InteractionNet(AbsMatrixHead):
     Implementation of the Interaction Graph-Network (https://arxiv.org/abs/1612.00222).
     Shown to be applicable for embedding many 4-momenta in e.g. https://arxiv.org/abs/1908.05318
 
-    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly into matrix form.
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly in column-wise matrix form.
     Matrices should/will be column-wise: each column is a seperate object (e.g. particle and jet) and each row is a feature (e.g. energy and mometum component).
     Matrix elements are expected to be named according to `{object}_{feature}`, e.g. `photon_energy`.
     `vecs` (vectors) should then be a list of objects, i.e. column headers, feature prefixes.
@@ -361,7 +362,7 @@ class InteractionNet(AbsMatrixHead):
     Arguments:
         cont_feats: list of all the matrix features which are present in the input data
         vecs: list of objects, i.e. column headers, feature prefixes
-        feats_per_vec: list of features, i.e. row headers, feature suffixes
+        feats_per_vec: list of features per object, i.e. row headers, feature suffixes
         intfunc_depth: number of layers in the interaction-representation network
         intfunc_width: width of hidden layers in the interaction-representation network
         intfunc_out_sz: width of output layer of the interaction-representation network, i.e. the size of each interaction representation
@@ -410,6 +411,7 @@ class InteractionNet(AbsMatrixHead):
         self.fr = self._get_nn(fan_in=2*self.n_fpv, width=self.intfunc_width, fan_out=self.intfunc_out_sz, depth=self.intfunc_depth)
         self.fo = self._get_nn(fan_in=self.n_fpv+self.intfunc_out_sz, width=self.outfunc_width, fan_out=self.outfunc_out_sz, depth=self.outfunc_depth)
         self._map_outputs()
+        if self.freeze: self.freeze_layers()
     
     def _map_outputs(self) -> None:
         self.feat_map = {}
@@ -458,6 +460,7 @@ class InteractionNet(AbsMatrixHead):
         mat_i = self._process_input(x)
         mat_o = torch.cat((mat_i@self.mat_rr, mat_i@self.mat_rs), 1)
         
+        # Refactor this; nn.Module will automatically run over each vector without reshaping!
         # Transpose+reshape trick from https://github.com/eric-moreno/IN/blob/master/gnn.py
         mat_o = torch.transpose(mat_o, 1, 2)
         mat_o = self.fr(mat_o.reshape(-1, 2*self.n_fpv)).reshape(-1, self.n_e, self.intfunc_out_sz)
@@ -482,3 +485,88 @@ class InteractionNet(AbsMatrixHead):
         
         if self.agg_method == 'sum':       return self.outfunc_out_sz
         elif self.agg_method == 'flatten': return self.outfunc_out_sz*self.n_v
+
+
+class RecurrentHead(AbsMatrixHead):
+    r'''
+    Recurrent head for row-wise matrix data applying e.g. RNN, LSTM, GRU.
+    
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly into matrix form.
+    Matrices should/will be row-wise: each column is a seperate object (e.g. particle and jet) and each row is a feature (e.g. energy and mometum component).
+    Matrix elements are expected to be named according to `{object}_{feature}`, e.g. `photon_energy`.
+    `vecs` (vectors) should then be a list of objects, i.e. row headers, feature prefixes.
+    `feats_per_vec` should be a list of features, i.e. column headers, feature suffixes.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. row headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. columns headers, feature suffixes
+        depth: number of hidden layers to use
+        width: size of each hidden state
+        bidirectional: whether to set recurrent layers to be bidirectional
+        rnn: module class to use for the recurrent layer, e.g. `torch.nn.RNN`, `torch.nn.LSTM`, `torch.nn.GRU`
+        do: dropout rate to be applied to hidden layers
+        act: activation function to apply to hidden layers, only used if rnn expects a nonliearity
+        stateful: whether to return all intermediate hidden states, or only the final hidden states
+        freeze: whether to start with module parameters set to untrainable
+    
+    Examples::
+        >>> rnn = RecurrentHead(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs, depth=1, width=20)
+        >>>
+        >>> rnn = RecurrentHead(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
+        ...                     depth=2, width=10, act='relu', bidirectional=True)
+        >>>
+        >>> lstm = RecurrentHead(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
+        ...                      depth=1, width=10, rnn=nn.LSTM)
+        >>>
+        >>> gru = RecurrentHead(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
+        ...                     depth=3, width=10, rnn=nn.GRU, bidirectional=True)
+    '''
+
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 depth:int, width:int, bidirectional:bool=False, rnn:nn.RNNBase=nn.RNN,
+                 do:float=0., act:str='tanh', stateful:bool=False, freeze:bool=False, **kargs):
+        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=True, freeze=freeze)
+        self.stateful,self.width,self.bidirectional = stateful,width,bidirectional
+        p = partial(rnn, input_size=self.n_fpv, hidden_size=width, num_layers=depth, bias=True, batch_first=True, dropout=do, bidirectional=bidirectional)
+        try:              self.rnn = p(nonlinearity=act)
+        except TypeError: self.rnn = p()
+        self._map_outputs()
+        if self.freeze: self.freeze_layers()
+            
+    def _map_outputs(self) -> None:
+        self.feat_map = {}
+        for i, f in enumerate(self.cont_feats): self.feat_map[f] = list(range(self.get_out_size()))
+
+    def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Passes input through the recurrent network.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
+        
+        Returns:
+            if stateful, returns all hidden states, otherwise only returns last hidden state
+        '''
+
+        x = self._process_input(x)
+        x,_ = self.rnn(x)
+        if self.stateful: return x
+        else:             return x[:,-1]
+    
+    def get_out_size(self) -> Union[int,Tuple[int,int]]:
+        r'''
+        Get size of output
+
+        Returns:
+            Width of output representation, or shape of output if stateful
+        '''
+        
+        if self.stateful:
+            return (self.n_v,2*self.width) if self.bidirectional else (self.n_v,self.width)
+        else:
+            return 2*self.width if self.bidirectional else self.width
