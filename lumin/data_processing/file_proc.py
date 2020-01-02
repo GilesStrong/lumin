@@ -128,7 +128,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         dup = [f for f in cont_feats if f in mat_feats]
         if len(dup) > 1:
             print(f'{dup} present in both matrix features and continuous features; removing from continuous features')
-            for f in dup: cont_feats.remove(f)
+            cont_feats = [f for f in cont_feats if f not in dup]
 
     if strat_key is None:
         kf = KFold(n_splits=n_folds, shuffle=True)
