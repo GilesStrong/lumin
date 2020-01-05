@@ -570,3 +570,115 @@ class RecurrentHead(AbsMatrixHead):
             return (self.n_v,2*self.width) if self.bidirectional else (self.n_v,self.width)
         else:
             return 2*self.width if self.bidirectional else self.width
+
+
+class AbsConv1dHead(AbsMatrixHead):
+    r'''
+    Abstract wrapper head for applying 1D convolutions to column-wise matrix data.
+    Users should inherit from this class and overwrite :meth:`~lumin.nn.models.blocks.heads.AbsConv1dHead.get_layers` to define their model.
+    For more colmplicated models, :meth:`~lumin.nn.models.blocks.heads.AbsConv1dHead.foward` can also be overwritten
+    The output size of the block is automatically computed during initialisation by passing through random pseudodata.
+    
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly into matrix form.
+    Matrices should/will be row-wise: each column is a seperate object (e.g. particle and jet) and each row is a feature (e.g. energy and mometum component).
+    Matrix elements are expected to be named according to `{object}_{feature}`, e.g. `photon_energy`.
+    `vecs` (vectors) should then be a list of objects, i.e. row headers, feature prefixes.
+    `feats_per_vec` should be a list of features, i.e. column headers, feature suffixes.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. row headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. columns headers, feature suffixes
+        do: dropout rate argument passed to `get_layers`
+        act: activation function passed to `get_layers`
+        bn: batch normalisation argument passed to `get_layers`
+        layer_kargs: dictionary of keyword arguments which are passed to `get_layers`
+        freeze: whether to start with module parameters set to untrainable
+    
+    Examples::
+        >>> class MyCNN(AbsConv1dHead):
+        ...     def get_layers(self, do:float=0., act:str='relu', bn:bool=False, **kargs) -> Tuple[nn.Module, int]:
+        ...         layers = []
+        ...         layers.append(nn.Conv1d(in_channels=self.n_fpv, out_channels=16, kernel_size=3, padding=1))
+        ...         self.lookup_init(act)(layers[-1].weight)
+        ...         if act != 'linear': layers.append(self.lookup_act(act))        
+        ...         layers.append(nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3, padding=1))
+        ...         self.lookup_init(act)(layers[-1].weight)
+        ...         if act != 'linear': layers.append(self.lookup_act(act))
+        ...         layers.append(nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, padding=1, stride=2))
+        ...         self.lookup_init(act)(layers[-1].weight)
+        ...         if act != 'linear': layers.append(self.lookup_act(act))
+        ...         layers.append(nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1, stride=1))
+        ...         self.lookup_init(act)(layers[-1].weight)
+        ...         if act != 'linear': layers.append(self.lookup_act(act))
+        ...         layers.append(nn.AdaptiveAvgPool1d(1))
+        ...         layers = nn.Sequential(*layers)
+        ...         return layers
+        ...
+        ... cnn = MyCNN(cont_feats=matrix_feats, vecs=vectors, feats_per_vec=feats_per_vec)
+    '''
+
+    # TODO: check whether it's overwrite or overload for the technical term
+
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 do:float=0., act:str='relu', bn:bool=False, layer_kargs:Optional[Dict[str,Any]]=None,
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
+        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+        if layer_kargs is None: layer_kargs = {}
+        self.layers:nn.Module = self.get_layers(do=do, act=act, bn=bn, **layer_kargs)
+        self.out_sz = self.check_out_sz()
+        if self.freeze: self.freeze_layers()
+        self._map_outputs()
+            
+    def _map_outputs(self) -> None:
+        self.feat_map = {}
+        for i, f in enumerate(self.cont_feats): self.feat_map[f] = list(range(self.get_out_size()))
+            
+    def check_out_sz(self) -> int:
+        x = torch.rand((1, self.n_fpv,self.n_v))
+        x = self.forward(x)
+        return x.size(-1)
+            
+    @abstractmethod
+    def get_layers(self, do:float=0., act:str='relu', bn:bool=False, **kargs) -> nn.Module:
+        r'''
+        Abstract function to be overwritten by user. Should return a single torch.nn.Module which accepts the expected input matrix data.
+        .. Warning:: The user is responsible for correctly initialising layers using `self.lookup_init`, e.g. self.lookup_init(act)(layer.weight)
+        '''
+        
+        # layers = []
+        # layers.append ...
+        # ...
+        # layers = nn.Sequential(*layers)
+        # return layers
+        
+        pass
+
+    def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Passes input through the convolutional network.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
+        
+        Returns:
+            Resulting tensor
+        '''
+
+        x = self._process_input(x)
+        return self.layers(x).view(x.size(0),-1)
+    
+    def get_out_size(self) -> int:
+        r'''
+        Get size of output
+
+        Returns:
+            Width of output representation
+        '''
+        
+        return self.out_sz
