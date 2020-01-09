@@ -117,6 +117,8 @@ class FullyConnected(AbsBody):
                 if i > 0:
                     x = l(x)+x
                     x = self.res_bns[i-1](x)  # Renormalise after addition
+                else:
+                    x = l(x)
         else:
             x = self.layers(x)
         return x

@@ -82,7 +82,7 @@ class CatEmbedder():
                     emb_load_path=Path('weights'))
         '''
 
-        cat_names = [f for f in fy.cat_feats if f not in fy.get_ignore()]
+        cat_names = fy.get_use_cat_feats()
         cat_szs = None
         # Get cardinalities
         for fld_id in range(len(fy)):

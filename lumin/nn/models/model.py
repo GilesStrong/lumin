@@ -241,7 +241,7 @@ class Model(AbsModel):
         '''
 
         times = []
-        mb = master_bar(range(len(fy.foldfile)))
+        mb = master_bar(range(len(fy)))
         for fold_idx in mb:
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:

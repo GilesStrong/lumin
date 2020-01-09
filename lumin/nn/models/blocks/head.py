@@ -644,15 +644,27 @@ class AbsConv1dHead(AbsMatrixHead):
         x = self.forward(x)
         return x.size(-1)
             
+    def get_conv_layer(self, in_c:int, out_c:int, kernel_sz:int, padding:int, stride:int=1, do:float=0., act:str='relu', bn:bool=False) -> nn.Sequential:
+            layers = []
+            layers.append(nn.Conv1d(in_channels=in_c, out_channels=out_c, kernel_size=kernel_sz, padding=padding, stride=stride))
+            self.lookup_init(act)(layers[-1].weight)
+            nn.init.zeros_(layers[-1].bias)
+            if act != 'linear': layers.append(self.lookup_act(act))
+            if bn: layers.append(nn.BatchNorm1d(out_c))  # check BN for 1D conv
+            if do: 
+                if act == 'selu': layers.append(nn.AlphaDropout(do))
+                else:             layers.append(nn.Dropout(do))
+            return nn.Sequential(*layers)
+            
     @abstractmethod
     def get_layers(self, do:float=0., act:str='relu', bn:bool=False, **kargs) -> nn.Module:
         r'''
-        Abstract function to be overwritten by user. Should return a single torch.nn.Module which accepts the expected input matrix data.
-        .. Warning:: The user is responsible for correctly initialising layers using `self.lookup_init`, e.g. self.lookup_init(act)(layer.weight)
+        Abstract function to be overloaded by user. Should return a single torch.nn.Module which accepts the expected input matrix data.
+        
         '''
         
         # layers = []
-        # layers.append ...
+        # layers.append(self.get_conv_layer(3, 16, kernel_sz=7, padding=3, stride=2))
         # ...
         # layers = nn.Sequential(*layers)
         # return layers
