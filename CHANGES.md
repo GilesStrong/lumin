@@ -24,6 +24,7 @@
 - `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros unless `nan_to_num` is set to `True`
 - Various typing fixes`
 - Body and tail modules not correctly freezing
+- Made `Swish` to not be inplace - seemed to cause problems sometimes
 
 ## Changes
 
