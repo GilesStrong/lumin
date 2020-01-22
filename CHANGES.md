@@ -12,6 +12,7 @@
     - `AbsMatrixHead` abstract class for head blocks designed to process matrix data
     - `InteractionNet` a new head block to apply interaction graph-nets to objects in matrix form
     - `RecurrentHead` a new head block to apply recurrent layers (RNN, LSTM, GRU) to series objects in matrix form
+    - `AbsConv1dHead` a new abstract class for building convolutional layers to apply to object in matrix form
 - Meta data:
     - `FoldYielder` now checks its foldfile for a `meta_data` group which contains information about the features and inputs in the data
     - `cont_feats` and `cat_feats` now no longer need to be passed to `FoldYielder` during initialisation of the foldfile contains meta data
@@ -24,6 +25,7 @@
 - `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros unless `nan_to_num` is set to `True`
 - Various typing fixes`
 - Body and tail modules not correctly freezing
+- Made `Swish` to not be inplace - seemed to cause problems sometimes
 
 ## Changes
 

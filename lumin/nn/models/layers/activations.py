@@ -42,7 +42,7 @@ class Swish(nn.Module):
 
     def __init__(self, inplace=False):
         super().__init__()
-        self.inplace = True
+        self.inplace = False
 
     def forward(self, x:Tensor) -> Tensor:
         r'''

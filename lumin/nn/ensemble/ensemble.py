@@ -7,7 +7,7 @@ import warnings
 from fastprogress import progress_bar, master_bar
 from pathlib import Path
 import timeit
-from typing import Dict, Union, Any, List, Optional
+from typing import Dict, Union, Any, List, Optional, Tuple
 from sklearn.pipeline import Pipeline
 
 from torch.tensor import Tensor
@@ -247,7 +247,7 @@ class Ensemble(AbsEnsemble):
         self.n_out = self.models[0].get_out_size()
         self.results = results
         
-    def predict_array(self, arr:np.ndarray, n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None, display:bool=True, 
+    def predict_array(self, arr:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None, display:bool=True, 
                       callbacks:Optional[List[AbsCallback]]=None) -> np.ndarray:
         r'''
         Apply ensemble to Numpy array and get predictions. If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
@@ -272,7 +272,7 @@ class Ensemble(AbsEnsemble):
         models = self.models[:n_models]
         weights = self.weights[:n_models]
         weights = weights/weights.sum()
-        
+
         if isinstance(arr, tuple):
             arr = (to_device(Tensor(arr[0])),to_device(Tensor(arr[1])))
             pred = np.zeros((len(arr[0]), self.n_out))
@@ -308,7 +308,7 @@ class Ensemble(AbsEnsemble):
 
         n_models = len(self.models) if n_models is None else n_models
         times = []
-        mb = master_bar(range(len(fy.foldfile)))
+        mb = master_bar(range(len(fy)))
         for fold_idx in mb:
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:

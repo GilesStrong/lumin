@@ -41,8 +41,8 @@ class FoldYielder:
     # TODO: Matrix example
 
     def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:Optional[List[str]]=None, cat_feats:Optional[List[str]]=None,
-                 ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline]]=None, output_pipe:Optional[Union[str,Pipeline]]=None,
-                 yield_matrix:bool=True, matrix_pipe:Optional[Union[str,Pipeline]]=None):
+                 ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline,Path]]=None, output_pipe:Optional[Union[str,Pipeline,Path]]=None,
+                 yield_matrix:bool=True, matrix_pipe:Optional[Union[str,Pipeline,Path]]=None):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
         self.yield_matrix,self.matrix_pipe = yield_matrix,matrix_pipe
         self.augmented,self.aug_mult,self.train_time_aug,self.test_time_aug = False,0,False,False
@@ -95,6 +95,26 @@ class FoldYielder:
         
         return self._ignore_feats
 
+    def get_use_cont_feats(self) -> List[str]:
+        r'''
+        Returns list of continuous features which will be present in training data, accounting for ignored features.
+
+        Returns:
+            List of continuous features
+        '''
+
+        return [f for f in self.cont_feats if f not in self._ignore_feats]
+
+    def get_use_cat_feats(self) -> List[str]:
+        r'''
+        Returns list of categorical features which will be present in training data, accounting for ignored features.
+
+        Returns:
+            List of categorical features
+        '''
+
+        return [f for f in self.cat_feats if f not in self._ignore_feats]
+
     def _set_foldfile(self, foldfile:Union[str,Path,h5py.File]) -> None:
         r'''
         Sets the file from which to access data
@@ -127,35 +147,40 @@ class FoldYielder:
 
         self.foldfile.close()
 
-    def add_input_pipe(self, input_pipe:Pipeline) -> None:
+    def add_input_pipe(self, input_pipe:Union[str,Pipeline]) -> None:
         r'''
         Adds an input pipe to the FoldYielder for use when deprocessing data
 
         Arguments:
-            input_pipe: Pipeline which was used for preprocessing the input data
+            input_pipe: Pipeline which was used for preprocessing the input data or name of pkl file containing Pipeline
         '''
-        
-        self.input_pipe = input_pipe
+
+        if isinstance(input_pipe, str) or isinstance(input_pipe, Path): self.add_input_pipe_from_file(input_pipe)
+        else:                                                           self.input_pipe = input_pipe
     
-    def add_matrix_pipe(self, matrix_pipe:Pipeline) -> None:
+    def add_matrix_pipe(self, matrix_pipe:Union[str,Pipeline]) -> None:
         r'''
         Adds an matrix pipe to the FoldYielder for use when deprocessing data
 
+        .. Warning:: Deprocessing matrix data is not yet implemented
+
         Arguments:
-            matrix_pipe: Pipeline which was used for preprocessing the input data
+            matrix_pipe: Pipeline which was used for preprocessing the input data or name of pkl file containing Pipeline
         '''
         
-        self.matrix_pipe  = matrix_pipe
+        if isinstance(matrix_pipe, str) or isinstance(matrix_pipe, Path): self.add_matrix_pipe_from_file(matrix_pipe)
+        else:                                                             self.matrix_pipe = matrix_pipe
 
-    def add_output_pipe(self, output_pipe:Pipeline) -> None:
+    def add_output_pipe(self, output_pipe:Union[str,Pipeline]) -> None:
         r'''
         Adds an output pipe to the FoldYielder for use when deprocessing data
 
         Arguments:
-            output_pipe: Pipeline which was used for preprocessing the target data
+            output_pipe: Pipeline which was used for preprocessing the target data or name of pkl file containing Pipeline
         '''
         
-        self.output_pipe = output_pipe
+        if isinstance(output_pipe, str) or isinstance(output_pipe, Path): self.add_output_pipe_from_file(output_pipe)
+        else:                                                             self.output_pipe = output_pipe
 
     def add_input_pipe_from_file(self, name:str) -> None:
         r'''
@@ -227,7 +252,7 @@ class FoldYielder:
             Numpy array of column data
         '''
 
-        if f'fold_0/{column}' not in self.foldfile: return None
+        if column not in self.columns(): return None
 
         if fold_idx is None:
             data = []
@@ -236,6 +261,7 @@ class FoldYielder:
                 data.append(np.array(self.foldfile[f'{fold}/{column}']))
             data = np.concatenate(data)
         else:
+            if f'fold_{fold_idx}' not in self.foldfile: raise IndexError(f"Fold {fold_idx} does not exist")
             data = np.array(self.foldfile[f'fold_{fold_idx}/{column}'])
         return data[:, None] if data[0].shape is () and add_newaxis else data
 
