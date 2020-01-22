@@ -18,8 +18,9 @@ from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
 from ....utils.misc import to_device
+from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
-__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead']
+__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead']
 
 
 class AbsHead(AbsBlock):
@@ -574,8 +575,11 @@ class RecurrentHead(AbsMatrixHead):
 class AbsConv1dHead(AbsMatrixHead):
     r'''
     Abstract wrapper head for applying 1D convolutions to column-wise matrix data.
-    Users should inherit from this class and overwrite :meth:`~lumin.nn.models.blocks.heads.AbsConv1dHead.get_layers` to define their model.
-    For more colmplicated models, :meth:`~lumin.nn.models.blocks.heads.AbsConv1dHead.foward` can also be overwritten
+    Users should inherit from this class and overload :meth:`~lumin.nn.models.blocks.heads.AbsConv1dHead.get_layers` to define their model.
+    Some common convolutional layers are already defined (e.g. :class:`~lumin.nn.models.blocks.conv_blocks.ConvBlock` and
+    :class:`~lumin.nn.models.blocks.conv_blocks.ResNeXt`), which are accessable using methods such as
+    :meth`~lumin.nn.models.blocks.heads.AbsConv1dHead..get_conv1d_block`.
+    For more complicated models, :meth:`~lumin.nn.models.blocks.heads.AbsConv1dHead.foward` can also be overwritten
     The output size of the block is automatically computed during initialisation by passing through random pseudodata.
     
     Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly into matrix form.
@@ -592,44 +596,60 @@ class AbsConv1dHead(AbsMatrixHead):
         cont_feats: list of all the matrix features which are present in the input data
         vecs: list of objects, i.e. row headers, feature prefixes
         feats_per_vec: list of features per object, i.e. columns headers, feature suffixes
-        do: dropout rate argument passed to `get_layers`
         act: activation function passed to `get_layers`
         bn: batch normalisation argument passed to `get_layers`
         layer_kargs: dictionary of keyword arguments which are passed to `get_layers`
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         freeze: whether to start with module parameters set to untrainable
     
     Examples::
         >>> class MyCNN(AbsConv1dHead):
-        ...     def get_layers(self, do:float=0., act:str='relu', bn:bool=False, **kargs) -> Tuple[nn.Module, int]:
+        ...     def get_layers(self, act:str='relu', bn:bool=False, **kargs) -> Tuple[nn.Module, int]:    
         ...         layers = []
-        ...         layers.append(nn.Conv1d(in_channels=self.n_fpv, out_channels=16, kernel_size=3, padding=1))
-        ...         self.lookup_init(act)(layers[-1].weight)
-        ...         if act != 'linear': layers.append(self.lookup_act(act))        
-        ...         layers.append(nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3, padding=1))
-        ...         self.lookup_init(act)(layers[-1].weight)
-        ...         if act != 'linear': layers.append(self.lookup_act(act))
-        ...         layers.append(nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, padding=1, stride=2))
-        ...         self.lookup_init(act)(layers[-1].weight)
-        ...         if act != 'linear': layers.append(self.lookup_act(act))
-        ...         layers.append(nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1, stride=1))
-        ...         self.lookup_init(act)(layers[-1].weight)
-        ...         if act != 'linear': layers.append(self.lookup_act(act))
+        ...         layers.append(self.get_conv1d_block(3, 16, stride=1, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_block(16, 16, stride=1, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_block(16, 32, stride=2, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_block(32, 32, stride=1, kernel_sz=3, act=act, bn=bn))
         ...         layers.append(nn.AdaptiveAvgPool1d(1))
         ...         layers = nn.Sequential(*layers)
         ...         return layers
         ...
         ... cnn = MyCNN(cont_feats=matrix_feats, vecs=vectors, feats_per_vec=feats_per_vec)
+        >>>
+        >>> class MyResNet(AbsConv1dHead):
+        ...     def get_layers(self, act:str='relu', bn:bool=False, **kargs) -> Tuple[nn.Module, int]:    
+        ...         layers = []
+        ...         layers.append(self.get_conv1d_block(3, 16, stride=1, kernel_sz=3, act='linear', bn=False))
+        ...         layers.append(self.get_conv1d_res_block(16, 16, stride=1, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_res_block(16, 32, stride=2, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_res_block(32, 32, stride=1, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(nn.AdaptiveAvgPool1d(1))
+        ...         layers = nn.Sequential(*layers)
+        ...         return layers
+        ...
+        ... cnn = MyResNet(cont_feats=matrix_feats, vecs=vectors, feats_per_vec=feats_per_vec)
+        >>>
+        >>> class MyResNeXt(AbsConv1dHead):
+        ...     def get_layers(self, act:str='relu', bn:bool=False, **kargs) -> Tuple[nn.Module, int]:    
+        ...         layers = []
+        ...         layers.append(self.get_conv1d_block(3, 32, stride=1, kernel_sz=3, act='linear', bn=False))
+        ...         layers.append(self.get_conv1d_resNeXt_block(32, 4, 4, 32, stride=1, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_resNeXt_block(32, 4, 4, 32, stride=2, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(self.get_conv1d_resNeXt_block(32, 4, 4, 32, stride=1, kernel_sz=3, act=act, bn=bn))
+        ...         layers.append(nn.AdaptiveAvgPool1d(1))
+        ...         layers = nn.Sequential(*layers)
+        ...         return layers
+        ...
+        ... cnn = MyResNeXt(cont_feats=matrix_feats, vecs=vectors, feats_per_vec=feats_per_vec)
     '''
 
-    # TODO: check whether it's overwrite or overload for the technical term
-
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
-                 do:float=0., act:str='relu', bn:bool=False, layer_kargs:Optional[Dict[str,Any]]=None,
+                 act:str='relu', bn:bool=False, layer_kargs:Optional[Dict[str,Any]]=None,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
         if layer_kargs is None: layer_kargs = {}
-        self.layers:nn.Module = self.get_layers(do=do, act=act, bn=bn, **layer_kargs)
+        self.layers:nn.Module = self.get_layers(act=act, bn=bn, **layer_kargs)
         self.out_sz = self.check_out_sz()
         if self.freeze: self.freeze_layers()
         self._map_outputs()
@@ -639,31 +659,95 @@ class AbsConv1dHead(AbsMatrixHead):
         for i, f in enumerate(self.cont_feats): self.feat_map[f] = list(range(self.get_out_size()))
             
     def check_out_sz(self) -> int:
+        r'''
+        Automatically computes the output size of the head by passing through random data of the expected shape
+
+        Returns:
+            x.size(-1) where x is the outgoing tensor from the head
+        '''
+
         x = torch.rand((1, self.n_fpv,self.n_v))
         x = self.forward(x)
         return x.size(-1)
             
-    def get_conv_layer(self, in_c:int, out_c:int, kernel_sz:int, padding:int, stride:int=1, do:float=0., act:str='relu', bn:bool=False) -> nn.Sequential:
-            layers = []
-            layers.append(nn.Conv1d(in_channels=in_c, out_channels=out_c, kernel_size=kernel_sz, padding=padding, stride=stride))
-            self.lookup_init(act)(layers[-1].weight)
-            nn.init.zeros_(layers[-1].bias)
-            if act != 'linear': layers.append(self.lookup_act(act))
-            if bn: layers.append(nn.BatchNorm1d(out_c))  # check BN for 1D conv
-            if do: 
-                if act == 'selu': layers.append(nn.AlphaDropout(do))
-                else:             layers.append(nn.Dropout(do))
-            return nn.Sequential(*layers)
-            
+    def get_conv1d_block(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,act:str='relu', bn:bool=False) -> Conv1DBlock:
+        r'''
+        Wrapper method to build a :class:`~lumin.nn.models.blocks.conv_blocks.ConvBlock` object.
+
+        Arguments:
+            in_c: number of input channels (number of features per object / rows in input matrix)
+            out_c: number of output channels (number of features / rows in output matrix)
+            kernel_sz: width of kernel, i.e. the number of columns to overlay
+            padding: amount of padding columns to add at start and end of convolution.
+                If left as 'auto', padding will be automatically computed to conserve the number of columns.
+            stride: number of columns to move kernel when computing convolutions. Stride 1 = kernel centred on each column,
+                stride 2 = kernel centred on ever other column and input size halved, et cetera.
+            act: string representation of argument to pass to lookup_act
+            bn: whether to use batch normalisation (order is weights->activation->batchnorm)
+
+        Returns:
+            Instantiated :class:`~lumin.nn.models.blocks.conv_blocks.ConvBlock` object
+        '''
+        
+        return Conv1DBlock(in_c=in_c, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act, bn=bn,
+                           lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+    
+    def get_conv1d_res_block(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,act:str='relu', bn:bool=False) -> Res1DBlock:
+        r'''
+        Wrapper method to build a :class:`~lumin.nn.models.blocks.conv_blocks.Res1DBlock` object.
+
+        Arguments:
+            in_c: number of input channels (number of features per object / rows in input matrix)
+            out_c: number of output channels (number of features / rows in output matrix)
+            kernel_sz: width of kernel, i.e. the number of columns to overlay
+            padding: amount of padding columns to add at start and end of convolution.
+                If left as 'auto', padding will be automatically computed to conserve the number of columns.
+            stride: number of columns to move kernel when computing convolutions. Stride 1 = kernel centred on each column,
+                stride 2 = kernel centred on ever other column and input size halved, et cetera.
+            act: string representation of argument to pass to lookup_act
+            bn: whether to use batch normalisation (order is pre-activation: batchnorm->activation->weights)
+
+        Returns:
+            Instantiated :class:`~lumin.nn.models.blocks.conv_blocks.Res1DBlock` object
+        '''
+
+        return Res1DBlock(in_c=in_c, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act, bn=bn,
+                          lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+    
+    def get_conv1d_resNeXt_block(self, in_c:int, inter_c:int, cardinality:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,
+                                 act:str='relu', bn:bool=False) -> ResNeXt1DBlock:
+        r'''
+        Wrapper method to build a :class:`~lumin.nn.models.blocks.conv_blocks.ResNeXt1DBlock` object.
+
+        Arguments:
+            in_c: number of input channels (number of features per object / rows in input matrix)
+            inter_c: number of intermediate channels in groups
+            cardinality: number of groups
+            out_c: number of output channels (number of features / rows in output matrix)
+            kernel_sz: width of kernel, i.e. the number of columns to overlay
+            padding: amount of padding columns to add at start and end of convolution.
+                If left as 'auto', padding will be automatically computed to conserve the number of columns.
+            stride: number of columns to move kernel when computing convolutions. Stride 1 = kernel centred on each column,
+                stride 2 = kernel centred on ever other column and input size halved, et cetera.
+            act: string representation of argument to pass to lookup_act
+            bn: whether to use batch normalisation (order is pre-activation: batchnorm->activation->weights)
+
+        Returns:
+            Instantiated :class:`~lumin.nn.models.blocks.conv_blocks.ResNeXt1DBlock` object
+        '''
+
+        return ResNeXt1DBlock(in_c=in_c, inter_c=inter_c, cardinality=cardinality, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act,
+                              bn=bn, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+    
     @abstractmethod
-    def get_layers(self, do:float=0., act:str='relu', bn:bool=False, **kargs) -> nn.Module:
+    def get_layers(self, act:str='relu', bn:bool=False, **kargs) -> nn.Module:
         r'''
         Abstract function to be overloaded by user. Should return a single torch.nn.Module which accepts the expected input matrix data.
         
         '''
         
         # layers = []
-        # layers.append(self.get_conv_layer(3, 16, kernel_sz=7, padding=3, stride=2))
+        # layers.append(self.get_conv1d_block(3, 16, kernel_sz=7, padding=3, stride=2))
         # ...
         # layers = nn.Sequential(*layers)
         # return layers
