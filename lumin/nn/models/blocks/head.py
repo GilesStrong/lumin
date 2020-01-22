@@ -460,18 +460,17 @@ class InteractionNet(AbsMatrixHead):
         mat_i = self._process_input(x)
         mat_o = torch.cat((mat_i@self.mat_rr, mat_i@self.mat_rs), 1)
         
-        # Refactor this; nn.Module will automatically run over each vector without reshaping!
-        # Transpose+reshape trick from https://github.com/eric-moreno/IN/blob/master/gnn.py
         mat_o = torch.transpose(mat_o, 1, 2)
-        mat_o = self.fr(mat_o.reshape(-1, 2*self.n_fpv)).reshape(-1, self.n_e, self.intfunc_out_sz)
+        mat_o = self.fr(mat_o)
         mat_o = torch.transpose(mat_o, 1, 2)
         
         mat_o = mat_o@self.mat_rr_t
         mat_o = torch.cat((mat_i,mat_o), 1)
         
         mat_o = torch.transpose(mat_o, 1, 2)
-        mat_o = self.fo(mat_o.reshape(-1, self.n_fpv+self.intfunc_out_sz)).reshape(-1, self.n_v, self.outfunc_out_sz)
-
+        mat_o = self.fo(mat_o)
+        mat_o = torch.transpose(mat_o, 1, 2)
+        
         if self.agg_method == 'sum':       return mat_o.sum(1)
         elif self.agg_method == 'flatten': return mat_o.reshape(x.size(0), -1)
     
