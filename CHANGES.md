@@ -26,6 +26,7 @@
 - Various typing fixes`
 - Body and tail modules not correctly freezing
 - Made `Swish` to not be inplace - seemed to cause problems sometimes
+- Enforced fastprogress version; latest version renamed a parameter
 
 ## Changes
 
