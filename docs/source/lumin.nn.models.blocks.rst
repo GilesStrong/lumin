@@ -12,6 +12,14 @@ lumin.nn.models.blocks.body module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.models.blocks.conv\_blocks module
+------------------------------------------
+
+.. automodule:: lumin.nn.models.blocks.conv_blocks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.models.blocks.endcap module
 ------------------------------------
 

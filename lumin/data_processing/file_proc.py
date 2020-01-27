@@ -79,10 +79,16 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
 
     grp = out_file.create_group(f'fold_{fold_idx}')
     save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
-    save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
-    if wgt_feat is not None: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
+    if targ_feats in df.columns: save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
+    else:                        print(f'{targ_feats} not found in file')
+    if wgt_feat is not None: 
+        if wgt_feat in df.columns: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
+        else:                      print(f'{wgt_feat} not found in file')
     if misc_feats is not None:
-        for f in misc_feats: save_to_grp(df[f].values, grp, f)
+        for f in misc_feats:
+            if f in df.columns: save_to_grp(df[f].values, grp, f)
+            else:               print(f'{f} not found in file')
+
 
     if matrix_lookup is not None:
         mat = df[matrix_lookup].values
@@ -130,6 +136,9 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
             print(f'{dup} present in both matrix features and continuous features; removing from continuous features')
             cont_feats = [f for f in cont_feats if f not in dup]
 
+    if strat_key not in df.columns:
+        print(f'{strat_key} not found in DataFrame')
+        strat_key = None
     if strat_key is None:
         kf = KFold(n_splits=n_folds, shuffle=True)
         folds = kf.split(df)
