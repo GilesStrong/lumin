@@ -11,7 +11,7 @@ from ..data.fold_yielder import FoldYielder
 from ...utils.misc import to_np, to_device
 from ..models.abs_model import AbsModel
 
-__all__ = ['BinaryLabelSmooth', 'SequentialReweight', 'SequentialReweightClasses', 'BootstrapResample', 'FeatureSubsample']
+__all__ = ['BinaryLabelSmooth', 'SequentialReweight', 'SequentialReweightClasses', 'BootstrapResample', 'FeatureSubsample', 'ParametrisedPrediction']
 
 
 class BinaryLabelSmooth(Callback):
