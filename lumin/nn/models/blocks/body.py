@@ -213,6 +213,7 @@ class MultiBlock(AbsBody):
             init = self.lookup_init(self.bottleneck_act, len(mask), self.bottleneck_sz)
             layers.append(self.lookup_act(self.bottleneck_act))
         init(layers[0].weight)
+        nn.init.zeros_(layers[0].bias)
         return nn.Sequential(*layers)
 
     def get_out_size(self) -> int:

@@ -473,7 +473,7 @@ class InteractionNet(AbsMatrixHead):
         mat_o = torch.transpose(mat_o, 1, 2)
         
         if self.agg_method == 'sum':       return mat_o.sum(1)
-        elif self.agg_method == 'flatten': return mat_o.reshape(x.size(0), -1)
+        elif self.agg_method == 'flatten': return mat_o.reshape(mat_i.size(0), -1)
     
     def get_out_size(self) -> int:
         r'''
@@ -535,8 +535,24 @@ class RecurrentHead(AbsMatrixHead):
         p = partial(rnn, input_size=self.n_fpv, hidden_size=width, num_layers=depth, bias=True, batch_first=True, dropout=do, bidirectional=bidirectional)
         try:              self.rnn = p(nonlinearity=act)
         except TypeError: self.rnn = p()
+        self._init_rnn(width)
         self._map_outputs()
         if self.freeze: self.freeze_layers()
+
+    def _init_rnn(self, width:int) -> None:
+        for name, param in self.rnn.named_parameters():
+            if 'bias' in name:        nn.init.zeros_(param)
+            elif 'weight_ih' in name: nn.init.orthogonal_(param)    
+            if isinstance(self.rnn, nn.RNN):
+                if 'weight_hh' in name: nn.init.orthogonal_(self.rnn.state_dict()[name])
+            elif isinstance(self.rnn, nn.LSTM):
+                if 'bias' in name: self.rnn.state_dict()[name][width:width*2].fill_(1)  # Forget bias -> 1
+                elif 'weight_hh' in name:
+                    for i in range(4): nn.init.orthogonal_(self.rnn.state_dict()[name][i*width:(i+1)*width])
+            elif isinstance(self.rnn, nn.GRU):
+                if 'bias' in name: self.rnn.state_dict()[name][:width].fill_(-1)  # Reset bias -> -1
+                elif 'weight_hh' in name:
+                    for i in range(3): nn.init.orthogonal_(self.rnn.state_dict()[name][i*width:(i+1)*width])
             
     def _map_outputs(self) -> None:
         self.feat_map = {}

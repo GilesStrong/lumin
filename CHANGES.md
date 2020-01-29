@@ -29,6 +29,7 @@
 - Enforced fastprogress version; latest version renamed a parameter
 - Added support to `df2foldfile` for missing `strat_key`
 - Added support to `fold2foldfile` for missing features
+- Zero bias init for bottlenecks in `MultiBlock` body
 
 
 ## Changes
