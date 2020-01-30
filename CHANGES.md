@@ -17,7 +17,9 @@
     - `FoldYielder` now checks its foldfile for a `meta_data` group which contains information about the features and inputs in the data
     - `cont_feats` and `cat_feats` now no longer need to be passed to `FoldYielder` during initialisation of the foldfile contains meta data
     - `add_meta_data` function added to write meta data to foldfiles and is automatically called by `df2foldfile` 
+- `get_inputs` method to `BatchYielder` to return the inputs, optionally on device
 - Added LSUV initialisation, implemented by `LsuvInit` callback
+
 
 ## Removals
 
