@@ -89,3 +89,11 @@ class BatchYielder:
                 yield x, y, w
 
     def __len__(self): return len(self.inputs)//self.bs
+
+    def get_inputs(self, on_device:bool=False) -> Union[Tensor, Tuple[Tensor,Tensor]]:
+        if on_device:
+            if self.matrix_inputs is None: return to_device(Tensor(self.inputs))
+            else:                          return (to_device(Tensor(self.inputs)), to_device(Tensor(self.matrix_inputs)))
+        else:
+            if self.matrix_inputs is None: return self.inputs
+            else:                          return (self.inputs, self.matrix_inputs)

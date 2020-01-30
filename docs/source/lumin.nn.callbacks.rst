@@ -36,6 +36,14 @@ lumin.nn.callbacks.loss\_callbacks module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.callbacks.lsuv\_init module
+------------------------------------
+
+.. automodule:: lumin.nn.callbacks.lsuv_init
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.callbacks.model\_callbacks module
 ------------------------------------------
 
