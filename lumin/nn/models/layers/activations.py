@@ -27,7 +27,6 @@ def lookup_act(act:str) -> Any:
     if act == 'softmax':    return nn.Softmax(1)
     if act == 'linear':     return lambda x: x
     if 'swish' in act:      return Swish()
-    if 'mish' in act:       return Mish()
     raise ValueError("Activation not implemented")
 
         
@@ -62,27 +61,3 @@ class Swish(nn.Module):
             return x  # Do we need to return?
         else:
             return x*torch.sigmoid(x)
-
-
-class Mish(nn.Module):
-    r'''
-
-    '''
-
-    def __init__(self, inplace=False):
-        super().__init__()
-        self.inplace = False
-
-    def forward(self, x:Tensor) -> Tensor:
-        r'''
-        Pass tensor through Mish function
-
-        Arguments:
-            x: incoming tensor
-
-        Returns:
-            Resulting tensor
-        '''
-        nn.Softplus
-
-        return x*torch.tanh(F.softplus(x))

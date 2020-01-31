@@ -192,6 +192,11 @@ class Model(AbsModel):
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
+    def evaluate_from_by(self, by:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
+        loss = 0
+        for i, (x, y, w) in enumerate(by): loss += self.evaluate(x, y, w, callbacks)
+        return loss/i
+
     def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
                       callbacks:Optional[List[AbsCallback]]=None) -> Union[np.ndarray, Tensor]:
         r'''

@@ -140,18 +140,14 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         for c in callbacks: c.on_train_begin(model_num=model_num, savepath=savepath)
 
         # Validation data
-        if fy.has_matrix and fy.yield_matrix:
-            if bulk_move: val_x = (to_device(Tensor(val_fold['inputs'][0]).float()), to_device(Tensor(val_fold['inputs'][1]).float())) 
-            else:         val_x = (Tensor(val_fold['inputs'][0]).float()), (Tensor(val_fold['inputs'][1]).float())
-        else:
-            if bulk_move: val_x =  to_device(Tensor(val_fold['inputs']).float())
-            else:         val_x =  Tensor(val_fold['inputs']).float()
-
-        val_y = to_device(Tensor(val_fold['targets'])) if bulk_move else Tensor(val_fold['targets'])
-        if train_on_weights: val_w = to_device(to_tensor(val_fold['weights'])) if bulk_move else to_tensor(val_fold['weights'])
-        else:                val_w = None
-        if 'multiclass' in model_builder.objective: val_y = val_y.long().squeeze()
-        else:                                       val_y = val_y.float()
+        if bulk_move:
+            if fy.has_matrix and fy.yield_matrix: val_x = (to_device(Tensor(val_fold['inputs'][0]).float()), to_device(Tensor(val_fold['inputs'][1]).float())) 
+            else:                                 val_x =  to_device(Tensor(val_fold['inputs']).float())
+            val_y = to_device(Tensor(val_fold['targets'])) if bulk_move else Tensor(val_fold['targets'])
+            if train_on_weights: val_w = to_device(to_tensor(val_fold['weights'])) if bulk_move else to_tensor(val_fold['weights'])
+            else:                val_w = None
+            if 'multiclass' in model_builder.objective: val_y = val_y.long().squeeze()
+            else:                                       val_y = val_y.float()
 
         if 'realtime' in plots: model_bar.update_graph([[0, 0] for i in range(len(model_bar.names))])
         epoch_pb = progress_bar(range(max_epochs), leave=True)
@@ -167,10 +163,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 if bulk_move:
                     val_loss = model.evaluate(val_x, val_y, weights=val_w, callbacks=callbacks)
                 else:
-                    val_loss = model.evaluate(to_device(val_x), to_device(val_y), weights=to_device(val_w), callbacks=callbacks)
-                    val_x = val_x.cpu()
-                    val_y = val_y.cpu()
-                    val_w = val_w.cpu()
+                    batch_yielder = BatchYielder(**val_fold, objective=model_builder.objective,
+                                                 bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold, bulk_move=bulk_move)
+                    val_loss = model.evaluate_from_by(batch_yielder, callbacks=callbacks)
+                    del batch_yielder
+
                 loss_history['val_loss'].append(val_loss)
                 loss_callback_idx = None
                 loss = val_loss
