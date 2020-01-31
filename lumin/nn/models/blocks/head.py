@@ -665,7 +665,7 @@ class AbsConv1dHead(AbsMatrixHead):
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
         if layer_kargs is None: layer_kargs = {}
-        self.layers:nn.Module = self.get_layers(act=act, bn=bn, **layer_kargs)
+        self.layers:nn.Module = self.get_layers(in_c=self.n_fpv, act=act, bn=bn, **layer_kargs)
         self.out_sz = self.check_out_sz()
         if self.freeze: self.freeze_layers()
         self._map_outputs()
@@ -756,14 +756,14 @@ class AbsConv1dHead(AbsMatrixHead):
                               bn=bn, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
     
     @abstractmethod
-    def get_layers(self, act:str='relu', bn:bool=False, **kargs) -> nn.Module:
+    def get_layers(self, in_c:int, act:str='relu', bn:bool=False, **kargs) -> nn.Module:
         r'''
         Abstract function to be overloaded by user. Should return a single torch.nn.Module which accepts the expected input matrix data.
         
         '''
         
         # layers = []
-        # layers.append(self.get_conv1d_block(3, 16, kernel_sz=7, padding=3, stride=2))
+        # layers.append(self.get_conv1d_block(in_c, 16, kernel_sz=7, padding=3, stride=2))
         # ...
         # layers = nn.Sequential(*layers)
         # return layers

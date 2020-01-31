@@ -29,6 +29,7 @@ def lookup_normal_init(act:str, fan_in:Optional[int]=None, fan_out:Optional[int]
     if act == 'softmax':    return nn.init.xavier_normal_
     if act == 'linear':     return nn.init.xavier_normal_
     if 'swish' in act:      return partial(nn.init.kaiming_normal_, nonlinearity='relu')
+    if 'mish' in act:       return partial(nn.init.kaiming_normal_, nonlinearity='relu')
     raise ValueError("Activation not implemented")
 
 
@@ -53,5 +54,6 @@ def lookup_uniform_init(act:str, fan_in:Optional[int]=None, fan_out:Optional[int
     if act == 'softmax':    return nn.init.xavier_uniform_
     if act == 'linear':     return nn.init.xavier_uniform_
     if 'swish' in act:      return partial(nn.init.kaiming_uniform_, nonlinearity='relu')
+    if 'mish' in act:       return partial(nn.init.kaiming_uniform_, nonlinearity='relu')
     raise ValueError("Activation not implemented")
     

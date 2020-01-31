@@ -73,8 +73,8 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
         agg = df.groupby(by='LR').agg(mean_loss=pd.NamedAgg(column='Loss', aggfunc='mean'))
         agg.reset_index(inplace=True)
         argmin_lr = agg.loc[agg.mean_loss.idxmin(), 'LR']
-        loss_range = 1.1*agg.loc[agg.LR < argmin_lr, 'mean_loss'].max()
-        
+        loss_range = [0.8*agg.loc[agg.LR < argmin_lr, 'mean_loss'].min(), 1.2*agg.loc[agg.LR < argmin_lr, 'mean_loss'].max()]
+
     with sns.axes_style('whitegrid'), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         sns.lineplot(x='LR', y='Loss', data=df, ci='sd')
