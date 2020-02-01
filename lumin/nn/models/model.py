@@ -236,7 +236,7 @@ class Model(AbsModel):
             pred = _get_preds(inputs, callbacks)
         else:
             pred = []
-            for i in range(0, len(inputs)-bs+1, self.bs): pred.append(_get_preds(inputs[i:i+bs]))
+            for i in range(0, len(inputs)-bs+1, bs): pred.append(_get_preds(inputs[i:i+bs]))
             pred.append(_get_preds(inputs[i+bs:]))
             pred = np.vstack(pred)
         if as_np:
