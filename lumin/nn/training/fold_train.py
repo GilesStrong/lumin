@@ -205,14 +205,14 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
         model.load(savepath/"best.h5")
         model.save(savepath/f'train_{model_num}.h5')
-        for c in callbacks: c.on_train_end(fy=fy, val_id=val_id, bs=2*bs if not bulk_move else None)
+        for c in callbacks: c.on_train_end(fy=fy, val_id=val_id, bs=bs if not bulk_move else None)
 
         histories.append({})
         histories[-1] = loss_history
         results.append({})
         results[-1]['loss'] = best_loss
         if eval_metrics is not None and len(eval_metrics) > 0:
-            y_pred = model.predict(val_fold['inputs'], bs=2*bs if not bulk_move else None)
+            y_pred = model.predict(val_fold['inputs'], bs=bs if not bulk_move else None)
             for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_id, y_pred)
         print(f"Scores are: {results[-1]}")
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)
