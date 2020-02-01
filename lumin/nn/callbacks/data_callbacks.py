@@ -72,16 +72,16 @@ class SequentialReweight(Callback):
         super().__init__(model=model)
         self.scale,self.reweight_func = scale,reweight_func
 
-    def _reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
+    def _reweight_fold(self, fy:FoldYielder, fold_id:int, bs:Optional[int]=None) -> None:
         fld = fy.get_fold(fold_id)
-        preds = self.model.predict_array(fld['inputs'], as_np=False)
+        preds = self.model.predict_array(fld['inputs'], as_np=False, bs=bs)
         coefs = to_np(self.reweight_func(preds, to_device(Tensor(fld['targets']))))
         weight = np.sum(fld['weights'])
         fld['weights'] += self.scale*coefs*fld['weights']
         fld['weights'] *= weight/np.sum(fld['weights'])
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
     
-    def on_train_end(self, fy:FoldYielder, val_id:int, **kargs) -> None:
+    def on_train_end(self, fy:FoldYielder, val_id:int, bs:Optional[int]=None, **kargs) -> None:
         r'''
         Reweighs the validation fold once training is finished
 
@@ -90,7 +90,7 @@ class SequentialReweight(Callback):
             fold_id: Fold index which was used for validation
         '''
         
-        self._reweight_fold(fy, val_id)
+        self._reweight_fold(fy, val_id, bs)
 
 
 class SequentialReweightClasses(SequentialReweight):

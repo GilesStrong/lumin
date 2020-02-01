@@ -15,6 +15,7 @@
     - Added`Model.evaluate_from_by` to allow batch-wise evaluation of loss
     - `bulk_move` in `fold_train_ensemble` now also affects the validation fold, i.e. `bulk_move=False` no longer preloads the validation fold, and validation loss is evaluated using `Model.evaluate_from_by`
     - `bulk_move` arguments added to `fold_lr_find`
+    - Added batch-size argument to Model predict methods to run predictions in batches
 
 ## Breaking
 
@@ -60,6 +61,7 @@
     - Added`Model.evaluate_from_by` to allow batch-wise evaluation of loss
     - `bulk_move` in `fold_train_ensemble` now also affects the validation fold, i.e. `bulk_move=False` no longer preloads the validation fold, and validation loss is evaluated using `Model.evaluate_from_by`
     - `bulk_move` arguments added to `fold_lr_find`
+    - Added batch-size argument to Model predict methods to run predictions in batches
 
 ## Depreciations
 
