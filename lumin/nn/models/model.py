@@ -236,8 +236,8 @@ class Model(AbsModel):
             pred = _get_preds(inputs, callbacks)
         else:
             pred = []
-            for i in range(0, len(inputs)-bs+1, bs): pred.append(_get_preds(inputs[i:i+bs]))
-            pred.append(_get_preds(inputs[i+bs:]))
+            for i in range(0, len(inputs)-bs+1, bs): pred.append(_get_preds(inputs[i:i+bs], callbacks))
+            pred.append(_get_preds(inputs[i+bs:], callbacks))
             pred = np.vstack(pred)
         if as_np:
             if 'multiclass' in self.objective: return np.exp(pred)
