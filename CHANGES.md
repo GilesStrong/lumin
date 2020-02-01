@@ -1,8 +1,25 @@
 # Targeting V0.4.1
 
 ## Important changes
+- Added support for processing and embedding of matrix data
+    - `MultiHead` to allow the use of multiple head blocks to handle input data containing flat and matrix inputs
+    - `AbsMatrixHead` abstract class for head blocks designed to process matrix data
+    - `InteractionNet` a new head block to apply interaction graph-nets to objects in matrix form
+    - `RecurrentHead` a new head block to apply recurrent layers (RNN, LSTM, GRU) to series objects in matrix form
+    - `AbsConv1dHead` a new abstract class for building convolutional networks from basic blocks to apply to object in matrix form.
+- Meta data:
+    - `FoldYielder` now checks its foldfile for a `meta_data` group which contains information about the features and inputs in the data
+    - `cont_feats` and `cat_feats` now no longer need to be passed to `FoldYielder` during initialisation of the foldfile contains meta data
+    - `add_meta_data` function added to write meta data to foldfiles and is automatically called by `df2foldfile`
+- Improved usage with large datasets:
+    - Added`Model.evaluate_from_by` to allow batch-wise evaluation of loss
+    - `bulk_move` in `fold_train_ensemble` now also affects the validation fold, i.e. `bulk_move=False` no longer preloads the validation fold, and validation loss is evaluated using `Model.evaluate_from_by`
+    - `bulk_move` arguments added to `fold_lr_find`
 
 ## Breaking
+
+- `FoldYielder.get_df()` now returns any NaNs present in data rather than zeros unless `nan_to_num` is set to `True`
+- Zero bias init for bottlenecks in `MultiBlock` body
 
 ## Additions
 
@@ -39,6 +56,10 @@
 
 - Slight optimisation in `FullyConnected` when not using dense or residual networks 
 - `FoldYielder.set_foldfile` is now a private function `FoldYielder._set_foldfile`
+- Improved usage with large datasets:
+    - Added`Model.evaluate_from_by` to allow batch-wise evaluation of loss
+    - `bulk_move` in `fold_train_ensemble` now also affects the validation fold, i.e. `bulk_move=False` no longer preloads the validation fold, and validation loss is evaluated using `Model.evaluate_from_by`
+    - `bulk_move` arguments added to `fold_lr_find`
 
 ## Depreciations
 

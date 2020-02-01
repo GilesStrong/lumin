@@ -198,7 +198,7 @@ class Model(AbsModel):
         return loss/(len(by)*by.bs)
 
     def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
-                      callbacks:Optional[List[AbsCallback]]=None) -> Union[np.ndarray, Tensor]:
+                      callbacks:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
         r'''
         Pass inputs through network and obtain predictions.
 
@@ -207,34 +207,46 @@ class Model(AbsModel):
             as_np: whether to return predictions as Numpy array (otherwise tensor)
             mask_inputs: whether to apply input mask if one has been set
             callbacks: list of any callbacks to use during evaluation
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
 
         Returns:
             Model prediction(s) per datapoint
         '''
+
+        def _get_preds(inputs, callbacks):
+            for c in callbacks: c.on_pred_begin(inputs=inputs)
+            if isinstance(inputs, pd.DataFrame): inputs = to_device(Tensor(inputs.values).float())
+            if self.input_mask is not None and mask_inputs:
+                if isinstance(inputs, tuple):
+                    inputs[0] = inputs[0][:,self.input_mask]
+                else:
+                    inputs = inputs[:,self.input_mask]
+            if not isinstance(inputs, Tensor):
+                if isinstance(inputs, tuple):
+                    if not isinstance(inputs[0], Tensor): inputs = (to_device(Tensor(inputs[0]).float()),to_device(Tensor(inputs[1]).float()))
+                else:
+                    inputs = to_device(Tensor(inputs).float())
+            pred = self.model(inputs)
+            for c in callbacks: c.on_pred_end(pred=pred)
+            return to_np(pred)
         
         self.model.eval()
         if callbacks is None: callbacks = []
-        for c in callbacks: c.on_pred_begin(inputs=inputs)
-        if isinstance(inputs, pd.DataFrame): inputs = to_device(Tensor(inputs.values).float())
-        if self.input_mask is not None and mask_inputs:
-            if isinstance(inputs, tuple):
-                inputs[0] = inputs[0][:,self.input_mask]
-            else:
-                inputs = inputs[:,self.input_mask]
-        if not isinstance(inputs, Tensor):
-            if isinstance(inputs, tuple):
-               if not isinstance(inputs[0], Tensor): inputs = (to_device(Tensor(inputs[0]).float()),to_device(Tensor(inputs[1]).float()))
-            else:
-                inputs = to_device(Tensor(inputs).float())
-        pred = self.model(inputs)
-        for c in callbacks: c.on_pred_end(pred=pred)        
-        if as_np:
-            if 'multiclass' in self.objective: return np.exp(to_np(pred))
-            else:                              return to_np(pred)
+        if bs is None:
+            pred = _get_preds(inputs, callbacks)
         else:
-            return pred
+            pred = []
+            for i in range(0, len(inputs)-self.bs+1, self.bs): pred.append(_get_preds(inputs[i:i+bs]))
+            pred.append(_get_preds(inputs[i+bs:]))
+            pred = np.vstack(pred)
+        if as_np:
+            if 'multiclass' in self.objective: return np.exp(pred)
+            else:                              return pred
+        else:
+            return to_device(Tensor(pred))
 
-    def predict_folds(self, fy:FoldYielder, pred_name:str='pred', callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True) -> None:
+    def predict_folds(self, fy:FoldYielder, pred_name:str='pred', callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True,
+                      bs:Optional[int]=None) -> None:
         r'''
         Apply model to all dataaccessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as new group in fold file
 
@@ -243,6 +255,7 @@ class Model(AbsModel):
             pred_name: name of group to which to save predictions
             callbacks: list of any callbacks to use during evaluation
             verbose: whether to print average prediction timings
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
         '''
 
         times = []
@@ -251,13 +264,13 @@ class Model(AbsModel):
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold, callbacks=callbacks)
+                pred = self.predict_array(fold, callbacks=callbacks, bs=bs)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold, callbacks=callbacks))
+                    tmpPred.append(self.predict_array(fold, callbacks=callbacks, bs=bs))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
@@ -267,7 +280,7 @@ class Model(AbsModel):
         if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
-                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True) -> Union[np.ndarray, Tensor, None]:
+                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
         A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`, depending on input type.
@@ -278,12 +291,13 @@ class Model(AbsModel):
             pred_name: name of group to which to save predictions if inputs are a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
             callbacks: list of any callbacks to use during evaluation
             verbose: whether to print average prediction timings
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, callbacks=callbacks)
-        self.predict_folds(inputs, pred_name, callbacks=callbacks, verbose=verbose)
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, callbacks=callbacks, bs=bs)
+        self.predict_folds(inputs, pred_name, callbacks=callbacks, verbose=verbose, bs=bs)
 
     def get_weights(self) -> OrderedDict:
         r'''

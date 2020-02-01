@@ -78,7 +78,8 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 
 def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
-                 callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings()) -> List[LRFinder]:
+                 callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
+                 bulk_move:bool=True) -> List[LRFinder]:
     r'''
     Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
     using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
@@ -118,7 +119,8 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         for c in callbacks:
             c.on_train_begin()
         lr_finder.on_train_begin()
-        batch_yielder = BatchYielder(**fy.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold)
+        batch_yielder = BatchYielder(**fy.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold,
+                                     bulk_move=bulk_move)
         model.fit(batch_yielder, callbacks+[lr_finder])
         lr_finders.append(lr_finder)
         
