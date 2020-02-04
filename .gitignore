@@ -1,6 +1,9 @@
 #Dev
 lumin.code-workspace
 dev/
+**/.DS_Store
+*~
+
 
 #Examples
 **/train_weights

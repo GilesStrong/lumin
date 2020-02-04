@@ -471,8 +471,7 @@ class InteractionNet(AbsMatrixHead):
         mat_o = torch.transpose(mat_o, 1, 2)
         mat_o = self.fo(mat_o)
         mat_o = torch.transpose(mat_o, 1, 2)
-        
-        if self.agg_method == 'sum':       return mat_o.sum(1)
+        if self.agg_method == 'sum':       return mat_o.sum(2)
         elif self.agg_method == 'flatten': return mat_o.reshape(mat_i.size(0), -1)
     
     def get_out_size(self) -> int:
