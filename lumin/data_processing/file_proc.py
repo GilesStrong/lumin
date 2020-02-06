@@ -79,8 +79,7 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
 
     grp = out_file.create_group(f'fold_{fold_idx}')
     save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
-    if targ_feats in df.columns: save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
-    else:                        print(f'{targ_feats} not found in file')
+    save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
     if wgt_feat is not None: 
         if wgt_feat in df.columns: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
         else:                      print(f'{wgt_feat} not found in file')

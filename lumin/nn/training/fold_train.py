@@ -25,6 +25,7 @@ from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history
 from ...plotting.plot_settings import PlotSettings
+from .metric_logger import MetricLogger
 
 import matplotlib.pyplot as plt
 
@@ -109,10 +110,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     nb = len(fy.foldfile['fold_0/targets'])//bs
 
     model_bar = master_bar(range(n_models))
-    if 'realtime' in plots: model_bar.names = ['Best', 'Train', 'Validation']
+    if 'realtime' in plots: metric_log = MetricLogger(metrics=['Train', 'Validation'], plot_settings=plot_settings)
     for model_num in (model_bar):
         val_id = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_id}")
+        if 'realtime' in plots: metric_log.reset()
         model_tmr = timeit.default_timer()
         os.system(f"rm {savepath}/best.h5")
         best_loss,epoch_counter,subEpoch,stop = math.inf,0,0,False
@@ -135,7 +137,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 c.set_cyclic_callback(cyclic_callback)
                 if getattr(c, "get_loss", None):
                     loss_callbacks.append(c)
-                    model_bar.names.append(type(c).__name__)
+                    if 'realtime' in plots: metric_log.add_metric(type(c).__name__)
                     loss_history[f'{type(c).__name__}_val_loss'] = []
         for c in callbacks: c.on_train_begin(model_num=model_num, savepath=savepath)
 
@@ -149,7 +151,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
             if 'multiclass' in model_builder.objective: val_y = val_y.long().squeeze()
             else:                                       val_y = val_y.float()
 
-        if 'realtime' in plots: model_bar.update_graph([[0, 0] for i in range(len(model_bar.names))])
         epoch_pb = progress_bar(range(max_epochs), leave=True)
         if 'realtime' in plots: model_bar.show()
         for epoch in epoch_pb:
@@ -195,9 +196,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 else:
                     epoch_counter += 1
 
-                x = np.arange(len(loss_history['val_loss']))
-                if 'realtime' in plots: model_bar.update_graph([[x, best_loss*np.ones_like(x)]] + [[x, loss_history[l]] for l in loss_history])
-
+                if 'realtime' in plots: metric_log.update([loss_history[l][-1] for l in loss_history], best=best_loss)
                 if epoch_counter >= patience or model.stop_train:  # Early stopping
                     print('Early stopping after {} epochs'.format(subEpoch))
                     stop = True; break
@@ -218,7 +217,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)
         with open(savepath/'cycle_file.pkl', 'wb') as fout: pickle.dump(cycle_losses, fout)
         
-        if 'realtime' in plots: delattr(model_bar, 'fig')
         plt.clf()
         if 'cycle' in plots and cyclic_callback is not None: cyclic_callback.plot()
         print(f"Fold took {timeit.default_timer()-model_tmr:.3f}s\n")
