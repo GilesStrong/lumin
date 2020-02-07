@@ -110,7 +110,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     nb = len(fy.foldfile['fold_0/targets'])//bs
 
     model_bar = master_bar(range(n_models))
-    if 'realtime' in plots: metric_log = MetricLogger(metrics=['Train', 'Validation'], plot_settings=plot_settings)
+    if 'realtime' in plots: metric_log = MetricLogger(metrics=['Train', 'Validation'], n_folds=fy.n_folds, plot_settings=plot_settings)
     for model_num in (model_bar):
         val_id = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_id}")
