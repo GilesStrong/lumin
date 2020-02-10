@@ -1,4 +1,4 @@
-# Targeting V0.4.1
+# Targeting V0.5
 
 ## Important changes
 - Added support for processing and embedding of matrix data
