@@ -408,7 +408,6 @@ class HEPAugFoldYielder(FoldYielder):
         ...                        input_pipe='input_pipe.pkl')
     '''
 
-    '''Accessing data from foldfile and apply HEP specific data augmentation during training and testing'''
     def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:Optional[List[str]]=None, cat_feats:Optional[List[str]]=None,
                  ignore_feats:Optional[List[str]]=None, targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,
