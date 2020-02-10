@@ -113,6 +113,7 @@ Several examples are present in the form of Jupyter Notebooks in the `examples` 
 1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0.1/examples/Feature_Selection.ipynb) `examples/Feature_Selection.ipynb`: In-depth walkthrough for automated feature-selection
 1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0.1/examples/Advanced_Model_Building.ipynb) `examples/Advanced_Model_Building.ipynb`: In-depth look at building more complicated models and a few advanced interpretation techniques
 1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0.1/examples/Model_Exporting.ipynb) `examples/Model_Exporting.ipynb`: Walkthough for exporting a trained model to ONNX and TensorFlow
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.4.0.1/examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb) `examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb.ipynb`: Various examples of applying RNNs, CNNs, and GNNs to matrix data (top-tagging on jet constituents)
 
 ## Installation
 
