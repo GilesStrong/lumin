@@ -1,4 +1,22 @@
-# Targeting V0.4.1
+# Targeting V0.5.1
+
+## Important changes
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# V0.5 - The Gradient Must Flow
 
 ## Important changes
 - Added support for processing and embedding of matrix data
@@ -140,7 +158,7 @@
 
 ## Depreciations
 
-- `FeatureSubsample` in favour of `guaranteed_feats` and `cont_subsample_rate` in `ModelBuilder`. Will be removed in v0.5.
+- `FeatureSubsample` in favour of `guaranteed_feats` and `cont_subsample_rate` in `ModelBuilder`. Will be removed in v0.6.
 
 ## Comments
 

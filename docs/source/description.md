@@ -1,14 +1,3 @@
-[![pypi lumin version](https://img.shields.io/pypi/v/lumin.svg)](https://pypi.python.org/pypi/lumin)
-[![lumin python compatibility](https://img.shields.io/pypi/pyversions/lumin.svg)](https://pypi.python.org/pypi/lumin) [![lumin license](https://img.shields.io/pypi/l/lumin.svg)](https://pypi.python.org/pypi/lumin) [![DOI](https://zenodo.org/badge/163840693.svg)](https://zenodo.org/badge/latestdoi/163840693)
-
-# LUMIN: Lumin Unifies Many Improvements for Networks
-
-LUMIN aims to become a deep-learning and data-analysis ecosystem for High-Energy Physics, and perhaps other scientific domains in the future. Similar to [Keras](https://keras.io/) and [fastai](https://github.com/fastai/fastai) it is a wrapper framework for a graph computation library (PyTorch), but includes many useful functions to handle domain-specific requirements and problems. It also intends to provide easy access to to state-of-the-art methods, but still be flexible enough for users to inherit from base classes and override methods to meet their own demands.
-
-Online documentation may be found at https://lumin.readthedocs.io/en/stable
-
-For an introduction and motivation for LUMIN, checkout this talk from IML-2019 at CERN: [video](https://cds.cern.ch/record/2672119), [slides](https://indico.cern.ch/event/766872/timetable/?view=standard#29-lumin-a-deep-learning-and-d).
-
 ## Distinguishing Characteristics
 
 ### Data objects
@@ -103,17 +92,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
 
 ## Examples
 
-Several examples are present in the form of Jupyter Notebooks in the `examples` folder. These can be run also on Google Colab to allow you to quickly try out the package.
-
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Classification_of_earnings.ipynb) `examples/Classification_of_earnings.ipynb`: Very basic binary-classification example
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Binary_Classification.ipynb) `examples/Binary_Classification.ipynb`: Binary-classification example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Multiclass_Classification.ipynb) `examples/Multiclass_Classification.ipynb`: Multiclass-classification example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Single_Target_Regression.ipynb) `examples/Single_Target_Regression.ipynb`: Single-target regression example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Multi_Target_Regression.ipynb) `examples/Multi_Target_Regression.ipynb`: Multi-target regression example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Feature_Selection.ipynb) `examples/Feature_Selection.ipynb`: In-depth walkthrough for automated feature-selection
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Advanced_Model_Building.ipynb) `examples/Advanced_Model_Building.ipynb`: In-depth look at building more complicated models and a few advanced interpretation techniques
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/Model_Exporting.ipynb) `examples/Model_Exporting.ipynb`: Walkthough for exporting a trained model to ONNX and TensorFlow
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.5.0/examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb) `examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb.ipynb`: Various examples of applying RNNs, CNNs, and GNNs to matrix data (top-tagging on jet constituents)
+Several examples are present in the form of Jupyter Notebooks in the `examples` folder. These can be run also on Google Colab to allow you to quickly try out the package here: https://github.com/GilesStrong/lumin#examples
 
 ## Installation
 
@@ -152,7 +131,7 @@ LUMIN aims to provides the best of both, Keras-style sample weighting and fastai
 
 ### Data types
 
-LUMIN is primarily designed for use on columnar data, and from version 0.5 onwards this also includes *matrix data*; ordered series and un-ordered groups of objects. With some extra work it can be used on other data formats, but at the moment it has nothing special to offer. Whilst recent work in HEP has made use of jet images and GANs, these normally hijack existing ideas and models. Perhaps once we get established, domain specific approaches which necessitate the use of a specialised framework, then LUMIN could grow to meet those demands, but for now I'd recommend checking out the fastai library, especially for image data.
+LUMIN is primarily designed for use on columnar data, and from version 0.5 onwards this also includes *matrix data*; ordered series and un-ordered groups of objects.  With some extra work it can be used on other data formats, but at the moment it has nothing special to offer. Whilst recent work in HEP has made use of jet images and GANs, these normally hijack existing ideas and models. Perhaps once we get established, domain specific approaches which necessitate the use of a specialised framework, then LUMIN could grow to meet those demands, but for now I'd recommend checking out the fastai library, especially for image data.
 
 With just one main developer, I'm simply focussing on the data types and applications I need for my own research and common use cases in HEP. If, however you would like to use LUMIN's other methods for your own work on other data formats, then you are most welcome to contribute and help to grow LUMIN to better meet the needs of the scientific community.
 
