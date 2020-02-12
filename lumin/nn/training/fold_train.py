@@ -63,6 +63,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
           (or cycles, if using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`);
         - Or a callback triggers trainign to stop, e.g. :class:`~lumin.nn.callbacks.cyclic_callbacks.OneCycle`
         
+    Depending on the live_fdbk arguments, live plots of losses and other metrics may be shown during training, if running in Jupyter. By default, a live plot
+    with extra information will be shown for training the first model, and afterwards no live plots will be shown. Shoing the live plot slightly slows down the
+    training, but can help highlight problems without having to wait to the end. Thererfore this compromises between showing useful information and training
+    speed, since any problems should hopefully be visible in the first model.
+
     Once training is finished, the state with the lowest validation loss is loaded, evaluated, and saved.
 
     Arguments:
