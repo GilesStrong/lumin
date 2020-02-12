@@ -200,7 +200,7 @@ class FeatureSubsample(Callback):
 
     .. Attention:: This callback is now depreciated in favour of passing `cont_subsample_rate` and  `guaranteed_feats` to
         :class:`~lumin.nn.models.model_builder.ModelBuilder` as these offer greater functionality and are compatable with using a
-        :class:`~luminnn.models.blocks.body.MultiBlock` body. Will be removed in `V0.5`.
+        :class:`~luminnn.models.blocks.body.MultiBlock` body. Will be removed in `V0.6`.
 
     .. Caution:: This callback is incompatable with using a :class:`~luminnn.models.blocks.body.MultiBlock` body
 

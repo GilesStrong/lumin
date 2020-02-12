@@ -2,23 +2,38 @@
 
 ## Important changes
 
+- New live plot for losses during training (`MetricLogger`):
+    - Provides additional information
+    - Only updates after every epoch (previously every subepoch) reducing training times
+    - Nicer appearance and automatic log scale for y-axis
+
 ## Breaking
 
 ## Additions
+
+- New live plot for losses during training (`MetricLogger`):
+    - Provides additional information
+    - Only updates after every epoch (previously every subepoch) reducing training times
+    - Nicer appearance and automatic log scale for y-axis
 
 ## Removals
 
 ## Fixes
 
+- Fixed error in documentation which removed the ToC for the nn module
+
 ## Changes
 
 ## Depreciations
+
+- `plots` argument in `fold_train_ensemble`. The plots argument is now depreciated and ignored. Loss history will always be shown, lr history will no longer be shown separately, and live feedback is now controlled by the four live_fdbk arguments. This argument will be removed in V0.6.
 
 ## Comments
 
 # V0.5 - The Gradient Must Flow
 
 ## Important changes
+
 - Added support for processing and embedding of matrix data
     - `MultiHead` to allow the use of multiple head blocks to handle input data containing flat and matrix inputs
     - `AbsMatrixHead` abstract class for head blocks designed to process matrix data

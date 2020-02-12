@@ -45,9 +45,10 @@ def _get_folds(val_idx, n_folds, shuffle_folds:bool=True):
 def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder,
                         callback_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None,
                         train_on_weights:bool=True, eval_on_weights:bool=True, patience:int=10, max_epochs:int=200,
-                        plots:List[str]=['history', 'realtime'], shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
+                        shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
+                        live_fdbk:bool=True, live_fdbk_first_only:bool=True, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
-                        plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
+                        plot_settings:PlotSettings=PlotSettings(), plots:Optional[Any]=None) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
     Main training method for :class:`~lumin.nn.models.model.Model`.
     Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a
@@ -76,11 +77,10 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         eval_on_weights: If weights are present in validation data, whether to pass them to the loss function during validation
         patience: number of folds (sub-epochs) or cycles to train without decrease in validation loss before ending training (early stopping)
         max_epochs: maximum number of epochs for which to train
-        plots: list of string representation of plots to produce. currently:
-            'history': loss history of all models after all training has finished
-            'realtime': live loss evolution during training
-            'cycle": call the plot method of the last (if any) :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` listed in callback_partials after
-            every complete model training.
+        live_fdbk: whether or not to show any live feedback at all during training (slightly slows down training, but helps spot problems)
+        live_fdbk_first_only: whether to only show live feedback for the first model trained (trade off between time and problem spotting)
+        live_fdbk_extra: whether to show extra information live feedback (further slows training)
+        live_fdbk_extra_first_only: whether to only show extra live feedback information for the first model trained (trade off between time and information)
         shuffle_fold: whether to tell :class:`~lumin.nn.data.batch_yielder.BatchYielder` to shuffle data
         shuffle_folds: whether to shuffle the order of the trainign folds
         bulk_move: whether to pass all training data to device at once, or by minibatch. Bulk moving will be quicker, but may not fit in memory.
@@ -88,6 +88,9 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         verbose: whether to print out extra information during training
         log_output: whether to save printed results to a log file rather than printing them
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        plots: Depreciated: loss history will always be shown,
+            lr history will no longer be shown separately,
+            and live feedback is now controlled by `live_fdbk` argument
 
     Returns:
         - results list of validation losses and other eval_metrics results, ordered by model training. Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
@@ -105,16 +108,26 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         log_file = open(savepath/'training_log.log', 'w')
         sys.stdout = log_file
 
+    if plots is not None:
+        warnings.warn("The plots argument is now depreciated and ignored. Loss history will always be shown, lr history will no longer be shown separately, \
+                       and live feedback is now controlled by the four live_fdbk arguments. This argument will be removed in V0.6.")
+
     train_tmr = timeit.default_timer()
     results,histories,cycle_losses = [],[],[]
     nb = len(fy.foldfile['fold_0/targets'])//bs
 
+    if live_fdbk:
+        metric_log = MetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
+                                  plot_settings=plot_settings)
+    
     model_bar = master_bar(range(n_models))
-    if 'realtime' in plots: metric_log = MetricLogger(metrics=['Train', 'Validation'], n_folds=fy.n_folds, plot_settings=plot_settings)
     for model_num in (model_bar):
         val_id = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_id}")
-        if 'realtime' in plots: metric_log.reset()
+        if model_num == 1:
+            if live_fdbk_first_only: live_fdbk = False  # Only show fdbk for first training
+            elif live_fdbk_extra_first_only: metric_log.extra_detail = False
+        if live_fdbk: metric_log.reset()
         model_tmr = timeit.default_timer()
         os.system(f"rm {savepath}/best.h5")
         best_loss,epoch_counter,subEpoch,stop = math.inf,0,0,False
@@ -137,7 +150,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 c.set_cyclic_callback(cyclic_callback)
                 if getattr(c, "get_loss", None):
                     loss_callbacks.append(c)
-                    if 'realtime' in plots: metric_log.add_metric(type(c).__name__)
+                    if live_fdbk: metric_log.add_loss_name(type(c).__name__)
                     loss_history[f'{type(c).__name__}_val_loss'] = []
         for c in callbacks: c.on_train_begin(model_num=model_num, savepath=savepath)
 
@@ -152,7 +165,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
             else:                                       val_y = val_y.float()
 
         epoch_pb = progress_bar(range(max_epochs), leave=True)
-        if 'realtime' in plots: model_bar.show()
+        if live_fdbk: model_bar.show()
         for epoch in epoch_pb:
             for trn_id in trn_ids:
                 subEpoch += 1
@@ -196,10 +209,11 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 else:
                     epoch_counter += 1
 
-                if 'realtime' in plots: metric_log.update([loss_history[l][-1] for l in loss_history], best=best_loss)
+                if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
                 if epoch_counter >= patience or model.stop_train:  # Early stopping
                     print('Early stopping after {} epochs'.format(subEpoch))
                     stop = True; break
+            if live_fdbk: metric_log.update_plot(best_loss)
             if stop: break
 
         model.load(savepath/"best.h5")
@@ -218,13 +232,12 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         with open(savepath/'cycle_file.pkl', 'wb') as fout: pickle.dump(cycle_losses, fout)
         
         plt.clf()
-        if 'cycle' in plots and cyclic_callback is not None: cyclic_callback.plot()
         print(f"Fold took {timeit.default_timer()-model_tmr:.3f}s\n")
 
     print("\n______________________________________")
     print("Training finished")
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
-    if 'history' in plots: plot_train_history(histories, savepath/'loss_history', settings=plot_settings)
+    plot_train_history(histories, savepath/'loss_history', settings=plot_settings)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
