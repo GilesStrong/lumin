@@ -97,7 +97,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         - histories list of loss histories, ordered by model training
         - cycle_losses if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed, list of validation losses at the end of each cycle, ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
     '''
-    # TODO: fix returns paret of doc string
+    # TODO: fix returns part of doc string
 
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")
