@@ -1,4 +1,22 @@
-# Targeting V0.5.1
+# Targeting V0.5.2
+
+## Important changes
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# V0.5.1 - The Gradient Must Flow - Micro Update
 
 ## Important changes
 
