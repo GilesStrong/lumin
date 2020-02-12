@@ -10,6 +10,8 @@
 
 ## Fixes
 
+- Docs bug for nn.training due to missing ipython in requirements
+
 ## Changes
 
 ## Depreciations
