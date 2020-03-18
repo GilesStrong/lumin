@@ -6,11 +6,20 @@
 
 ## Additions
 
+- Addition of batch size parameter to `Ensemble.predict*`
+- Lorentz Boost Network (https://arxiv.org/abs/1812.09722):
+    - `LorentzBoostNet` basic implementation which learns boosted particles from existing particles and extracts features from them using fixed kernel functions
+    - `AutoExtractLorentzBoostNet` which also learns the kernel-functions during training 
+
 ## Removals
 
 ## Fixes
 
 - Docs bug for nn.training due to missing ipython in requirements
+- Bug in LSUV init when running on CUDA
+- Bug in TF export based on searching for fullstops
+- Bug in model_bar update during fold training
+- Quiet bug in 'MultHead' when matrix feats were not listed first; map construction indexed self.matrix_feats not self.feats
 
 ## Changes
 

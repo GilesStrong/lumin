@@ -421,7 +421,6 @@ class Model(AbsModel):
         from onnx_tf.backend import prepare
         warnings.warn("""Tensorflow ProtocolBuffer export of LUMIN models (via ONNX) has not been fully explored or sufficiently tested yet.
                          Please use with caution, and report any trouble""")
-        if '.' in name: name = name[:name.rfind('.')]
         self.export2onnx(name, bs)
         m = onnx.load(f'{name}.onnx')
         tf_rep = prepare(m)

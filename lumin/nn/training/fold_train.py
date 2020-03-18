@@ -127,6 +127,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     
     model_bar = master_bar(range(n_models))
     for model_num in (model_bar):
+        model_bar.show()
         val_id = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_id}")
         if model_num == 1:
