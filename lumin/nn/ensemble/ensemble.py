@@ -278,7 +278,7 @@ class Ensemble(AbsEnsemble):
             arr = (to_device(Tensor(arr[0])),to_device(Tensor(arr[1])))
             pred = np.zeros((len(arr[0]), self.n_out))
         else:
-            to_device(Tensor(arr))
+            arr = to_device(Tensor(arr))
             pred = np.zeros((len(arr), self.n_out))
 
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):

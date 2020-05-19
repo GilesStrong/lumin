@@ -36,7 +36,7 @@ class ModelBuilder(object):
         cont_feats: list of names of continuous input features
         model_args: dictionary of dictionaries of keyword arguments to pass to head, body, and tail to control architrcture
         opt_args: dictionary of arguments to pass to optimiser. Missing kargs will be filled with default values.
-            Currently, only ADAM (default), RAdam, Ranger, and SGD are available.
+            Currently, only ADAM (default), and SGD are available.
         cat_embedder: :class:`~lumin.nn.models.helpers.CatEmbedder` for embedding categorical inputs
         cont_subsample_rate: if between in range (0, 1), will randomly select a fraction of continuous features (rounded upwards) to use as inputs
         guaranteed_feats: if subsampling features, will always include the features listed here, which count towards the subsample fraction

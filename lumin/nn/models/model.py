@@ -101,7 +101,7 @@ class Model(AbsModel):
             NUmber of (trainable) parameters in model
         '''
         
-        return sum(p.numel() for p in self.parameters() if p.requires_grad) 
+        return sum(p.numel() for p in self.parameters() if p.requires_grad or not trainable) 
 
     def set_input_mask(self, mask:np.ndarray) -> None:
         r'''

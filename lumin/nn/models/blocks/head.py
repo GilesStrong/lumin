@@ -1000,15 +1000,15 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, n_particles=n_particles,
                          bn=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
         
-        if n_singles > 0: self.single_nn = self.get_nn(n_in=4, depth=depth, width=width,n_out=n_singles, act=act, do=do, bn=bn,
-                                                       lookup_act=lookup_act, lookup_init=lookup_init)
-        if n_pairs   > 0: self.pair_nn   = self.get_nn(n_in=8, depth=depth, width=width, n_out=n_pairs, act=act, do=do, bn=bn,
-                                                       lookup_act=lookup_act, lookup_init=lookup_init)
+        if n_singles > 0: self.single_nn = self._get_nn(n_in=4, depth=depth, width=width,n_out=n_singles, act=act, do=do, bn=bn,
+                                                        lookup_act=lookup_act, lookup_init=lookup_init)
+        if n_pairs   > 0: self.pair_nn   = self._get_nn(n_in=8, depth=depth, width=width, n_out=n_pairs, act=act, do=do, bn=bn,
+                                                        lookup_act=lookup_act, lookup_init=lookup_init)
         self.pre_bn = nn.BatchNorm1d(4*self.n_particles)
     
-    def get_nn(self, n_in:int, depth:int, width:int, n_out:int, act:str, do:bool, bn:bool,
-               lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]],
-               lookup_act:Callable[[str],Any]) -> nn.Sequential:
+    def _get_nn(self, n_in:int, depth:int, width:int, n_out:int, act:str, do:bool, bn:bool,
+                lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]],
+                lookup_act:Callable[[str],Any]) -> nn.Sequential:
         return nn.Sequential(*[self._get_layer(n_in=n_in if i == 0 else width, n_out=width if i+1 < depth else n_out,
                                                act=act, do=do, bn=bn, lookup_init=lookup_init, lookup_act=lookup_act)
                                for i in range(depth)])

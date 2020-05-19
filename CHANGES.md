@@ -20,6 +20,9 @@
 - Bug in TF export based on searching for fullstops
 - Bug in model_bar update during fold training
 - Quiet bug in 'MultHead' when matrix feats were not listed first; map construction indexed self.matrix_feats not self.feats
+- Slowdown in `ensemble.predict_array` which caused the array to get sent to device in during each model evaluations
+-`Model.get_param_count` now includes mon-trainable params when requested
+- Fixed bug in `fold_lr_find` where LR finders would use different LR steps leading to NaNs when plotting in `fold_lr_find`
 
 ## Changes
 
