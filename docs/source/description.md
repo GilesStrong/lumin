@@ -37,6 +37,7 @@
         - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222) & [Moreno et al., 2019](https://arxiv.org/abs/1908.05318)
         - Recurrent layers for series of objects
         - 1D convolutional networks for series of objects
+        - HEP-specific architectures, e.g. LorentzBoostNetworks [Erdmann, Geiser, Rath, Rieger, 2018](https://arxiv.org/abs/1812.09722)
 - Configurable initialisations, including LSUV [Mishkin, Matas, 2016](https://arxiv.org/abs/1511.06422)
 - HEP-specific losses, e.g. Asimov loss [Elwood & Krücker, 2018](https://arxiv.org/abs/1806.00322)
 - Easy training and inference of ensembles of models:
@@ -90,10 +91,6 @@
 - LUMIN aims to feel fast to use - liberal use of progress bars mean you're able to always know when tasks will finish, and get live updates of training
 - Guaranteed to spark joy (in its current beta state, LUMIN may instead ignite rage, despair, and frustration - *dev.*)
 
-## Examples
-
-Several examples are present in the form of Jupyter Notebooks in the `examples` folder. These can be run also on Google Colab to allow you to quickly try out the package here: https://github.com/GilesStrong/lumin#examples
-
 ## Installation
 
 Due to some strict version requirements on packages, it is recommended to install LUMIN in its own Python environment, e.g `conda create -n lumin python=3.6`
@@ -131,7 +128,7 @@ LUMIN aims to provides the best of both, Keras-style sample weighting and fastai
 
 ### Data types
 
-LUMIN is primarily designed for use on columnar data, and from version 0.5 onwards this also includes *matrix data*; ordered series and un-ordered groups of objects.  With some extra work it can be used on other data formats, but at the moment it has nothing special to offer. Whilst recent work in HEP has made use of jet images and GANs, these normally hijack existing ideas and models. Perhaps once we get established, domain specific approaches which necessitate the use of a specialised framework, then LUMIN could grow to meet those demands, but for now I'd recommend checking out the fastai library, especially for image data.
+LUMIN is primarily designed for use on columnar data, and from version 0.5 onwards this also includes *matrix data*; ordered series and un-ordered groups of objects. With some extra work it can be used on other data formats, but at the moment it has nothing special to offer. Whilst recent work in HEP has made use of jet images and GANs, these normally hijack existing ideas and models. Perhaps once we get established, domain specific approaches which necessitate the use of a specialised framework, then LUMIN could grow to meet those demands, but for now I'd recommend checking out the fastai library, especially for image data.
 
 With just one main developer, I'm simply focussing on the data types and applications I need for my own research and common use cases in HEP. If, however you would like to use LUMIN's other methods for your own work on other data formats, then you are most welcome to contribute and help to grow LUMIN to better meet the needs of the scientific community.
 
@@ -165,6 +162,7 @@ Certainly more developers and contributors are welcome to join and help out!
 
 If you have used LUMIN in your analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), https://doi.org/10.5281/zenodo.2601857, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
 
+```
 @misc{giles_chatham_strong_2019_2601857,  
   author       = {Giles Chatham Strong},  
   title        = {LUMIN},  
@@ -174,3 +172,4 @@ If you have used LUMIN in your analysis work and wish to cite it, the preferred 
   doi          = {10.5281/zenodo.2601857},  
   url          = {https://doi.org/10.5281/zenodo.2601857}  
 }
+```

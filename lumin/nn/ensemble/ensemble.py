@@ -248,7 +248,7 @@ class Ensemble(AbsEnsemble):
         self.results = results
         
     def predict_array(self, arr:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None, display:bool=True, 
-                      callbacks:Optional[List[AbsCallback]]=None) -> np.ndarray:
+                      callbacks:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> np.ndarray:
         r'''
         Apply ensemble to Numpy array and get predictions. If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
         Inputs are expected to be preprocessed; i.e. any input pipe added to the ensemble is not used.
@@ -260,6 +260,7 @@ class Ensemble(AbsEnsemble):
             parent_bar: not used when calling the method directly
             display: whether to display a progress bar for model evaluations
             callbacks: list of any callbacks to use during evaluation
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
 
         Returns:
             Numpy array of predictions
@@ -277,17 +278,17 @@ class Ensemble(AbsEnsemble):
             arr = (to_device(Tensor(arr[0])),to_device(Tensor(arr[1])))
             pred = np.zeros((len(arr[0]), self.n_out))
         else:
-            to_device(Tensor(arr))
+            arr = to_device(Tensor(arr))
             pred = np.zeros((len(arr), self.n_out))
 
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
-            tmp_pred = m.predict(arr, callbacks=callbacks)
+            tmp_pred = m.predict(arr, callbacks=callbacks, bs=bs)
             if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred
     
     def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred', callbacks:Optional[List[AbsCallback]]=None,
-                      verbose:bool=True) -> None:
+                      verbose:bool=True, bs:Optional[int]=None) -> None:
         r'''
         Apply ensemble to data accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as a new group per fold in the foldfile.
         If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
@@ -301,6 +302,7 @@ class Ensemble(AbsEnsemble):
             pred_name: name for new group of predictions
             callbacks: list of any callbacks to use during evaluation
             verbose: whether to print average prediction timings
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
 
         Examples::
             >>> ensemble.predict_array(test_fy, pred_name='pred_tta')
@@ -313,13 +315,13 @@ class Ensemble(AbsEnsemble):
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold, n_models, mb, display=True, callbacks=callbacks)
+                pred = self.predict_array(fold, n_models, mb, display=True, callbacks=callbacks, bs=bs)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold, n_models, display=False, callbacks=callbacks))
+                    tmpPred.append(self.predict_array(fold, n_models, display=False, callbacks=callbacks, bs=bs))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
@@ -329,7 +331,7 @@ class Ensemble(AbsEnsemble):
         if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred',
-                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True) -> Union[None,np.ndarray]:
+                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[None,np.ndarray]:
         r'''
         Compatability method for predicting data contained in either a Numpy array or a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
         Will either pass inputs to :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_array` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_folds`.
@@ -342,6 +344,7 @@ class Ensemble(AbsEnsemble):
             pred_name: name for new group of predictions if passed a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
             callbacks: list of any callbacks to use during evaluation
             verbose: whether to print average predicition timings
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
 
         Returns:
             If passed a Numpy array will return predictions.
@@ -352,8 +355,8 @@ class Ensemble(AbsEnsemble):
             >>> ensemble.predict(test_fy)
         '''
         
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models, display=True, callbacks=callbacks)
-        self.predict_folds(inputs, n_models, pred_name, callbacks=callbacks, verbose=verbose)
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models, display=True, callbacks=callbacks, bs=bs)
+        self.predict_folds(inputs, n_models, pred_name, callbacks=callbacks, verbose=verbose, bs=bs)
     
     def save(self, name:str, feats:Optional[Any]=None, overwrite:bool=False) -> None:
         r'''

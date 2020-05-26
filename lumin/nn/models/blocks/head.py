@@ -20,7 +20,7 @@ from .abs_block import AbsBlock
 from ....utils.misc import to_device
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
-__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead']
+__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
 
 
 class AbsHead(AbsBlock):
@@ -308,7 +308,7 @@ class MultiHead(AbsHead):
         self.flat_lookup = torch.zeros(len(self.flat_feats), dtype=torch.long)
         for i,f in enumerate(self.flat_feats): self.flat_lookup[i] = self.feats.index(f)
         self.matrix_lookup = torch.zeros(len(self.matrix_feats), dtype=torch.long)
-        for i,f in enumerate(self.matrix_feats): self.matrix_lookup[i] = self.matrix_feats.index(f)
+        for i,f in enumerate(self.matrix_feats): self.matrix_lookup[i] = self.feats.index(f)
     
     def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
         r'''
@@ -792,3 +792,257 @@ class AbsConv1dHead(AbsMatrixHead):
         '''
         
         return self.out_sz
+
+
+class LorentzBoostNet(AbsMatrixHead):
+    r'''
+    Implementation of the Lorentz Boost Network (https://arxiv.org/abs/1812.09722), which takes 4-momenta for particles and learns new particles and reference
+    frames from linear combinations of the original particles, and then boosts the new particles into the learned reference frames. Preset kernel functions are
+    the run over the 4-momenta of the boosted particles to compute a set of veriables per particle. These functions can be based on pairs etc. of particles,
+    e.g. angles between particles. (`LorentzBoostNet.comb` provides an index iterator over all paris of particles).
+    
+    A default feature extractor is provided which returns the (px,py,pz,E) of the boosted particles and the cosine angle between every pair of boosted particle.
+    This can be overwritten by passing a function to the `feat_extractor` argument during initialisation, or overidding `LorentzBoostNet.feat_extractor`.
+
+    .. Important::
+        4-momenta should be supplied without preprocessing, and 4-momenta must be physical (E>=|p|). It is up to the user to ensure this, and not doing so may
+        result in errors. A BatchNorm argument (`bn`) is available to preprocess the features extracted from the boosted particles prior to returning them.
+
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly in row-wise matrix form.
+    Matrices should/will be row-wise: each row is a seperate 4-momenta in the form (px,py,pz,E).
+    Matrix elements are expected to be named according to `{particle}_{feature}`, e.g. `photon_E`.
+    `vecs` (vectors) should then be a list of particles, i.e. row headers, feature prefixes.
+    `feats_per_vec` should be a list of features, i.e. column headers, feature suffixes.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. column headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. row headers, feature suffixes
+        n_particles: the number of particles and reference frames to learn
+        feat_extractor: if not None, will use the argument as the function to extract features from the 4-momenta of the boosted particles.
+        bn: whether batch normalisation should be applied to the extracted features
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+            Purely for inheritance, unused by class as is.
+        lookup_act: function taking choice of activation function and returning an activation function layer. Purely for inheritance, unused by class as is.
+        freeze: whether to start with module parameters set to untrainable.
+    
+    Examples::
+        >>> lbn = LorentzBoostNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs, n_particles=6)
+        >>>
+        >>> def feat_extractor(x:Tensor) -> Tensor:  # Return masses of boosted particles, x dimensions = [batch,particle,4-mom]
+        ...     momenta,energies =  x[:,:,:3], x[:,:,3:]
+        ...     mass = torch.sqrt((energies**2)-torch.sum(momenta**2, dim=-1)[:,:,None])
+        ...     return mass
+        >>> lbn = InteractionNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs, n_particle=6, feat_extractor=feat_extractor)
+    '''
+
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 n_particles:int, feat_extractor:Optional[Callable[[Tensor],Tensor]]=None, bn:bool=True,
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
+        super().__init__(cont_feats=cont_feats,vecs=vecs,feats_per_vec=feats_per_vec,row_wise=True,lookup_init=lookup_init,lookup_act=lookup_act,freeze=freeze)
+        self.n_particles = n_particles
+        self.comb = torch.combinations(torch.arange(0,self.n_particles))
+        if feat_extractor is not None: self.feat_extractor = feat_extractor
+        self.part_wgts,self.rf_wgts = self._get_wgts(),self._get_wgts()
+        self.out_sz = None
+        self.out_sz = self.check_out_sz()
+        self.bn = nn.BatchNorm1d(self.out_sz) if bn else None
+        self._map_outputs()
+        if self.freeze: self.freeze_layers()
+    
+    def _map_outputs(self) -> None:
+        self.feat_map = {}
+        for i, f in enumerate(self.cont_feats): self.feat_map[f] = list(range(self.get_out_size()))
+            
+    def _get_wgts(self) -> nn.Module:
+        return nn.Parameter(torch.randn(self.n_particles,1,self.n_v,1)/self.n_particles)
+    
+    def _get_particles(self, x:Tensor) -> Tensor:
+        def _upscale(mat:Tensor, wgts:nn.Parameter) -> Tensor: return torch.transpose(torch.abs(wgts)*mat, 0,1).sum(2)
+        
+        # Get particles and reference frames
+        parts,rfs = _upscale(x, self.part_wgts),_upscale(x, self.rf_wgts)
+        parts,rfs = parts.reshape(-1,4),rfs.reshape(-1,4)
+        
+        # Compute boost vectors to reference frames and gamma factors
+        b_vec = -(rfs/(rfs[:,3:4]+1e-10))[:,:3]
+        b2 = b_vec.norm(dim=1)**2
+        g = 1/(torch.sqrt(1-b2)+1e-10)[:,None]
+        g2 = (g-1)/(b2+1e-10)[:,None]
+        
+        # Boost particles to reference frames
+        bp = torch.sum(parts[:,:3]*b_vec, 1)[:,None]
+        parts = torch.cat((parts[:,:3]+(g2*bp*b_vec)+(g*b_vec*parts[:,3][:,None]),(parts[:,3:]+bp)*g),1)
+        return parts.reshape(-1,self.n_particles, 4)
+    
+    def feat_extractor(self, x:Tensor) -> Tensor:
+        r'''
+        Computes features from boosted particle 4-momenta. Incoming tensor `x` contains all 4-momenta for all particles for all datapoints in minibatch.
+        Default function returns 4-momenta and cosine angle between all particles.
+
+        Arguments:
+            x: 3D incoming tensor with dimensions: [batch, particle, 4-mom (px,py,pz,E)]
+        
+        Returns:
+            2D tensor with dimensions [batch, features]
+        '''
+
+        def _cos_delta(x:Tensor) -> Tensor:
+            v0,v1 = x[:,:,0,:3],x[:,:,1,:3]
+            d = torch.sum(v0*v1, dim=2)
+            mag = v0.norm(dim=2)*v1.norm(dim=2)
+            return d/mag
+
+        bs = x.size(0)
+        out = [x.reshape((bs,-1))]
+        out.append(_cos_delta(x[:,self.comb]))
+        return torch.cat(out, -1)
+
+    def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Passes input through the LB network and aggregates down to a flat tensor via the feature extractor, optionally passing through a batchnorm layer.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
+        
+        Returns:
+            Resulting tensor
+        '''
+        x = self._process_input(x)
+        x = self._get_particles(x)
+        x = self.feat_extractor(x)
+        if self.out_sz is not None and self.bn is not None: x = self.bn(x)
+        return x
+    
+    def get_out_size(self) -> int:
+        r'''
+        Get size of output
+
+        Returns:
+            Width of output representation
+        '''
+        
+        return self.out_sz
+    
+    def check_out_sz(self) -> int:
+        r'''
+        Automatically computes the output size of the head by passing through random data of the expected shape
+
+        Returns:
+            x.size(-1) where x is the outgoing tensor from the head
+        '''
+        
+        x = torch.rand((1,self.n_v, self.n_fpv))
+        x = self.forward(x)
+        return x.size(-1)
+
+
+class AutoExtractLorentzBoostNet(LorentzBoostNet):
+    r'''
+    Modified version of :class:`~lumin.nn.models.blocks.head.LorentzBoostNet (implementation of the Lorentz Boost Network (https://arxiv.org/abs/1812.09722)).
+    Rather than relying on fixed kernel functions to extract features from the boosted paricles, the functions are learnt during training via neural networks.
+    
+    Two netrowks are used, one to extract `n_singles` features from each particle and another to extract `n_pairs` features from each pair of particles.
+
+    .. Important::
+        4-momenta should be supplied without preprocessing, and 4-momenta must be physical (E>=|p|). It is up to the user to ensure this, and not doing so may
+        result in errors. A BatchNorm argument (`bn`) is available to preprocess the 4-momenta of the boosted particles prior to passing them through the neural
+        networks
+
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly in row-wise matrix form.
+    Matrices should/will be row-wise: each row is a seperate 4-momenta in the form (px,py,pz,E).
+    Matrix elements are expected to be named according to `{particle}_{feature}`, e.g. `photon_E`.
+    `vecs` (vectors) should then be a list of particles, i.e. row headers, feature prefixes.
+    `feats_per_vec` should be a list of features, i.e. column headers, feature suffixes.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. column headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. row headers, feature suffixes
+        n_particles: the number of particles and reference frames to learn
+        depth: the number of hidden layers in each network
+        width: the number of neurons per hidden layer
+        n_singles: the number of features to extract per individual particle
+        n_pairs: the number of features to extract per pair of particles
+        act: string representation of argument to pass to lookup_act. Activation should ideally have non-zero outputs to help deal with poorly normalised inputs
+        do: dropout rate for use in networks
+        bn: whether to use batch normalisation within networks. Inputs are passed through BN regardless of setting.
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer.
+        freeze: whether to start with module parameters set to untrainable.
+    
+    Examples::
+        >>> aelbn = AutoExtractLorentzBoostNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs, n_particles=6,
+                                               depth=3, width=10, n_singles=3, n_pairs=2)
+    '''
+
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 n_particles:int, depth:int, width:int, n_singles:int=0, n_pairs:int=0, act:str='swish', do:float=0, bn:bool=False, 
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
+        self.n_singles,self.n_pairs = n_singles,n_pairs
+        
+        # Mock NNs to allow out_sz computation
+        self.comb = torch.combinations(torch.arange(0,n_particles))
+        self.single_nn = lambda x: torch.zeros((x.size(0),self.n_singles*self.n_particles))
+        self.pair_nn   = lambda x: torch.zeros((x.size(0),self.n_pairs*len(self.comb)))
+        self.pre_bn    = lambda x: x
+        
+        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, n_particles=n_particles,
+                         bn=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+        
+        if n_singles > 0: self.single_nn = self._get_nn(n_in=4, depth=depth, width=width,n_out=n_singles, act=act, do=do, bn=bn,
+                                                        lookup_act=lookup_act, lookup_init=lookup_init)
+        if n_pairs   > 0: self.pair_nn   = self._get_nn(n_in=8, depth=depth, width=width, n_out=n_pairs, act=act, do=do, bn=bn,
+                                                        lookup_act=lookup_act, lookup_init=lookup_init)
+        self.pre_bn = nn.BatchNorm1d(4*self.n_particles)
+    
+    def _get_nn(self, n_in:int, depth:int, width:int, n_out:int, act:str, do:bool, bn:bool,
+                lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]],
+                lookup_act:Callable[[str],Any]) -> nn.Sequential:
+        return nn.Sequential(*[self._get_layer(n_in=n_in if i == 0 else width, n_out=width if i+1 < depth else n_out,
+                                               act=act, do=do, bn=bn, lookup_init=lookup_init, lookup_act=lookup_act)
+                               for i in range(depth)])
+    
+    def _get_layer(self, n_in:int, n_out:int, act:str, do:bool, bn:bool,
+                   lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]], lookup_act:Callable[[str],Any]) -> nn.Sequential:   
+        layers = []
+        layers.append(nn.Linear(n_in, n_out))
+        lookup_init(act, n_in, n_out)(layers[-1].weight)
+        nn.init.zeros_(layers[-1].bias)
+        if act != 'linear': layers.append(lookup_act(act))
+        if bn:  layers.append(nn.BatchNorm1d(n_out))
+        if do: 
+            if act == 'selu': layers.append(nn.AlphaDropout(do))
+            else:             layers.append(nn.Dropout(do))
+        return nn.Sequential(*layers)
+    
+    def feat_extractor(self, x:Tensor) -> Tensor:
+        r'''
+        Computes features from boosted particle 4-momenta. Incoming tensor `x` contains all 4-momenta for all particles for all datapoints in minibatch.
+        `single_nn` broadcast to all boosted particles, and `pair_nn` broadcast to all paris of particles. Returned features are concatenated together.
+
+        Arguments:
+            x: 3D incoming tensor with dimensions: [batch, particle, 4-mom (px,py,pz,E)]
+        
+        Returns:
+            2D tensor with dimensions [batch, features]
+        '''
+
+        bs = x.size(0)
+        x = self.pre_bn(x.reshape((bs,-1))).reshape((bs,-1, 4))
+        out = []
+        if self.n_singles > 0: out.append(self.single_nn(x).reshape((bs,-1)))
+        if self.n_pairs   > 0: out.append(self.pair_nn(x[:,self.comb].reshape(bs, len(self.comb), 8)).reshape((bs, -1)))
+        if len(out) == 1: out = out[0]
+        else:             out = torch.cat(out, -1)
+        return out

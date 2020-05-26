@@ -43,7 +43,7 @@ def bin_binary_class_pred(df:pd.DataFrame, max_unc:float, consider_samples:Optio
             edges.append(max_zero)
             ub = max_zero
 
-    for i in progress_bar(np.linspace(ub,lb+step_sz, (ub-lb)/step_sz), display=verbose):
+    for i in progress_bar(np.linspace(ub,lb+step_sz, (ub-lb)/step_sz), display=verbose, leave=False):
         cut = (df[pred_name] > i) & (df[pred_name] <= edges[-1])
         pops = [len(df[(df[class_name] == c) & cut]) for c in df[class_name].unique()] if compact_samples \
             else [len(df[(df[sample_name] == s) & cut]) for s in consider_samples]

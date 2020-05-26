@@ -304,7 +304,7 @@ def plot_bottleneck_weighted_inputs(model:AbsModel, bottleneck_idx:int, inputs:U
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         if log_y: plt.yscale('log', nonposy='clip')
-        plt.xticks(rotation=70)
+        plt.xticks(rotation=90)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show() 

@@ -101,7 +101,7 @@ class Model(AbsModel):
             NUmber of (trainable) parameters in model
         '''
         
-        return sum(p.numel() for p in self.parameters() if p.requires_grad) 
+        return sum(p.numel() for p in self.parameters() if p.requires_grad or not trainable) 
 
     def set_input_mask(self, mask:np.ndarray) -> None:
         r'''
@@ -421,7 +421,6 @@ class Model(AbsModel):
         from onnx_tf.backend import prepare
         warnings.warn("""Tensorflow ProtocolBuffer export of LUMIN models (via ONNX) has not been fully explored or sufficiently tested yet.
                          Please use with caution, and report any trouble""")
-        if '.' in name: name = name[:name.rfind('.')]
         self.export2onnx(name, bs)
         m = onnx.load(f'{name}.onnx')
         tf_rep = prepare(m)

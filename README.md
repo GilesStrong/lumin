@@ -48,6 +48,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
         - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222) & [Moreno et al., 2019](https://arxiv.org/abs/1908.05318)
         - Recurrent layers for series of objects
         - 1D convolutional networks for series of objects
+        - HEP-specific architectures, e.g. LorentzBoostNetworks [Erdmann, Geiser, Rath, Rieger, 2018](https://arxiv.org/abs/1812.09722)
 - Configurable initialisations, including LSUV [Mishkin, Matas, 2016](https://arxiv.org/abs/1511.06422)
 - HEP-specific losses, e.g. Asimov loss [Elwood & Krücker, 2018](https://arxiv.org/abs/1806.00322)
 - Easy training and inference of ensembles of models:
@@ -186,6 +187,7 @@ Certainly more developers and contributors are welcome to join and help out!
 
 If you have used LUMIN in your analysis work and wish to cite it, the preferred reference is: *Giles C. Strong, LUMIN, Zenodo (Mar. 2019), https://doi.org/10.5281/zenodo.2601857, Note: Please check https://github.com/GilesStrong/lumin/graphs/contributors for the full list of contributors*
 
+```
 @misc{giles_chatham_strong_2019_2601857,  
   author       = {Giles Chatham Strong},  
   title        = {LUMIN},  
@@ -195,3 +197,4 @@ If you have used LUMIN in your analysis work and wish to cite it, the preferred 
   doi          = {10.5281/zenodo.2601857},  
   url          = {https://doi.org/10.5281/zenodo.2601857}  
 }
+```

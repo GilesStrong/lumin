@@ -105,10 +105,11 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
     lr_finders = []
     tmr = timeit.default_timer()
+    nb = None
     for trn_id in progress_bar(idxs):
         model = Model(model_builder)
         trn_fold = fy.get_fold(trn_id)
-        nb = len(trn_fold['targets'])//bs
+        if nb is None: nb = len(trn_fold['targets'])//bs
         lr_finder = LRFinder(nb=nb, lr_bounds=lr_bounds, model=model)
         cyclic_callback,callbacks = None,[]
         for c in callback_partials: callbacks.append(c(model=model))

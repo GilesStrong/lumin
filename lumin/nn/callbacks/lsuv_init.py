@@ -144,14 +144,14 @@ class LsuvInit(Callback):
                     self.gg['correction_needed'] = False
 
     def _run_lsuv(self, data:Union[Tensor,Tuple[Tensor,Tensor]]) -> None:
-        # cuda = next(self.model.model.parameters()).is_cuda
+        cuda = next(self.model.model.parameters()).is_cuda
         self.model.model.eval()
         self.model.model.apply(self._count_conv_fc_layers)
         if self.verbose: print(f'Total layers to process: {self.gg["total_fc_conv_layers"]}')
         if self.do_orthonorm:
             self.model.model.apply(self._orthogonal_weights_init)
             if self.verbose: print('Orthonorm done')
-            # if cuda: self.model.model = self.model.model.cuda()
+            if cuda: self.model.model = self.model.model.cuda()
         for layer_idx in range(self.gg['total_fc_conv_layers']):
             if self.verbose: print(f'Checking layer {layer_idx}')
             self.model.model.apply(self._add_current_hook)
@@ -177,4 +177,4 @@ class LsuvInit(Callback):
             self.gg['hook'] = None
             if self.verbose: print(f'Initialised layer {layer_idx}')
         if self.verbose: print('LSUV init done!')
-        # if not cuda: self.model.model = self.model.model.cpu()
+        if not cuda: self.model.model = self.model.model.cpu()
