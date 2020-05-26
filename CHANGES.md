@@ -26,6 +26,8 @@
 
 ## Changes
 
+- `ParametrisedPrediction` now accepts lists of parameterisation features
+
 ## Depreciations
 
 ## Comments

@@ -20,7 +20,7 @@ from .abs_block import AbsBlock
 from ....utils.misc import to_device
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
-__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead']
+__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
 
 
 class AbsHead(AbsBlock):

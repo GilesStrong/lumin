@@ -241,8 +241,8 @@ class ParametrisedPrediction(Callback):
 
     Arguments:
         feats: list of feature names used during training (in the same order)
-        param_feat: the feature name which is to be adjusted
-        param_val: the value to which to set the paramertisation feature
+        param_feat: the feature name which is to be adjusted, or a list of features to adjust
+        param_val: the value to which to set the paramertisation feature, of the list of values to set the parameterisation features to
         model: unused, purely for compatability, just leave it as None
 
     Examples::
@@ -255,10 +255,12 @@ class ParametrisedPrediction(Callback):
 
     '''
 
-    def __init__(self, feats:List[str], param_feat:str, param_val:float, model:Optional[AbsModel]=None):
+    def __init__(self, feats:List[str], param_feat:Union[List[str],str], param_val:Union[List[float],float], model:Optional[AbsModel]=None):
         super().__init__(model=model)
+        if not isinstance(param_feat, list): param_feat = [param_feat]
+        if not isinstance(param_val, list):  param_val  = [param_val]
         self.feats,self.param_feat,self.param_val = feats,param_feat,param_val
-        self.param_idx = self.feats.index(self.param_feat)
+        self.param_idx = [self.feats.index(f) for f in self.param_feat]
         
     def on_pred_begin(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], **kargs) -> None:
         r'''
@@ -268,5 +270,7 @@ class ParametrisedPrediction(Callback):
             inputs: data which will later be passed to the model
         '''
 
-        if isinstance(inputs, pd.DataFrame): inputs[self.param_feat] = self.param_val
-        else: inputs[:, self.param_idx] = self.param_val
+        if isinstance(inputs, pd.DataFrame):
+            for f, v in zip(self.param_feat, self.param_val): self.inputs[f] = v
+        else:
+            for f, v in zip(self.param_idx, self.param_val):  inputs[:, f] = v
