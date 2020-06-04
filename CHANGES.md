@@ -2,7 +2,11 @@
 
 ## Important changes
 
+- `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
+
 ## Breaking
+
+- `plot_rank_order_dendrogram` now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
 
 ## Additions
 
@@ -27,6 +31,13 @@
 ## Changes
 
 - `ParametrisedPrediction` now accepts lists of parameterisation features
+- `plot_sample_pred` now ensures that signal and background have the same binning
+- `PlotSettings` now coerces string arguments for `savepath` to `Path`
+- Added default value for `targ_name` in `EvalMetric`
+- `plot_rank_order_dendrogram`:
+    - Now uses "optimal ordering" for improved presentation
+    - Now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
+- `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
 
 ## Depreciations
 

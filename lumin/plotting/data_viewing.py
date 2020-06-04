@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, Tuple
 import warnings
 
 import scipy
@@ -12,7 +12,7 @@ from ..utils.statistics import uncert_round, get_moments
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-__all__ = ['plot_feat', 'compare_events', 'plot_rank_order_dendrogram', 'plot_kdes_from_bs']
+__all__ = ['plot_feat', 'compare_events', 'plot_rank_order_dendrogram', 'plot_kdes_from_bs', 'plot_binary_sample_feat']
 
 
 def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
@@ -77,7 +77,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
             if show_moments:
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
-                std = uncert_round(moms[2], moms[3])
+                std  = uncert_round(moms[2], moms[3])
                 if wgt_name is None: label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
                 else:                label += r' $\bar{x}=$' + f'{mean[0]}' + r', $\sigma_x=$' + f'{std[0]}'
 
@@ -141,10 +141,11 @@ def compare_events(events:list) -> None:
         fig.show()
 
 
-def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> List[List[str]]:
+def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) \
+        -> Dict[str,Union[List[str],float]]:
     r'''
     Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient.
-    Also returns a list pairs of features with correlation coefficients greater than the threshold
+    Also returns a sets of features with correlation coefficients greater than the threshold
 
     Arguments:
         df: Pandas DataFrame containing data
@@ -153,12 +154,12 @@ def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Op
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        List of pairs of features with correlation coefficients greater than the threshold
+        Dict of sets of features with correlation coefficients greater than the threshold and cluster distance
     '''
 
     corr = np.round(scipy.stats.spearmanr(df).correlation, 4)
     corr_condensed = hc.distance.squareform(1-np.abs(corr))  # Abs because negtaive of a feature is a trvial transformation: information unaffected
-    z = hc.linkage(corr_condensed, method='average')
+    z = hc.linkage(corr_condensed, method='average', optimal_ordering=True)
 
     with sns.axes_style('white'), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_large, (0.5*len(df.columns))))
@@ -169,11 +170,15 @@ def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Op
         plt.show()
 
     feats = df.columns
-    pairs = []
-    for r in z:
-        if 1-r[2] < threshold: break
-        if r[0] < len(feats) and r[1] < len(feats): pairs.append([feats[r[0]],feats[r[1]]])
-    return pairs
+    sets = {}
+    for i, merge in enumerate(z):
+        if merge[2] > 1-threshold: continue
+        if merge[0] <= len(z): a = [feats[int(merge[0])]]
+        else:                  a = sets.pop(int(merge[0]))['children']
+        if merge[1] <= len(z): b = [feats[int(merge[1])]]
+        else:                  b = sets.pop(int(merge[1]))['children']
+        sets[1 + i + len(z)] = {'children': [*a, *b], 'distance': merge[2]}
+    return sets
 
 
 def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,Dict[str,Any]], 
@@ -221,3 +226,57 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         plt.show()
+
+
+def plot_binary_sample_feat(df:pd.DataFrame, feat:str, targ_name:str='gen_target', wgt_name:str='gen_weight', sample_name:str='gen_sample',
+                            wgt_scale:float=1, bins:Optional[Union[int,List[int]]]=None, log_y:bool=False, lim_x:Optional[Tuple[float,float]]=None,
+                            density=True, feat_name:Optional[str]=None, units:Optional[str]=None,
+                            savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+    r'''
+    TODO write this
+    Work in progress
+    '''
+    
+    def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
+        '''Returns set of samples present in df ordered by sum of weights''' 
+        samples = set(df[sample_name])
+        weights = [np.sum(df[df[sample_name] == sample][wgt_name]) for sample in samples]
+        return [x[0] for x in np.array(sorted(zip(samples, weights), key=lambda x: x[1]))]
+    
+    sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
+    if not isinstance(bins,list): bins = np.linspace(df[feat].min(),df[feat].max(), bins if isinstance(bins, int) else 20)
+    hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
+    sig_samples = _get_samples(df[sig], sample_name, wgt_name)
+    bkg_samples = _get_samples(df[bkg], sample_name, wgt_name)
+    sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
+    
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette, 1+max([sample2col[x] for x in sample2col])):
+        fig, ax = plt.subplots(figsize=(settings.w_mid, settings.h_mid))
+        ax.hist([df[df[sample_name] == sample][feat] for sample in bkg_samples],
+                weights=[wgt_scale*df[df[sample_name] == sample][wgt_name] for sample in bkg_samples],
+                label=bkg_samples, color=[sns.color_palette()[sample2col[s]] for s in bkg_samples], **hist_params)
+        
+        for sample in sig_samples:
+            ax.hist(df[df[sample_name] == sample][feat],
+                    weights=wgt_scale*df[df[sample_name] == sample][wgt_name],
+                    label=sample, histtype='step', linewidth='3', 
+                    color='black', **hist_params)
+        
+        ax.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+        if lim_x is not None: ax.set_xlim(*lim_x)
+        ax.tick_params(axis='x', labelsize=settings.tk_sz, labelcolor=settings.tk_col)
+        ax.tick_params(axis='y', labelsize=settings.tk_sz, labelcolor=settings.tk_col)
+        x_lbl = feat if feat_name is None else feat_name
+        y_lbl = r'$\frac{d\left(\mathcal{A}\sigma\right)}{dx}$'
+        if units is not None:
+            x_lbl += r'$\ [' + units + r']$'
+            y_lbl += r'$\ [' + units + r'^{-1}]$'
+        ax.xaxis.set_label_text(x_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if density: ax.yaxis.set_label_text(r"$\frac{1}{\mathcal{A}\sigma}$"+y_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
+        else:       ax.yaxis.set_label_text(r"$\mathcal{L}_{\mathrm{int.}}\times$"+y_lbl, fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if log_y:
+            ax.set_yscale('log', nonposy='clip')
+            ax.grid(True, which="both")
+        ax.set_title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
+        fig.show()

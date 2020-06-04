@@ -17,7 +17,7 @@ class EvalMetric(ABC):
         wgt_name: name of group in fold file containing datapoint weights
     '''
 
-    def __init__(self, targ_name:str, wgt_name:Optional[str]=None): self.targ_name,self.wgt_name,self.lower_metric_better = targ_name,wgt_name,True
+    def __init__(self, targ_name:str='targets', wgt_name:Optional[str]=None): self.targ_name,self.wgt_name,self.lower_metric_better = targ_name,wgt_name,True
 
     def get_df(self, fy:FoldYielder, idx:int, y_pred:np.ndarray) -> pd.DataFrame:
         r'''

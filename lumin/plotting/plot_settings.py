@@ -37,6 +37,7 @@ class PlotSettings:
 
         self.savepath = Path('.') if 'savepath' not in kargs else kargs['savepath']
         self.format   = '.pdf'    if 'format'   not in kargs else kargs['format']
+        if not isinstance(self.savepath, Path): self.savepath = Path(self.savepath)
         if '.' not in self.format: self.format = '.' + self.format
 
         self.h_small = 4  if 'h_small' not in kargs else kargs['h_small']

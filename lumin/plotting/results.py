@@ -164,7 +164,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
                      density=False, zoom_args:Optional[Dict[str,Any]]=None,
                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    More advanceed plotter for prediction distirbution in a binary class problem with stacked distributions for backgrounds and user-defined binning
+    More advanced plotter for prediction distribution in a binary class problem with stacked distributions for backgrounds and user-defined binning
     Can also zoom in to specified parts of plot
     Note that plotting colours can be controled by seeting the settings.sample2col dictionary
     
@@ -187,6 +187,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
     
     hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
+    if not isinstance(bins,list): bins = np.linspace(df[feat].min(),df[feat].max(), bins if isinstance(bins, int) else 10)
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)
     bkg_samples = _get_samples(df[bkg], sample_name, wgt_name)
     sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
@@ -229,6 +230,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
             ax.xaxis.set_label_text("Class prediction", fontsize=settings.lbl_sz, color=settings.lbl_col)
             fig.legend(loc='right', fontsize=settings.leg_sz)
         else:
+                     
             ax.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         ax.set_xlim(*lim_x)
         ax.tick_params(axis='x', labelsize=settings.tk_sz, labelcolor=settings.tk_col)

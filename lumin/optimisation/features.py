@@ -354,14 +354,12 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
     pair by checking whether doing so would not decrease the performance Random Forests trained to perform classification or regression.
 
     Linearly correlated features are identified by computing Spearman's rank-order correlation coefficients for every pair of features. Hierachical clustering
-    is then used to group features. Pairs with a correlation coefficient greater than a set threshold are candidates for removal.
-    Candidate pairs are tested, in order of decreasing correlation, by computing the mean performance of a Random Forests trained on: all remaining training
-    features; all remaining training features except the first feature in the pair; and all remaining training features except the second feature in the pair.
-    If the RF trained on all remaining features consistently outperforms the other two trainings, then neither feature from the pair is removed, otherwise the
-    feature whose removal causes the largest mean increase in performance is removed.
-
-    Since multiple features maybe correlated with one-another, but this function examines paris of features, it might be necessary/desirable to rerun it on the
-    the previous results.
+    is then used to group features. Clusters of features with a correlation coefficient greater than a set threshold are candidates for removal.
+    Candidate sets of features are tested, in order of decreasing correlation, by computing the mean performance of a Random Forests trained on all remaining
+    training features and all remaining training features except each feature in the set in turn.
+    If the RF trained on all remaining features consistently outperforms the other trainings, then no feature from the set is removed, otherwise the
+    feature whose removal causes the largest mean increase in performance is removed. This test is then repeated on the remaining features in the set, until
+    either no features are removed, or only one feature remains.
 
     Since this function involves training many models, it can be slow on large datasets. In such cases one can use the `subsample_rate` argument to sample
     randomly a fraction of the whole dataset (with optionaly stratification). Resampling is performed prior to each RF training for maximum genralisation, and
@@ -395,15 +393,16 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
     '''
 
     tmr = timeit.default_timer()
-    # Get pairs of linearly correlated features clustered by Spearman's rank-order correlation coefficient
+    # Get sets of linearly correlated features clustered by Spearman's rank-order correlation coefficient
     print("Computing Spearman's rank-order correlation coefficients")
-    pairs = plot_rank_order_dendrogram(train_df[check_feats], threshold=corr_threshold, savename=savename, settings=plot_settings)
-    if len(pairs) == 0:
-        print(f'No pairs of features found to pass correlation threshold of {corr_threshold}')
+    clusters = plot_rank_order_dendrogram(train_df[check_feats], threshold=corr_threshold, savename=savename, settings=plot_settings)
+    if len(clusters) == 0:
+        print(f'No sets of features found to pass correlation threshold of {corr_threshold}')
         return check_feats
-    else:
-        print(f'{len(pairs)} pairs of features found to pass correlation threshold of {corr_threshold}:')
-        print(pairs)
+    test_sets = []
+    for c in clusters: test_sets.append(clusters[c]['children'])
+    print(f'{len(test_sets)} sets of features found to pass correlation threshold of {corr_threshold}:')
+    print(test_sets)
     
     if optimise_rf:  # Roughly optimise a Random Forest for the (subsampled) data
         print("\nOptimising RF")
@@ -415,33 +414,37 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
                                          objective=objective, n_estimators=n_estimators, verbose=True, params=rf_params)
         
     remove = []
-    for p in progress_bar(pairs):  # Loop through paris of features check whether features can be removed
-        print(f'\nChecking pair: {p}')
-        res = rf_check_feat_removal(check_feats=p, train_df=train_df, objective=objective, train_feats=[f for f in check_feats if f not in remove],
-                                    targ_name=targ_name, wgt_name=wgt_name, val_df=val_df, n_rfs=n_rfs, subsample_rate=subsample_rate, strat_key=strat_key,
-                                    rf_params=rf_params)
-        arr = [['None', res['None_val_score']],
-               [p[0], res[f'{p[0]}_val_score']],
-               [p[1], res[f'{p[1]}_val_score']]]
-        arr = sorted(arr, key=lambda x:x[1])
-        drop = arr[-1][0]
-        if drop != 'None':
-            print(f'Dropping {drop}')
-            remove.append(drop)
-        elif arr[-2][1] == arr[-1][1]:
-            drop = arr[-2][0]
-            print(f'Dropping {drop}')
-            remove.append(drop)
+    for s in progress_bar(test_sets):  # Loop through sets of features check whether features can be removed
+        while len(s) > 1:
+            print(f'\nChecking set: {s}')
+            res = rf_check_feat_removal(check_feats=s, train_df=train_df, objective=objective, train_feats=[f for f in check_feats if f not in remove],
+                                        targ_name=targ_name, wgt_name=wgt_name, val_df=val_df, n_rfs=n_rfs, subsample_rate=subsample_rate, strat_key=strat_key,
+                                        rf_params=rf_params)
+            arr = [['None', res['None_val_score']]]
+            for f in s: arr.append([f, res[f'{f}_val_score']])
+            arr = sorted(arr, key=lambda x:x[1])
+            drop = arr[-1][0]
+            if drop != 'None':
+                print(f'Dropping {drop}')
+                remove.append(drop)
+                s.pop(s.index(drop))
+            elif arr[-2][1] == arr[-1][1]:
+                drop = arr[-2][0]
+                print(f'Dropping {drop}')
+                remove.append(drop)
+                s.pop(s.index(drop))
+            else:
+                print('Unable to remove any(more) features from cluster, moving to next set')
+                break
             
     filtered = [f for f in check_feats if f not in remove]
     print(f'\n{len(remove)} features removed from starting list of {len(check_feats)}, {len(filtered)} features remain')
     print("\nRecomputing Spearman's rank-order correlation coefficients on filtered features")
-    pairs = plot_rank_order_dendrogram(train_df[filtered], threshold=corr_threshold, settings=plot_settings)
-    if len(pairs) == 0:
-        print(f'No pairs of features found to pass correlation threshold of {corr_threshold}')
+    test_sets = plot_rank_order_dendrogram(train_df[filtered], threshold=corr_threshold, settings=plot_settings)
+    if len(test_sets) == 0:
+        print(f'No sets of features found to pass correlation threshold of {corr_threshold}')
     else:
-        print(f'{len(pairs)} pairs of features still found to pass correlation threshold of {corr_threshold}.', 
-              'You may wish to rerun this function on the filtered features.')
+        print(f'{len(test_sets)} sets of features still found to pass correlation threshold of {corr_threshold}.')
 
     def _get_score(feats:List[str]) -> Tuple[float,float]:
         score = []
