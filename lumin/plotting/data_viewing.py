@@ -27,6 +27,9 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
     By passing a list of cuts and labels, it will plot multiple distributions of the same feature for different cuts.
     Since it is designed to provide quick, indicative information, more specific functions (such as `plot_kdes_from_bs`)
     should be used to provide final results.
+
+    .. important::
+        NaN and Inf values are removed prior to plotting and no attempt is made to coerce them to real numbers
     
     Arguments:
         df: Pandas DataFrame containing data
@@ -44,10 +47,13 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
+    def _filter_data(x:Union[pd.DataFrame,pd.Series]) -> Union[pd.DataFrame,pd.Series]: return x.replace([np.inf,-np.inf],np.nan).dropna()
+
     if not isinstance(labels, list): labels = [labels]
     if not isinstance(cuts,   list): cuts   = [cuts]
     if plot_params is None: plot_params = {}
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
+    use_df = df.replace([np.inf,-np.inf],np.nan).dropna()
     
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
@@ -55,24 +61,26 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
 
             if plot_bulk:  # Ignore tails for indicative plotting
-                feat_range = np.percentile(np.nan_to_num(df[feat]), [1, 99])
+                feat_range = np.percentile(_filter_data(df[feat]), [1, 99])
                 if feat_range[0] == feat_range[1]: break
                 cut = (df[feat] > feat_range[0]) & (df[feat] < feat_range[1])
                 if cuts[i] is not None: cut = cut & (cuts[i])
                 if wgt_name is None:
-                    plot_data = np.nan_to_num(df.loc[cut, feat])
+                    plot_data = _filter_data(df.loc[cut, feat])
                 else:
-                    weights = df.loc[cut, wgt_name].values.astype('float64')
+                    tmp = _filter_data(df.loc[cut, [wgt_name, feat]])
+                    weights = tmp[wgt_name].values.astype('float64')
                     weights /= weights.sum()
-                    plot_data = np.random.choice(np.nan_to_num(df.loc[cut, feat]), n_samples, p=weights)
+                    plot_data = np.random.choice(tmp[feat], n_samples, p=weights)
             else:
                 tmp_data = df if cuts[i] is None else df.loc[cuts[i]]
                 if wgt_name is None:
-                    plot_data = np.nan_to_num(tmp_data[feat])
+                    plot_data = _filter_data(tmp_data[feat])
                 else:
+                    tmp_data = _filter_data(tmp_data[[wgt_name, feat]])
                     weights = tmp_data[wgt_name].values.astype('float64')
                     weights /= weights.sum()
-                    plot_data = np.random.choice(np.nan_to_num(tmp_data[feat]), n_samples, p=weights)
+                    plot_data = np.random.choice(tmp_data[feat], n_samples, p=weights)
             label = labels[i]
             if show_moments:
                 moms = get_moments(plot_data)
