@@ -2,14 +2,12 @@ import pandas as pd
 import numpy as np
 from typing import List, Optional, Dict, Any, Tuple, Union
 from fastprogress import progress_bar
-from rfpimp import importances
 from prettytable import PrettyTable
 import timeit
 from collections import OrderedDict, defaultdict
-from rfpimp import feature_dependence_matrix, plot_dependence_heatmap
+from rfpimp import importances, feature_dependence_matrix, plot_dependence_heatmap
 import multiprocessing as mp
 
-from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 from .hyper_param import get_opt_rf_params
@@ -24,7 +22,7 @@ __all__ = ['get_rf_feat_importance', 'rf_rank_features', 'rf_check_feat_removal'
            'auto_filter_on_mutual_dependence']
 
 
-def get_rf_feat_importance(rf:ForestRegressor, inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
+def get_rf_feat_importance(rf:Union[RandomForestRegressor,RandomForestClassifier], inputs:pd.DataFrame, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> pd.DataFrame:
     r'''
     Compute feature importance for a Random Forest model using rfpimp.
 
@@ -87,18 +85,18 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
         rfp['n_estimators'] = n_estimators
         m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
         rf = m(**rfp)
-        rf.fit(train_df[train_feats], train_df[targ_name], w_trn)
+        rf.fit(X=train_df[train_feats], y=train_df[targ_name], sample_weight=w_trn)
     
     if verbose: print("Evalualting importances")
     fi = get_rf_feat_importance(rf, train_df[train_feats], train_df[targ_name], w_trn)
-    orig_score = [rf.score(val_df[train_feats], val_df[targ_name], w_val)]
+    orig_score = [rf.score(X=val_df[train_feats], y=val_df[targ_name], sample_weight=w_val)]
     if n_rfs > 1:
         m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
         for _ in progress_bar(range(n_rfs-1)):
             rf = m(**rfp)
-            rf.fit(train_df[train_feats], train_df[targ_name], w_trn)
+            rf.fit(X=train_df[train_feats], y=train_df[targ_name], sample_weight=w_trn)
             fi = pd.merge(fi, get_rf_feat_importance(rf, train_df[train_feats], train_df[targ_name], w_trn), on='Feature', how='left')
-            orig_score.append(rf.score(val_df[train_feats], val_df[targ_name], w_val))
+            orig_score.append(rf.score(X=val_df[train_feats], y=val_df[targ_name], sample_weight=w_val))
         fi['Importance']  = np.mean(fi[[f for f in fi.columns if 'Importance' in f]].values, axis=1)
         fi['Uncertainty'] = np.std(fi[[f for f in fi.columns if 'Importance' in f]].values, ddof=1, axis=1)/np.sqrt(n_rfs)
         fi.sort_values(by='Importance', ascending=False, inplace=True)
@@ -120,14 +118,14 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
                 if verbose: print("Optimising new RF")
                 rfp, rf_new = get_opt_rf_params(train_df[top_feats], train_df[targ_name], val_df[top_feats], val_df[targ_name],
                                                 objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, params=rf_params, verbose=False)
-                new_score.append(rf_new.score(val_df[top_feats], val_df[targ_name], w_val))
+                new_score.append(rf_new.score(X=val_df[top_feats], y=val_df[targ_name], sample_weight=w_val))
             else:
                 rfp = rf_params
                 rfp['n_estimators'] = n_estimators
             while len(new_score) < n_rfs:
                 rf_new = m(**rfp)
-                rf_new.fit(train_df[top_feats], train_df[targ_name], w_trn)
-                new_score.append(rf_new.score(val_df[top_feats], val_df[targ_name], w_val))
+                rf_new.fit(X=train_df[top_feats], y=train_df[targ_name], sample_weight=w_trn)
+                new_score.append(rf_new.score(X=val_df[top_feats], y=val_df[targ_name], sample_weight=w_val))
             new_score = uncert_round(np.mean(new_score), np.std(new_score, ddof=1))
             print("Comparing RF scores, higher = better")                           
             print(f"All features:\t\t{orig_score[0]}±{orig_score[1]}")
@@ -202,9 +200,10 @@ def rf_check_feat_removal(train_df:pd.DataFrame, objective:str,
         for remove in ['None']+check_feats:
             feats = train_feats if remove == 'None' else [f for f in train_feats if f != remove]
             rf = m(**rf_params)
-            rf.fit(tmp_trn[feats], tmp_trn[targ_name], sample_weight=None if wgt_name is None else tmp_trn[wgt_name])
+            rf.fit(X=tmp_trn[feats], y=tmp_trn[targ_name], sample_weight=None if wgt_name is None else tmp_trn[wgt_name])
             oob[remove].append(rf.oob_score_)
-            if val_df is not None: val[remove].append(rf.score(val_df[feats], val_df[targ_name], None if wgt_name is None else val_df[wgt_name]))
+            if val_df is not None: val[remove].append(rf.score(X=val_df[feats], y=val_df[targ_name],
+                                                               sample_weight=None if wgt_name is None else val_df[wgt_name]))
 
     results = {}
     for remove in ['None']+check_feats:
@@ -289,7 +288,7 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
             w_val = None if wgt_name is None else tmp_val[wgt_name]
             rfp, rf = get_opt_rf_params(tmp_trn[feats], tmp_trn[targ_name], tmp_val[feats], tmp_val[targ_name],
                                         objective, w_trn=w_trn, w_val=w_val, n_estimators=n_estimators, params=rf_params, verbose=False)
-            score.append(rf.score(tmp_val[feats], tmp_val[targ_name], w_val))
+            score.append(rf.score(X=tmp_val[feats], y=tmp_val[targ_name], sample_weight=w_val))
         else:
             rfp = rf_params
             rfp['n_estimators'] = n_estimators
@@ -299,8 +298,8 @@ def repeated_rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, n_reps
             w_val = None if wgt_name is None else tmp_val[wgt_name]
             m = RandomForestClassifier if 'class' in objective.lower() else RandomForestRegressor
             rf = m(**rfp)
-            rf.fit(tmp_trn[feats], tmp_trn[targ_name], w_trn)
-            score.append(rf.score(tmp_val[feats], tmp_val[targ_name], w_val))
+            rf.fit(X=tmp_trn[feats], y=tmp_trn[targ_name], sample_weight=w_trn)
+            score.append(rf.score(X=tmp_val[feats], y=tmp_val[targ_name], sample_weight=w_val))
         return  uncert_round(np.mean(score), np.std(score, ddof=1))
     
     selections = pd.DataFrame({'Feature':train_feats, 'N_Selections':0})
@@ -455,8 +454,8 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
                                    n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None)
             w_trn = None if wgt_name is None else tmp_trn[wgt_name]
             rf = m(**rf_params)
-            rf.fit(tmp_trn[feats], tmp_trn[targ_name], w_trn)
-            score.append(rf.score(val_df[feats], val_df[targ_name], w_val))
+            rf.fit(X=tmp_trn[feats], y=tmp_trn[targ_name], sample_weight=w_trn)
+            score.append(rf.score(X=val_df[feats], y=val_df[targ_name], sample_weight=w_val))
         return uncert_round(np.mean(score), np.std(score, ddof=1))
     
     if len(filtered) < len(check_feats):
@@ -585,8 +584,8 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
                                    n_samples=int(subsample_rate*len(train_df)) if subsample_rate is not None else None)
             w_trn = None if wgt_name is None else tmp_trn[wgt_name]
             rf = m(**rf_params)
-            rf.fit(tmp_trn[feats], tmp_trn[targ_name], w_trn)
-            score.append(rf.score(val_df[feats], val_df[targ_name], w_val))
+            rf.fit(X=tmp_trn[feats], y=tmp_trn[targ_name], sample_weight=w_trn)
+            score.append(rf.score(X=val_df[feats], y=val_df[targ_name], sample_weight=w_val))
         return uncert_round(np.mean(score), np.std(score, ddof=1))
 
     if len(filtered) < len(check_feats):

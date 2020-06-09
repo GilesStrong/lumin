@@ -38,8 +38,8 @@ def _check_val_set_fy(train_fy:FoldYielder, val_fy:FoldYielder, test_fy:Optional
             if train_feats is None: train_feats = [f for f in df_trn.columns if 'gen_' not in f]
 
             m = RandomForestClassifier(n_estimators=40, min_samples_leaf=25, n_jobs=-1)
-            m.fit(df_trn[train_feats], df_trn['gen_target'], df_trn['gen_weight'])
-            aucs.append(roc_auc_score(df_val['gen_target'], m.predict(df_val[train_feats]), sample_weight=df_val['gen_weight']))
+            m.fit(X=df_trn[train_feats], y=df_trn['gen_target'], sample_weight=df_trn['gen_weight'])
+            aucs.append(roc_auc_score(y_true=df_val['gen_target'], y_score=m.predict(df_val[train_feats]), sample_weight=df_val['gen_weight']))
             fi = fi.append(get_rf_feat_importance(m, df_val[train_feats], df_val['gen_target'], df_val['gen_weight']), ignore_index=True)
 
         mean = uncert_round(np.mean(aucs), np.std(aucs, ddof=1)/np.sqrt(len(aucs)))
@@ -78,8 +78,8 @@ def _check_val_set_np(train:Union[pd.DataFrame,np.ndarray], val:Union[pd.DataFra
         train_feats = [f for f in df_trn.columns if 'gen_' not in f]
 
         m = RandomForestClassifier(n_estimators=40, min_samples_leaf=25, n_jobs=-1)
-        m.fit(df_trn[train_feats], df_trn['gen_target'], df_trn['gen_weight'])
-        auc = roc_auc_score(df_val['gen_target'], m.predict(df_val[train_feats]), sample_weight=df_val['gen_weight'])
+        m.fit(X=df_trn[train_feats], y=df_trn['gen_target'], sample_weight=df_trn['gen_weight'])
+        auc = roc_auc_score(y_true=df_val['gen_target'], y_score=m.predict(df_val[train_feats]), sample_weight=df_val['gen_weight'])
         fi = get_rf_feat_importance(m, df_val[train_feats], df_val['gen_target'],
                                     df_val['gen_weight']).sort_values(['Importance'], ascending=False).reset_index()
         print(f"\nAUC for {sample}-validation discrimination = {auc}")

@@ -3,7 +3,7 @@
 ## Important changes
 
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
-- Moved to Scikit-learn 0.23.1
+- Moved to Scikit-learn 0.23.1, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
 
 ## Breaking
 
@@ -50,6 +50,8 @@
 ## Depreciations
 
 ## Comments
+
+- RFPImp still imports from sklearn.ensemble.forest which is depreciated, and possibly part of the private API. Hopefully the package will remedy this in time for depreciation. For now, future warnings are displayed.
 
 # V0.5.1 - The Gradient Must Flow - Micro Update
 

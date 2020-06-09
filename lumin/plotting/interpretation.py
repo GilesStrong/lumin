@@ -195,7 +195,7 @@ def _deprocess_iso(iso:PDPIsolate, input_pipe:Pipeline, feat:str, feats:Union[np
     if feat_id >= in_sz: return
     x = iso.feature_grids
     x = np.broadcast_to(x[:,None], (x.shape[0], in_sz))
-    x = input_pipe.inverse_transform(x)[:,feat_id]
+    x = input_pipe.inverse_transform(Xt=x)[:,feat_id]
     iso.feature_grids = x
     iso.ice_lines.columns = x
 
@@ -209,7 +209,7 @@ def _deprocess_interact(interact:PDPInteract, input_pipe:Pipeline, feat_pair:Tup
         if feat_id > in_sz: continue
         x = interact.feature_grids[i]
         x = np.broadcast_to(x[:,None], (x.shape[0], in_sz))
-        x = input_pipe.inverse_transform(x)[:,feat_id]
+        x = input_pipe.inverse_transform(Xt=x)[:,feat_id]
         interact.feature_grids[i] = x
 
 

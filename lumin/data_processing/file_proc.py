@@ -140,10 +140,10 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         strat_key = None
     if strat_key is None:
         kf = KFold(n_splits=n_folds, shuffle=True)
-        folds = kf.split(df)
+        folds = kf.split(X=df)
     else:
         kf = StratifiedKFold(n_splits=n_folds, shuffle=True)
-        folds = kf.split(df, df[strat_key])
+        folds = kf.split(X=df, y=df[strat_key])
     for fold_idx, (_, fold) in enumerate(folds):
         print(f"Saving fold {fold_idx} with {len(fold)} events")
         fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,

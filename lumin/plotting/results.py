@@ -26,7 +26,7 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     np.random.seed()
     for i in range(args['n']):
         points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
-        if len(set(args['labels'].loc[points])) == 2: scores.append(roc_auc_score(args['labels'].loc[points], args['preds'].loc[points],
+        if len(set(args['labels'].loc[points])) == 2: scores.append(roc_auc_score(y_true=args['labels'].loc[points], y_score=args['preds'].loc[points],
                                                                                   sample_weight=args['weights'].loc[points] if 'weights' in args else None))
     out_dict[f"{args['name']}_score"] = scores
     out_q.put(out_dict)
@@ -76,13 +76,11 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
             for i in range(len(data)): mean_scores.append((np.mean(res[f'{i}_score']), np.std(res[f'{i}_score'], ddof=1)))
 
         else:
-            for i in range(len(data)):
-                if wgt_name is None: mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name]))
-                else:                mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name], sample_weight=data[i][wgt_name]))
+            for i in range(len(data)): mean_scores.append(roc_auc_score(y_true=data[i][targ_name].values, y_score=data[i][pred_name],
+                                                                        sample_weight=None if wgt_name is None else data[i][wgt_name]))
         
-        for i in range(len(data)):
-            if wgt_name is None: curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values)[:2])
-            else:                curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values, sample_weight=data[i][wgt_name].values)[:2])
+        for i in range(len(data)): curves.append(roc_curve(y_true=data[i][targ_name].values, y_score=data[i][pred_name].values, 
+                                                           sample_weight=None if wgt_name is None else data[i][wgt_name].values)[:2])
 
         aucs = {}
         plt.figure(figsize=(settings.h_mid, settings.h_mid))

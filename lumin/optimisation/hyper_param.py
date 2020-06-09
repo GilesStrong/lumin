@@ -1,11 +1,10 @@
-from typing import Tuple, Dict, List, Optional
+from typing import Tuple, Dict, List, Optional, Union
 from fastprogress import master_bar, progress_bar
 import numpy as np
 from collections import OrderedDict
 import timeit
 from functools import partial
 
-from sklearn.ensemble.forest import ForestRegressor
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
 from ..nn.data.fold_yielder import FoldYielder
@@ -26,7 +25,8 @@ __all__ = ['get_opt_rf_params', 'fold_lr_find']
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
                       w_trn:Optional[np.ndarray]=None, w_val:Optional[np.ndarray]=None,
-                      params:Optional[OrderedDict]=None, n_estimators:int=40, verbose=True) -> Tuple[Dict[str,float],ForestRegressor]:
+                      params:Optional[OrderedDict]=None, n_estimators:int=40, verbose=True) \
+        -> Tuple[Dict[str,float],Union[RandomForestRegressor,RandomForestClassifier]]:
     r'''
     Use an ordered parameter-scan to roughly optimise Random Forest hyper-parameters.
 
@@ -60,8 +60,8 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
         for i, value in enumerate(pb):
             pb.comment = f'{param} = {params[param][min(i+1, len(params[param])-1)]}'
             m = rf(**{**best_params, param: value})
-            m.fit(x_trn, y_trn, w_trn)
-            scores.append(m.score(x_val, y_val, w_val))
+            m.fit(X=x_trn, y=y_trn, sample_weight=w_trn)
+            scores.append(m.score(X=x_val, y=y_val, sample_weight=w_val))
             if len(best_scores) == 0 or scores[-1] > best_scores[-1]:
                 best_scores.append(scores[-1])
                 best_params[param] = value

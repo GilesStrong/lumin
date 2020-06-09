@@ -159,7 +159,7 @@ class BinaryAccuracy(EvalMetric):
 
         df = self.get_df(fy, idx, y_pred)
         df.pred = (df.pred >= self.thresh).astype(int)
-        return accuracy_score(df['gen_target'], y_pred=df.pred, sample_weight=df['gen_weight'] if self.wgt_name is not None else None)
+        return accuracy_score(y_true=df['gen_target'], y_pred=df.pred, sample_weight=df['gen_weight'] if self.wgt_name is not None else None)
     
 
 class RocAucScore(EvalMetric):
@@ -247,5 +247,5 @@ class RocAucScore(EvalMetric):
         '''
 
         df = self.get_df(fy, idx, y_pred)
-        return roc_auc_score(df['gen_target'], y_score=df.pred, sample_weight=df['gen_weight'] if self.wgt_name is not None else None,
+        return roc_auc_score(y_true=df['gen_target'], y_score=df.pred, sample_weight=df['gen_weight'] if self.wgt_name is not None else None,
                              average=self.average, max_fpr=self.max_fpr, multi_class=self.multi_class)
