@@ -103,7 +103,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
 
 def compare_events(events:list) -> None:
     r'''
-    Plot at least two events side by side in their transverse and longitudinal projections
+    Plots at least two events side by side in their transverse and longitudinal projections
 
     Arguments:
         events: list of DataFrames containing vector coordinates for 3 momenta
@@ -152,7 +152,7 @@ def compare_events(events:list) -> None:
 def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) \
         -> Dict[str,Union[List[str],float]]:
     r'''
-    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient.
+    Plots a dendrogram of features in df clustered via Spearman's rank correlation coefficient.
     Also returns a sets of features with correlation coefficients greater than the threshold
 
     Arguments:
@@ -193,7 +193,7 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
                       feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    Plot KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
+    Plots KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
 
     Arguments:
         bs_stats: (filtered) dictionary retruned by :meth:`~lumin.utils.statistics.bootstrap_stats`
@@ -241,8 +241,24 @@ def plot_binary_sample_feat(df:pd.DataFrame, feat:str, targ_name:str='gen_target
                             density=True, feat_name:Optional[str]=None, units:Optional[str]=None,
                             savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    TODO write this
-    Work in progress
+    More advanced plotter for feature distributions in a binary class problem with stacked distributions for backgrounds and user-defined binning
+    Note that plotting colours can be controled by seeting the settings.sample2col dictionary
+    
+    Arguments:
+        df: DataFrame with targets and predictions
+        feat: name of column to plot the distribution of
+        targ_name: name of column to use as targets
+        wgt_name: name of column to use as sample weights
+        sample_name: name of column to use as process names
+        wgt_scale: applies a global multiplicative rescaling to sample weights. Default 1 = no rescaling. Only applicable when density = False     
+        bins: either the number of bins to use for a uniform binning, or a list of bin edges for a variable-width binning
+        log_y: whether to use a log scale for the y-axis
+        lim_x: limit for plotting on the x-axis
+        density: whether to normalise each distribution to one, or keep set to sum of weights / datapoints
+        feat_name: Name of feature to put on x-axis, can be in LaTeX.
+        units: units used to measure feature, if applicable. Can be in LaTeX, but should not include '$'.
+        savename: Optional name of file to which to save the plot of feature importances
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
     
     def _get_samples(df:pd.DataFrame, sample_name:str, wgt_name:str):
@@ -288,3 +304,4 @@ def plot_binary_sample_feat(df:pd.DataFrame, feat:str, targ_name:str='gen_target
         ax.set_title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         fig.show()
+        

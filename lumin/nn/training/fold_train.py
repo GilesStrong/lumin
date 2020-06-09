@@ -87,7 +87,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         live_fdbk_extra: whether to show extra information live feedback (further slows training)
         live_fdbk_extra_first_only: whether to only show extra live feedback information for the first model trained (trade off between time and information)
         shuffle_fold: whether to tell :class:`~lumin.nn.data.batch_yielder.BatchYielder` to shuffle data
-        shuffle_folds: whether to shuffle the order of the trainign folds
+        shuffle_folds: whether to shuffle the order of the training folds
         bulk_move: whether to pass all training data to device at once, or by minibatch. Bulk moving will be quicker, but may not fit in memory.
         savepath: path to to which to save model weights and results
         verbose: whether to print out extra information during training
@@ -217,7 +217,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
                 if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
                 if epoch_counter >= patience or model.stop_train:  # Early stopping
-                    print('Early stopping after {} epochs'.format(subEpoch))
+                    print('Early stopping after {} sub-epochs'.format(subEpoch))
                     stop = True; break
             if live_fdbk: metric_log.update_plot(best_loss)
             if stop: break

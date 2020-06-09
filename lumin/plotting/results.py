@@ -78,11 +78,11 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
         else:
             for i in range(len(data)):
                 if wgt_name is None: mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name]))
-                else:                   mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name], sample_weight=data[i][wgt_name]))
+                else:                mean_scores.append(roc_auc_score(data[i][targ_name].values, data[i][pred_name], sample_weight=data[i][wgt_name]))
         
         for i in range(len(data)):
             if wgt_name is None: curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values)[:2])
-            else:                   curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values, sample_weight=data[i][wgt_name].values)[:2])
+            else:                curves.append(roc_curve(data[i][targ_name].values, data[i][pred_name].values, sample_weight=data[i][wgt_name].values)[:2])
 
         aucs = {}
         plt.figure(figsize=(settings.h_mid, settings.h_mid))

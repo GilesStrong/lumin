@@ -3,6 +3,7 @@
 ## Important changes
 
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
+- Moved to Scikit-learn 0.23.1
 
 ## Breaking
 
@@ -13,7 +14,12 @@
 - Addition of batch size parameter to `Ensemble.predict*`
 - Lorentz Boost Network (https://arxiv.org/abs/1812.09722):
     - `LorentzBoostNet` basic implementation which learns boosted particles from existing particles and extracts features from them using fixed kernel functions
-    - `AutoExtractLorentzBoostNet` which also learns the kernel-functions during training 
+    - `AutoExtractLorentzBoostNet` which also learns the kernel-functions during training
+- Classification `Eval` classes:
+    - `BinaryAccuracy`: Computes and returns the accuracy of a single-output model for binary classification tasks.
+    - `RocAucScore`: Computes and returns the area under the Receiver Operator Characteristic curve (ROC AUC) of a classifier model.
+- `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contibutions by sample for
+    background.
 
 ## Removals
 
@@ -28,6 +34,7 @@
 -`Model.get_param_count` now includes mon-trainable params when requested
 - Fixed bug in `fold_lr_find` where LR finders would use different LR steps leading to NaNs when plotting in `fold_lr_find`
 - `plot_feat` used to coerce NaNs and Infs via `np.nan_to_num` prior to plotting, potentially impacting distributions, plotting scales, moments, etc. Fixed so that nan and inf values are removed rather than coerced.
+- Fixed early-stopping statement in `fold_train_ensemble` to state the number as "sub-epochs" (previously said "epochs")
 
 ## Changes
 
