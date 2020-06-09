@@ -18,6 +18,8 @@
 - Classification `Eval` classes:
     - `BinaryAccuracy`: Computes and returns the accuracy of a single-output model for binary classification tasks.
     - `RocAucScore`: Computes and returns the area under the Receiver Operator Characteristic curve (ROC AUC) of a classifier model.
+- `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contibutions by sample for
+    background.
 
 ## Removals
 
