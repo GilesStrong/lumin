@@ -7,7 +7,7 @@ from ..data.fold_yielder import FoldYielder
 from ...evaluation.ams import ams_scan_quick, ams_scan_slow
 from ...utils.misc import to_binary_class
 
-__all__ = ['AMS', 'MultiAMS']
+__all__ = ['AMS', 'MultiAMS', 'BinaryAccuracy', 'RocAucScore']
 
 
 class AMS(EvalMetric):
@@ -172,17 +172,22 @@ class RocAucScore(EvalMetric):
             this determines the type of averaging performed on the data:
             Note: multiclass ROC AUC currently only handles the 'macro' and
             'weighted' averages.
+
             ``'micro'``:
                 Calculate metrics globally by considering each element of the label
                 indicator matrix as a label.
+
             ``'macro'``:
                 Calculate metrics for each label, and find their unweighted
                 mean.  This does not take label imbalance into account.
+
             ``'weighted'``:
                 Calculate metrics for each label, and find their average, weighted
                 by support (the number of true instances for each label).
+
             ``'samples'``:
                 Calculate metrics for each instance, and find their average.
+
             Will be ignored when ``y_true`` is binary.
         max_fpr: As per scikit-learn. float > 0 and <= 1, default=None
             If not ``None``, the standardized partial AUC over the range
@@ -193,16 +198,19 @@ class RocAucScore(EvalMetric):
             Multiclass only. Determines the type of configuration to use. The
             default value raises an error, so either ``'ovr'`` or ``'ovo'`` must be
             passed explicitly.
+
             ``'ovr'``:
                 Computes the AUC of each class against the rest. This
                 treats the multiclass case in the same way as the multilabel case.
                 Sensitive to class imbalance even when ``average == 'macro'``,
                 because class imbalance affects the composition of each of the
                 'rest' groupings.
+
             ``'ovo'``:
                 Computes the average AUC of all possible pairwise combinations of
                 classes. Insensitive to class imbalance when
                 ``average == 'macro'``.
+                
         wgt_name: name of weight group in fold file to use.
         targ_name: name of target group in fold file which indicates whether the event is class 0 or 1
 
