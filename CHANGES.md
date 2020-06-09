@@ -3,7 +3,7 @@
 ## Important changes
 
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
-- Moved to Scikit-learn 0.23.1
+- Moved to Scikit-learn 0.23.1, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
 
 ## Breaking
 

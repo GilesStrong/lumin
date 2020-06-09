@@ -283,7 +283,7 @@ class Ensemble(AbsEnsemble):
 
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
             tmp_pred = m.predict(arr, callbacks=callbacks, bs=bs)
-            if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
+            if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(Xt=tmp_pred)
             pred += weights[i]*tmp_pred
         return pred
     

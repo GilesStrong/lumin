@@ -35,12 +35,12 @@ def get_pre_proc_pipes(norm_in:bool=True, norm_out:bool=False, pca:bool=False, w
     else:
         if pca: steps_in.append(('pca', PCA(n_components=n_components, whiten=whiten)))
         if norm_in: steps_in.append(('norm_in', StandardScaler(with_mean=with_mean, with_std=with_std)))
-    input_pipe = Pipeline(steps_in)
+    input_pipe = Pipeline(steps=steps_in)
 
     steps_out = []
     if norm_out: steps_out.append(('norm_out', StandardScaler(with_mean=with_mean, with_std=with_std)))
     else:        steps_out.append(('ident', StandardScaler(with_mean=False, with_std=False)))  # For compatability
-    output_pipe = Pipeline(steps_out)
+    output_pipe = Pipeline(steps=steps_out)
     return input_pipe, output_pipe
 
 
@@ -69,7 +69,7 @@ def fit_input_pipe(df:pd.DataFrame, cont_feats:Union[str,List[str]], savename:Op
     
     if input_pipe is None: input_pipe, _ = get_pre_proc_pipes(norm_in=norm_in, pca=pca, whiten=whiten,
                                                               with_mean=with_mean, with_std=with_std, n_components=n_components)
-    input_pipe.fit(df[cont_feats].values.astype('float32'))
+    input_pipe.fit(X=df[cont_feats].values.astype('float32'))
     if savename is not None:
         with open(f'{savename}.pkl', 'wb') as fout: pickle.dump(input_pipe, fout)
     return input_pipe
@@ -92,7 +92,7 @@ def fit_output_pipe(df:pd.DataFrame, targ_feats:Union[str,List[str]], savename:O
     '''
 
     if output_pipe is None: _, output_pipe = get_pre_proc_pipes(norm_out=True)
-    output_pipe.fit(df[targ_feats].values.astype('float32'))
+    output_pipe.fit(X=df[targ_feats].values.astype('float32'))
     if savename is not None:
         with open(f'{savename}.pkl', 'wb') as fout: pickle.dump(output_pipe, fout)
     return output_pipe
