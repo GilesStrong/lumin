@@ -4,6 +4,7 @@
 
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
 - Moved to Scikit-learn 0.23.1, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
+- Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
 
 ## Breaking
 
@@ -35,6 +36,7 @@
 - Fixed bug in `fold_lr_find` where LR finders would use different LR steps leading to NaNs when plotting in `fold_lr_find`
 - `plot_feat` used to coerce NaNs and Infs via `np.nan_to_num` prior to plotting, potentially impacting distributions, plotting scales, moments, etc. Fixed so that nan and inf values are removed rather than coerced.
 - Fixed early-stopping statement in `fold_train_ensemble` to state the number as "sub-epochs" (previously said "epochs")
+- Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
 
 ## Changes
 

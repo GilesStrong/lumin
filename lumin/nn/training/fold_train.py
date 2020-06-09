@@ -150,6 +150,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
             if isinstance(c, AbsCyclicCallback):
                 c.set_nb(nb)
                 cyclic_callback = c
+                improv_in_cycle = False
         for c in callbacks:
             if isinstance(c, AbsModelCallback):
                 c.set_val_fold(val_fold)
@@ -210,8 +211,14 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                     epoch_counter = 0
                     if loss_callback_idx is not None: loss_callbacks[loss_callback_idx].test_model.save(savepath/"best.h5")
                     else: model.save(savepath/"best.h5")
+                    if cyclic_callback is not None: improv_in_cycle = True
                 elif cyclic_callback is not None:
-                    if cyclic_callback.cycle_end: epoch_counter += 1
+                    if cyclic_callback.cycle_end:
+                        if improv_in_cycle:
+                            epoch_counter = 0
+                            improv_in_cycle = False
+                        else:
+                            epoch_counter += 1
                 else:
                     epoch_counter += 1
 
