@@ -3,6 +3,7 @@
 ## Important changes
 
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
+- Moved to Scikit-learn 0.23.1
 
 ## Breaking
 
@@ -13,7 +14,10 @@
 - Addition of batch size parameter to `Ensemble.predict*`
 - Lorentz Boost Network (https://arxiv.org/abs/1812.09722):
     - `LorentzBoostNet` basic implementation which learns boosted particles from existing particles and extracts features from them using fixed kernel functions
-    - `AutoExtractLorentzBoostNet` which also learns the kernel-functions during training 
+    - `AutoExtractLorentzBoostNet` which also learns the kernel-functions during training
+- Classification `Eval` classes:
+    - `BinaryAccuracy`: Computes and returns the accuracy of a single-output model for binary classification tasks.
+    - `RocAucScore`: Computes and returns the area under the Receiver Operator Characteristic curve (ROC AUC) of a classifier model.
 
 ## Removals
 

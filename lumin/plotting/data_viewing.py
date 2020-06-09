@@ -103,7 +103,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
 
 def compare_events(events:list) -> None:
     r'''
-    Plot at least two events side by side in their transverse and longitudinal projections
+    Plots at least two events side by side in their transverse and longitudinal projections
 
     Arguments:
         events: list of DataFrames containing vector coordinates for 3 momenta
@@ -152,7 +152,7 @@ def compare_events(events:list) -> None:
 def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) \
         -> Dict[str,Union[List[str],float]]:
     r'''
-    Plot dendrogram of features in df clustered via Spearman's rank correlation coefficient.
+    Plots a dendrogram of features in df clustered via Spearman's rank correlation coefficient.
     Also returns a sets of features with correlation coefficients greater than the threshold
 
     Arguments:
@@ -193,7 +193,7 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
                       feat:str, units:Optional[str]=None, moments=True,
                       savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
-    Plot KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
+    Plots KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
 
     Arguments:
         bs_stats: (filtered) dictionary retruned by :meth:`~lumin.utils.statistics.bootstrap_stats`
