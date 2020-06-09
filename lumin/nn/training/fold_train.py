@@ -217,7 +217,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
                 if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
                 if epoch_counter >= patience or model.stop_train:  # Early stopping
-                    print('Early stopping after {} epochs'.format(subEpoch))
+                    print('Early stopping after {} sub-epochs'.format(subEpoch))
                     stop = True; break
             if live_fdbk: metric_log.update_plot(best_loss)
             if stop: break

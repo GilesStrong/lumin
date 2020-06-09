@@ -32,6 +32,7 @@
 -`Model.get_param_count` now includes mon-trainable params when requested
 - Fixed bug in `fold_lr_find` where LR finders would use different LR steps leading to NaNs when plotting in `fold_lr_find`
 - `plot_feat` used to coerce NaNs and Infs via `np.nan_to_num` prior to plotting, potentially impacting distributions, plotting scales, moments, etc. Fixed so that nan and inf values are removed rather than coerced.
+- Fixed early-stopping statement in `fold_train_ensemble` to state the number as "sub-epochs" (previously said "epochs")
 
 ## Changes
 

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import List
+from typing import List, Optional
 from sklearn.metrics import accuracy_score, roc_auc_score
 
 from .eval_metric import EvalMetric
@@ -241,4 +241,3 @@ class RocAucScore(EvalMetric):
         df = self.get_df(fy, idx, y_pred)
         return roc_auc_score(df['gen_target'], y_score=df.pred, sample_weight=df['gen_weight'] if self.wgt_name is not None else None,
                              average=self.average, max_fpr=self.max_fpr, multi_class=self.multi_class)
-                             
