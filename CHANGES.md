@@ -51,6 +51,8 @@
 
 ## Comments
 
+- RFPImp still imports from sklearn.ensemble.forest which is depreciated, and possibly part of the private API. Hopefully the package will remedy this in time for depreciation. For now, future warnings are displayed.
+
 # V0.5.1 - The Gradient Must Flow - Micro Update
 
 ## Important changes
