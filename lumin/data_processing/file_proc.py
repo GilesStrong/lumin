@@ -23,7 +23,6 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
 
     # TODO Option for string length
 
-    print(arr.dtype.name)
     ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64')
     ds[...] = arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64')
 
