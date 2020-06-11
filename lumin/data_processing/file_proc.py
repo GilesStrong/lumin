@@ -23,6 +23,7 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
 
     # TODO Option for string length
 
+    print(arr.dtype.name)
     ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64')
     ds[...] = arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64')
 
@@ -78,6 +79,7 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
     # TODO infer target type automatically
 
     grp = out_file.create_group(f'fold_{fold_idx}')
+    
     save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
     save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
     if wgt_feat is not None: 
@@ -88,9 +90,8 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
             if f in df.columns: save_to_grp(df[f].values, grp, f)
             else:               print(f'{f} not found in file')
 
-
     if matrix_lookup is not None:
-        mat = df[matrix_lookup].values
+        mat = df[matrix_lookup].values.astype('float32')
         mat[:,matrix_missing] = np.NaN
         mat = mat.reshape((len(df),*matrix_shape))
         save_to_grp(mat, grp, 'matrix_inputs')
@@ -135,7 +136,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
             print(f'{dup} present in both matrix features and continuous features; removing from continuous features')
             cont_feats = [f for f in cont_feats if f not in dup]
 
-    if strat_key not in df.columns:
+    if strat_key is not None and strat_key not in df.columns:
         print(f'{strat_key} not found in DataFrame')
         strat_key = None
     if strat_key is None:
