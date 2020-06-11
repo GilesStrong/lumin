@@ -55,7 +55,8 @@ def _build_matrix_lookups(feats:List[str], vecs:List[str], feats_per_vec:List[st
 def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
                   cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:Any,
                   misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None,
-                  matrix_lookup:Optional[List[str]]=None, matrix_missing:Optional[np.ndarray]=None, matrix_shape:Optional[Tuple[int,int]]=None) -> None:
+                  matrix_lookup:Optional[List[str]]=None, matrix_missing:Optional[np.ndarray]=None, matrix_shape:Optional[Tuple[int,int]]=None,
+                  tensor_data:Optional[np.ndarray]=None) -> None:
     r'''
     Save fold of data into an h5py Group
 
@@ -74,6 +75,9 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
             Features listed but not present in df will be replaced with NaN.
         matrix_row_wise: whether objects encoded as a matrix should be encoded row-wise (i.e. all the features associated with an object are in their own row),
             or column-wise (i.e. all the features associated with an object are in their own column)
+        tensor_data: data of higher order than a matrix can be passed directly as a numpy array, rather than beign extracted and reshaped from the DataFrame.
+            The array will be saved under matrix data, and this is incompatible with also setting `matrix_lookup`, `matrix_missing`, and `matrix_shape`.
+            The first dimension of the array must be compatible with the length of the data frame.
     '''
 
     # TODO infer target type automatically
@@ -91,16 +95,22 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
             else:               print(f'{f} not found in file')
 
     if matrix_lookup is not None:
+        if tensor_data is not None:
+            raise ValueError("The saving of both matrix and tensor data is requested. This is ambiguous. Please only set one of the other.")
         mat = df[matrix_lookup].values.astype('float32')
         mat[:,matrix_missing] = np.NaN
         mat = mat.reshape((len(df),*matrix_shape))
         save_to_grp(mat, grp, 'matrix_inputs')
 
+    elif tensor_data is not None:
+        save_to_grp(tensor_data.astype('float32'), grp, 'matrix_inputs')
+
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
                 strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None, cat_maps:Optional[Dict[str,Dict[int,Any]]]=None,
-                matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None) -> None:
+                matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None,
+                tensor_data:Optional[np.ndarray]=None, tensor_name:Optional[str]=None) -> None:
     r'''
     Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
     
@@ -121,6 +131,10 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
             Features listed but not present in df will be replaced with NaN.
         matrix_row_wise: whether objects encoded as a matrix should be encoded row-wise (i.e. all the features associated with an object are in their own row),
             or column-wise (i.e. all the features associated with an object are in their own column)
+        tensor_data: data of higher order than a matrix can be passed directly as a numpy array, rather than beign extracted and reshaped from the DataFrame.
+            The array will be saved under matrix data, and this is incompatible with also setting `matrix_vecs`, `matrix_feats_per_vec`, and `matrix_row_wise`.
+            The first dimension of the array must be compatible with the length of the data frame.
+        tensor_name: if `tensor_data` is set, then this is the name that will to the foldfile's metadata.
     '''
 
     savename = str(savename)
@@ -129,6 +143,8 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
     out_file = h5py.File(f'{savename}.hdf5', "w")
     lookup,missing,shape = None,None,None
     if matrix_vecs is not None:
+        if tensor_data is not None:
+            raise ValueError("The saving of both matrix and tensor data is requested. This is ambiguous. Please only set one of the other.")
         lookup,missing,shape = _build_matrix_lookups(df.columns, matrix_vecs, matrix_feats_per_vec, matrix_row_wise)
         mat_feats = list(np.array(lookup)[np.logical_not(missing)])  # Only features present in data
         dup = [f for f in cont_feats if f in mat_feats]
@@ -149,14 +165,16 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         print(f"Saving fold {fold_idx} with {len(fold)} events")
         fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
                       targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat,
-                      matrix_lookup=lookup, matrix_missing=missing, matrix_shape=shape)
+                      matrix_lookup=lookup, matrix_missing=missing, matrix_shape=shape, tensor_data=tensor_data[fold] if tensor_data is not None else None)
     add_meta_data(out_file=out_file, feats=df.columns, cont_feats=cont_feats, cat_feats=cat_feats, cat_maps=cat_maps, targ_feats=targ_feats, wgt_feat=wgt_feat,
-                  matrix_vecs=matrix_vecs, matrix_feats_per_vec=matrix_feats_per_vec, matrix_row_wise=matrix_row_wise)
+                  matrix_vecs=matrix_vecs, matrix_feats_per_vec=matrix_feats_per_vec, matrix_row_wise=matrix_row_wise,
+                  tensor_name=tensor_name, tensor_shp=tensor_data[0].shape)
 
 
 def add_meta_data(out_file:h5py.File, feats:List[str], cont_feats:List[str], cat_feats:List[str], cat_maps:Optional[Dict[str,Dict[int,Any]]],
                   targ_feats:Union[str,List[str]], wgt_feat:Optional[str]=None,
-                  matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None) -> None:
+                  matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None,
+                  tensor_name:Optional[str]=None, tensor_shp:Optional[Tuple[int]]=None) -> None:
     r'''
     Adds meta data to foldfile containing information about the data: feature names, matrix information, etc.
     :class:`~lumin.nn.data.fold_yielder.FoldYielder` objects will access this and automatically extract it to save the user from having to manually pass lists
@@ -188,3 +206,6 @@ def add_meta_data(out_file:h5py.File, feats:List[str], cont_feats:List[str], cat
         use = list(np.array(lookup)[np.logical_not(missing)])  # Only features present in data
         grp.create_dataset('matrix_feats', data=json.dumps({'present_feats': use, 'vecs': matrix_vecs, 'missing': [int(m) for m in missing],
                                                             'feats_per_vec': matrix_feats_per_vec, 'row_wise': matrix_row_wise, 'shape': shape}))
+    elif tensor_name is not None:
+        grp.create_dataset('matrix_feats', data=json.dumps({'present_feats': [], 'vecs': [tensor_name], 'missing': [],
+                                                            'feats_per_vec': [''], 'row_wise': None, 'shape': tensor_shp}))
