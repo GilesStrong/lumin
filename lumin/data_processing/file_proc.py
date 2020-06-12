@@ -23,7 +23,6 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
 
     # TODO Option for string length
 
-    print(arr.dtype.name)
     ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64')
     ds[...] = arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64')
 
@@ -207,5 +206,5 @@ def add_meta_data(out_file:h5py.File, feats:List[str], cont_feats:List[str], cat
         grp.create_dataset('matrix_feats', data=json.dumps({'present_feats': use, 'vecs': matrix_vecs, 'missing': [int(m) for m in missing],
                                                             'feats_per_vec': matrix_feats_per_vec, 'row_wise': matrix_row_wise, 'shape': shape}))
     elif tensor_name is not None:
-        grp.create_dataset('matrix_feats', data=json.dumps({'present_feats': [], 'vecs': [tensor_name], 'missing': [],
+        grp.create_dataset('matrix_feats', data=json.dumps({'present_feats': [tensor_name], 'vecs': [tensor_name], 'missing': [],
                                                             'feats_per_vec': [''], 'row_wise': None, 'shape': tensor_shp}))

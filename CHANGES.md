@@ -38,7 +38,8 @@
 - Fixed early-stopping statement in `fold_train_ensemble` to state the number as "sub-epochs" (previously said "epochs")
 - Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
 - Unnecessary warning `df2foldfile` when no strat-key is passed.
-- Saved matrices in `fold2foldfile` are now in float32.
+- Saved matrices in `fold2foldfile` are now in float32
+- Fixed return type of `get_layers` methods in `RNNs_CNNs_and_GNNs_for_matrix_data` example
 
 ## Changes
 
