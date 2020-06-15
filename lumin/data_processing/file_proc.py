@@ -167,7 +167,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
                       matrix_lookup=lookup, matrix_missing=missing, matrix_shape=shape, tensor_data=tensor_data[fold] if tensor_data is not None else None)
     add_meta_data(out_file=out_file, feats=df.columns, cont_feats=cont_feats, cat_feats=cat_feats, cat_maps=cat_maps, targ_feats=targ_feats, wgt_feat=wgt_feat,
                   matrix_vecs=matrix_vecs, matrix_feats_per_vec=matrix_feats_per_vec, matrix_row_wise=matrix_row_wise,
-                  tensor_name=tensor_name, tensor_shp=tensor_data[0].shape)
+                  tensor_name=tensor_name, tensor_shp=tensor_data[0].shape if tensor_data is not None else None)
 
 
 def add_meta_data(out_file:h5py.File, feats:List[str], cont_feats:List[str], cat_feats:List[str], cat_maps:Optional[Dict[str,Dict[int,Any]]],
