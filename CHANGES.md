@@ -22,6 +22,11 @@
 - `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contibutions by sample for
     background.
 - Added compression arguments to `df2foldfile`, `fold2foldfile`, and `save_to_grp`
+- Tensor data:
+  - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the sacing of arbitrary matrices as a matrix input
+  - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
+    The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs inthe resulting foldfile
+
 
 ## Removals
 
