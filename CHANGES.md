@@ -21,6 +21,7 @@
     - `RocAucScore`: Computes and returns the area under the Receiver Operator Characteristic curve (ROC AUC) of a classifier model.
 - `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contibutions by sample for
     background.
+- Added compression arguments to `df2foldfile`, `fold2foldfile`, and `save_to_grp`
 
 ## Removals
 
@@ -40,6 +41,7 @@
 - Unnecessary warning `df2foldfile` when no strat-key is passed.
 - Saved matrices in `fold2foldfile` are now in float32
 - Fixed return type of `get_layers` methods in `RNNs_CNNs_and_GNNs_for_matrix_data` example
+- Bug in `model.predict_array` when predicting matrix data with a batch size
 
 ## Changes
 
@@ -57,6 +59,7 @@
 ## Comments
 
 - RFPImp still imports from sklearn.ensemble.forest which is depreciated, and possibly part of the private API. Hopefully the package will remedy this in time for depreciation. For now, future warnings are displayed.
+- Improved data shuffling in `BatchYielder`
 
 # V0.5.1 - The Gradient Must Flow - Micro Update
 

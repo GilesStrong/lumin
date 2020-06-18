@@ -11,7 +11,7 @@ from sklearn.model_selection import StratifiedKFold, KFold
 __all__ = ['save_to_grp', 'fold2foldfile', 'df2foldfile', 'add_meta_data']
 
 
-def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
+def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str, compression:Optional[str]=None) -> None:
     r'''
     Save Numpy array as a dataset in an h5py Group
     
@@ -19,12 +19,13 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str) -> None:
         arr: array to be saved
         grp: group in which to save arr
         name: name of dataset to create
+        compression: optional compression argument for h5py, e.g. 'lzf'
     '''
 
     # TODO Option for string length
 
-    ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64')
-    ds[...] = arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64')
+    ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64',
+                            data=arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64'), compression=compression)
 
 
 def _build_matrix_lookups(feats:List[str], vecs:List[str], feats_per_vec:List[str], row_wise:bool) -> Tuple[List[str],np.ndarray,Tuple[int,int]]:
@@ -55,7 +56,7 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
                   cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:Any,
                   misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None,
                   matrix_lookup:Optional[List[str]]=None, matrix_missing:Optional[np.ndarray]=None, matrix_shape:Optional[Tuple[int,int]]=None,
-                  tensor_data:Optional[np.ndarray]=None) -> None:
+                  tensor_data:Optional[np.ndarray]=None, compression:Optional[str]=None) -> None:
     r'''
     Save fold of data into an h5py Group
 
@@ -77,20 +78,21 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
         tensor_data: data of higher order than a matrix can be passed directly as a numpy array, rather than beign extracted and reshaped from the DataFrame.
             The array will be saved under matrix data, and this is incompatible with also setting `matrix_lookup`, `matrix_missing`, and `matrix_shape`.
             The first dimension of the array must be compatible with the length of the data frame.
+        compression: optional compression argument for h5py, e.g. 'lzf'
     '''
 
     # TODO infer target type automatically
 
     grp = out_file.create_group(f'fold_{fold_idx}')
     
-    save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs')
-    save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets')
+    save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs', compression=compression)
+    save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets', compression=compression)
     if wgt_feat is not None: 
-        if wgt_feat in df.columns: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights')
+        if wgt_feat in df.columns: save_to_grp(df[wgt_feat].values.astype('float32'), grp, 'weights', compression=compression)
         else:                      print(f'{wgt_feat} not found in file')
     if misc_feats is not None:
         for f in misc_feats:
-            if f in df.columns: save_to_grp(df[f].values, grp, f)
+            if f in df.columns: save_to_grp(df[f].values, grp, f, compression=compression)
             else:               print(f'{f} not found in file')
 
     if matrix_lookup is not None:
@@ -99,17 +101,17 @@ def fold2foldfile(df:pd.DataFrame, out_file:h5py.File, fold_idx:int,
         mat = df[matrix_lookup].values.astype('float32')
         mat[:,matrix_missing] = np.NaN
         mat = mat.reshape((len(df),*matrix_shape))
-        save_to_grp(mat, grp, 'matrix_inputs')
+        save_to_grp(mat, grp, 'matrix_inputs', compression=compression)
 
     elif tensor_data is not None:
-        save_to_grp(tensor_data.astype('float32'), grp, 'matrix_inputs')
+        save_to_grp(tensor_data.astype('float32'), grp, 'matrix_inputs', compression=compression)
 
 
 def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:List[str],
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
                 strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None, cat_maps:Optional[Dict[str,Dict[int,Any]]]=None,
                 matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None,
-                tensor_data:Optional[np.ndarray]=None, tensor_name:Optional[str]=None) -> None:
+                tensor_data:Optional[np.ndarray]=None, tensor_name:Optional[str]=None, compression:Optional[str]=None) -> None:
     r'''
     Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
     
@@ -134,6 +136,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
             The array will be saved under matrix data, and this is incompatible with also setting `matrix_vecs`, `matrix_feats_per_vec`, and `matrix_row_wise`.
             The first dimension of the array must be compatible with the length of the data frame.
         tensor_name: if `tensor_data` is set, then this is the name that will to the foldfile's metadata.
+        compression: optional compression argument for h5py, e.g. 'lzf'
     '''
 
     savename = str(savename)
@@ -164,7 +167,8 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
         print(f"Saving fold {fold_idx} with {len(fold)} events")
         fold2foldfile(df.iloc[fold].copy(), out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
                       targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat,
-                      matrix_lookup=lookup, matrix_missing=missing, matrix_shape=shape, tensor_data=tensor_data[fold] if tensor_data is not None else None)
+                      matrix_lookup=lookup, matrix_missing=missing, matrix_shape=shape, tensor_data=tensor_data[fold] if tensor_data is not None else None,
+                      compression=compression)
     add_meta_data(out_file=out_file, feats=df.columns, cont_feats=cont_feats, cat_feats=cat_feats, cat_maps=cat_maps, targ_feats=targ_feats, wgt_feat=wgt_feat,
                   matrix_vecs=matrix_vecs, matrix_feats_per_vec=matrix_feats_per_vec, matrix_row_wise=matrix_row_wise,
                   tensor_name=tensor_name, tensor_shp=tensor_data[0].shape if tensor_data is not None else None)
