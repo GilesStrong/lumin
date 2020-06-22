@@ -136,7 +136,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         if live_fdbk: metric_log.reset()
         model_tmr = timeit.default_timer()
         os.system(f"rm {savepath}/best.h5")
-        best_loss,epoch_counter,subEpoch,stop = math.inf,0,0,False
+        best_loss,epoch_counter,sub_epoch,stop = math.inf,0,0,False
         loss_history = OrderedDict({'trn_loss': [], 'val_loss': []})
         cycle_losses.append({})
         trn_ids = _get_folds(val_id, fy.n_folds, shuffle_folds)
@@ -175,7 +175,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         if live_fdbk: model_bar.show()
         for epoch in epoch_pb:
             for trn_id in trn_ids:
-                subEpoch += 1
+                sub_epoch += 1
                 batch_yielder = BatchYielder(**fy.get_fold(trn_id), objective=model_builder.objective,
                                              bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold, bulk_move=bulk_move)
                 loss_history['trn_loss'].append(model.fit(batch_yielder, callbacks))
@@ -195,7 +195,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 for i, lc in enumerate(loss_callbacks):
                     l = lc.get_loss()
                     if l < loss: loss, loss_callback_idx = l, i
-                    if verbose: print(f'{subEpoch} {type(lc).__name__} loss {l}, default loss {val_loss}')
+                    if verbose: print(f'{sub_epoch} {type(lc).__name__} loss {l}, default loss {val_loss}')
                     l = loss if l is None or not lc.active else l
                     loss_history[f'{type(lc).__name__}_val_loss'].append(l)
 
@@ -206,7 +206,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
                 if loss <= best_loss:
                     best_loss = loss
-                    epoch_pb.comment = f'Epoch {subEpoch}, best loss: {best_loss:.4E}'
+                    epoch_pb.comment = f'Best loss: {best_loss:.4E} at sub-epoch: {sub_epoch}'
                     if verbose: print(epoch_pb.comment)
                     epoch_counter = 0
                     if loss_callback_idx is not None: loss_callbacks[loss_callback_idx].test_model.save(savepath/"best.h5")
@@ -224,7 +224,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
                 if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
                 if epoch_counter >= patience or model.stop_train:  # Early stopping
-                    print('Early stopping after {} sub-epochs'.format(subEpoch))
+                    print('Early stopping after {} sub-epochs'.format(sub_epoch))
                     stop = True; break
             if live_fdbk: metric_log.update_plot(best_loss)
             if stop: break

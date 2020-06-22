@@ -21,6 +21,12 @@
     - `RocAucScore`: Computes and returns the area under the Receiver Operator Characteristic curve (ROC AUC) of a classifier model.
 - `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contibutions by sample for
     background.
+- Added compression arguments to `df2foldfile`, `fold2foldfile`, and `save_to_grp`
+- Tensor data:
+  - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the sacing of arbitrary matrices as a matrix input
+  - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
+    The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs inthe resulting foldfile
+
 
 ## Removals
 
@@ -38,7 +44,9 @@
 - Fixed early-stopping statement in `fold_train_ensemble` to state the number as "sub-epochs" (previously said "epochs")
 - Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
 - Unnecessary warning `df2foldfile` when no strat-key is passed.
-- Saved matrices in `fold2foldfile` are now in float32.
+- Saved matrices in `fold2foldfile` are now in float32
+- Fixed return type of `get_layers` methods in `RNNs_CNNs_and_GNNs_for_matrix_data` example
+- Bug in `model.predict_array` when predicting matrix data with a batch size
 
 ## Changes
 
@@ -50,6 +58,7 @@
     - Now uses "optimal ordering" for improved presentation
     - Now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
+- Improved data shuffling in `BatchYielder`, now runs much quicker
 
 ## Depreciations
 

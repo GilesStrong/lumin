@@ -43,49 +43,32 @@ class BatchYielder:
             tuple of batches of inputs, targets, and weights as tensors on device
         '''
 
-        if self.shuffle:
-            if self.weights is not None and self.use_weights:
-                if self.matrix_inputs is not None:
-                    data = list(zip(self.inputs, self.targets, self.weights, self.matrix_inputs))
-                    np.random.shuffle(data)
-                    inputs, targets, weights, matrix_inputs = zip(*data)
-                else:
-                    data = list(zip(self.inputs, self.targets, self.weights))
-                    np.random.shuffle(data)
-                    inputs, targets, weights = zip(*data)
-            else:
-                if self.matrix_inputs is not None:
-                    data = list(zip(self.inputs, self.targets, self.matrix_inputs))
-                    np.random.shuffle(data)
-                    inputs, targets, matrix_inputs = zip(*data)
-                else:
-                    data = list(zip(self.inputs, self.targets))
-                    np.random.shuffle(data)
-                    inputs, targets = zip(*data)
-        else:
-            inputs, targets, weights, matrix_inputs = self.inputs, self.targets, self.weights, self.matrix_inputs
+        full_idxs = np.arange(len(self.inputs))
+        if self.shuffle: np.random.shuffle(full_idxs)
 
         if self.bulk_move:
-            inputs = to_device(Tensor(inputs))
-            if 'multiclass' in self.objective: targets = to_device(Tensor(targets).long().squeeze())
-            else:                              targets = to_device(Tensor(targets))
-            if self.weights is not None and self.use_weights: weights = to_device(Tensor(weights))
+            inputs = to_device(Tensor(self.inputs))
+            if 'multiclass' in self.objective: targets = to_device(Tensor(self.targets).long().squeeze())
+            else:                              targets = to_device(Tensor(self.targets))
+            if self.weights is not None and self.use_weights: weights = to_device(Tensor(self.weights))
             else:                                             weights = None
-            if self.matrix_inputs is not None: matrix_inputs = to_device(Tensor(matrix_inputs))
+            if self.matrix_inputs is not None: matrix_inputs = to_device(Tensor(self.matrix_inputs))
             else:                                              matrix_inputs = None
 
-            for i in range(0, len(inputs)-self.bs+1, self.bs):
-                x = inputs[i:i+self.bs] if matrix_inputs is None else (inputs[i:i+self.bs],matrix_inputs[i:i+self.bs])
-                w = None if weights is None else weights[i:i+self.bs]
-                yield x, targets[i:i+self.bs], w              
+            for i in range(0, len(full_idxs)-self.bs+1, self.bs):
+                idxs = full_idxs[i:i+self.bs]
+                x = inputs[idxs] if matrix_inputs is None else (inputs[idxs],matrix_inputs[idxs])
+                w = None if weights is None else weights[idxs]
+                yield x, targets[idxs], w              
 
         else:
-            for i in range(0, len(inputs)-self.bs+1, self.bs):
-                if 'multiclass' in self.objective: y = to_device(Tensor(targets[i:i+self.bs]).long().squeeze())
-                else:                              y = to_device(Tensor(targets[i:i+self.bs]))
-                if self.matrix_inputs is None: x = to_device(Tensor(inputs[i:i+self.bs]))
-                else:                     x = (to_device(Tensor(inputs[i:i+self.bs])),to_device(Tensor(matrix_inputs[i:i+self.bs])))
-                w = to_device(Tensor(weights[i:i+self.bs])) if self.weights is not None and self.use_weights else None
+            for i in range(0, len(full_idxs)-self.bs+1, self.bs):
+                idxs = full_idxs[i:i+self.bs]
+                if 'multiclass' in self.objective: y = to_device(Tensor(self.targets[idxs]).long().squeeze())
+                else:                              y = to_device(Tensor(self.targets[idxs]))
+                if self.matrix_inputs is None: x =  to_device(Tensor(self.inputs[idxs]))
+                else:                          x = (to_device(Tensor(self.inputs[idxs])),to_device(Tensor(self.matrix_inputs[idxs])))
+                w = to_device(Tensor(self.weights[idxs])) if self.weights is not None and self.use_weights else None
                 yield x, y, w
 
     def __len__(self): return len(self.inputs)//self.bs
