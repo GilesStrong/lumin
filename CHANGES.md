@@ -58,13 +58,13 @@
     - Now uses "optimal ordering" for improved presentation
     - Now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
+- Improved data shuffling in `BatchYielder`, now runs much quicker
 
 ## Depreciations
 
 ## Comments
 
 - RFPImp still imports from sklearn.ensemble.forest which is depreciated, and possibly part of the private API. Hopefully the package will remedy this in time for depreciation. For now, future warnings are displayed.
-- Improved data shuffling in `BatchYielder`
 
 # V0.5.1 - The Gradient Must Flow - Micro Update
 
