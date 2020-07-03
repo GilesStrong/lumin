@@ -126,6 +126,6 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         lr_finders.append(lr_finder)
         
     print("LR finder took {:.3f}s ".format(timeit.default_timer()-tmr))
-    plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings)
+    plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings, log_y='auto' if 'regress' in model_builder.objective.lower() else False)
     return lr_finders
 

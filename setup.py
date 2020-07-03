@@ -4,9 +4,9 @@
 try:  from setuptools import setup, find_packages
 except ImportError: from distutils.core import setup, find_packages
     
-with open("README.md", "r") as fin: long_description = fin.read()
+with open("README.md", encoding="utf-8") as fin: long_description = fin.read()
 
-with open('requirements.txt') as f: requirements = f.read().strip().split('\n')
+with open('requirements.txt', encoding="utf-8") as f: requirements = f.read().strip().split('\n')
 
 
 exec(open('lumin/version.py').read())

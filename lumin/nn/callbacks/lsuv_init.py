@@ -46,7 +46,8 @@ __all__ = ['LsuvInit']
 class LsuvInit(Callback):
     r'''
     Applies Layer-Sequential Unit-Variance (LSUV) initialisation to model, as per Mishkin & Matas 2016 https://arxiv.org/abs/1511.06422.
-    When training begins for the first time, `Conv1D`, `Conv2D`, and `Linear` modules in the model will be LSUV initialised using the BatchYielder inputs.
+    When training begins for the first time, `Conv1D`, `Conv2D`, `Conv3D`, and `Linear` modules in the model will be LSUV initialised using the BatchYielder
+    inputs.
     This involves initialising the weights with orthonormal matirces and then iteratively scaling them such that the stadndar deviation of the layer outputs is
     equal to a desired value, within some tolerance.
 
@@ -113,11 +114,11 @@ class LsuvInit(Callback):
             else:                                                  self.gg['hook_position'] += 1
 
     def _count_conv_fc_layers(self, m:nn.Module) -> None:
-        if isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear): self.gg['total_fc_conv_layers'] += 1
+        if isinstance(m, nn.Conv3d) or isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear): self.gg['total_fc_conv_layers'] += 1
             
     @staticmethod
     def _check_layer(m:nn.Module) -> bool:
-        return isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear)
+        return isinstance(m, nn.Conv3d) or isinstance(m, nn.Conv2d) or isinstance(m, nn.Conv1d) or isinstance(m, nn.Linear)
     
     def _orthogonal_weights_init(self, m:nn.Module) -> None:
         if self._check_layer(m):
@@ -127,7 +128,7 @@ class LsuvInit(Callback):
             else:
                 w_ortho = self._svd_orthonormal(m.weight.data.cpu().numpy())
                 m.weight.data = torch.from_numpy(w_ortho)
-            if hasattr(m, 'bias'): nn.init.zeros_(m.bias)
+            if hasattr(m, 'bias') and m.bias is not None: nn.init.zeros_(m.bias)
 
     def _apply_weights_correction(self, m:nn.Module) -> None:
         if self.gg['hook'] is None: return
