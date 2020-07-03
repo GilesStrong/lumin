@@ -26,7 +26,9 @@
   - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the sacing of arbitrary matrices as a matrix input
   - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
     The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs inthe resulting foldfile
-
+- `plot_lr_finders` now has a `log_y` argument for logarithmic y-axis. Default `auto` set log_y if maximum fractional difference between losses is greater thn 50
+- Added new rescaling options to `ClassRegMulti` using linear outputs and scaling by mean and std of targets
+- `LsuvInit` now applies scaling to `nn.Conv3d` layers
 
 ## Removals
 
@@ -47,6 +49,9 @@
 - Saved matrices in `fold2foldfile` are now in float32
 - Fixed return type of `get_layers` methods in `RNNs_CNNs_and_GNNs_for_matrix_data` example
 - Bug in `model.predict_array` when predicting matrix data with a batch size
+- Added missing indexing in `AbsMatrixHead` to use `torch.bool` if PyTorch version is >= 1.2 (was `uint8` but now depreciated for indexing)
+- Errors when running in terminal due to trying to call `.show` on fastprogress bars
+- Fix due to encoding of readme when trying to install when deafult encoder is ascii
 
 ## Changes
 
@@ -59,6 +64,7 @@
     - Now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
 - Improved data shuffling in `BatchYielder`, now runs much quicker
+- Slight speedup when loading data from foldfiles
 
 ## Depreciations
 

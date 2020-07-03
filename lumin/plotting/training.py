@@ -16,7 +16,8 @@ def _lookup_name(name:str) -> str:
     if '_val' in name:     return name[:name.find('_val')] + 'Validation'
 
 
-def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn=True, settings:PlotSettings=PlotSettings()) -> None:
+def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn=True, settings:PlotSettings=PlotSettings(),
+                       show:bool=True) -> None:
     r'''
     Plot histories object returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` showing the loss evolution over time per model trained.
 
@@ -25,6 +26,7 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         savename: Optional name of file to which to save the plot of feature importances
         ignore_trn: whether to ignore training loss
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        show: whether or not to show the plot, or just save it
     '''
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
@@ -42,11 +44,11 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         plt.xlabel("Epoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
         if savename is not None: plt.savefig(f'{savename}{settings.format}', bbox_inches='tight')
-        plt.show()
+        if show: plt.show()
 
 
 def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
-                    settings:PlotSettings=PlotSettings()) -> None:
+                    log_y:Union[str,bool]='auto', settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by
     :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`.
@@ -60,6 +62,7 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
             if tuple, minimum & maximum loss;
             if None, no limits;
             if 'auto', computes an upper limit automatically
+        log_y: whether to plot y-axis as log. If 'auto', will set to log if maximal fractional difference in loss values is greater than 50
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
     
@@ -79,6 +82,10 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         sns.lineplot(x='LR', y='Loss', data=df, ci='sd')
         plt.xscale('log')
+        if log_y == 'auto':
+            if df.Loss.max()/df.Loss.min() > 50: plt.yscale('log')
+        elif log_y:
+            plt.yscale('log')
         plt.grid(b=True, which="both", axis="both")
         if loss_range is not None: plt.ylim((0,loss_range) if isinstance(loss_range, float) else loss_range)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)

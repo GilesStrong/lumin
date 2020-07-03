@@ -6,6 +6,7 @@ from pathlib import Path
 import os
 from abc import abstractmethod
 from functools import partial
+from distutils.version import LooseVersion
 
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -62,7 +63,8 @@ class AbsMatrixHead(AbsHead):
         '''
 
         shp = (self.n_v,self.n_fpv) if self.row_wise else (self.n_fpv,self.n_v)
-        lookup,missing = torch.zeros(shp, dtype=torch.long),torch.zeros(shp, dtype=torch.uint8)
+        lookup  = torch.zeros(shp, dtype=torch.long)
+        missing = torch.zeros(shp, dtype=torch.bool if LooseVersion(torch.__version__) >= LooseVersion("1.2") else torch.uint8)
         if self.row_wise:
             for i, v in enumerate(self.vecs):
                 for j, c in enumerate(self.fpv):

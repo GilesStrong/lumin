@@ -233,7 +233,7 @@ class FoldYielder:
         if len(self._ignore_feats) == 0:
             return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
         else:
-            inputs = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/inputs']), columns=self.input_feats)
+            inputs = pd.DataFrame(self.foldfile[f'fold_{idx}/inputs'][()], columns=self.input_feats)
             inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
             data['inputs'] = np.nan_to_num(inputs.values)
             return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
@@ -258,11 +258,11 @@ class FoldYielder:
             data = []
             for i, fold in enumerate([f for f in self.foldfile if 'fold_' in f]):
                 if n_folds is not None and i >= n_folds: break
-                data.append(np.array(self.foldfile[f'{fold}/{column}']))
+                data.append(self.foldfile[f'{fold}/{column}'][()])
             data = np.concatenate(data)
         else:
             if f'fold_{fold_idx}' not in self.foldfile: raise IndexError(f"Fold {fold_idx} does not exist")
-            data = np.array(self.foldfile[f'fold_{fold_idx}/{column}'])
+            data = self.foldfile[f'fold_{fold_idx}/{column}'][()]
         return data[:, None] if data[0].shape is () and add_newaxis else data
 
     def get_data(self, n_folds:Optional[int]=None, fold_idx:Optional[int]=None) -> Dict[str,np.ndarray]:
@@ -488,8 +488,8 @@ class HEPAugFoldYielder(FoldYielder):
 
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data
-        inputs = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/inputs']), columns=self.input_feats)
-        if self.targ_feats is not None: targets = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/targets']), columns=self.targ_feats)
+        inputs = pd.DataFrame(self.foldfile[f'fold_{idx}/inputs'][()], columns=self.input_feats)
+        if self.targ_feats is not None: targets = pd.DataFrame(self.foldfile[f'fold_{idx}/targets'][()], columns=self.targ_feats)
             
         if self.rot_mult:
             inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
@@ -540,7 +540,7 @@ class HEPAugFoldYielder(FoldYielder):
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data
         
-        inputs = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/inputs']), columns=self.input_feats)
+        inputs = pd.DataFrame(self.foldfile[f'fold_{idx}/inputs'][()], columns=self.input_feats)
         if len(self.reflect_axes) > 0 and self.rot_mult > 0:
             rot_idx = aug_idx % self.rot_mult
             ref_idx = self._get_ref_idx(aug_idx)
@@ -565,7 +565,7 @@ class HEPAugFoldYielder(FoldYielder):
         data['inputs'] = np.nan_to_num(inputs.values)
         
         if self.targ_feats is not None:
-            targets = pd.DataFrame(np.array(self.foldfile[f'fold_{idx}/targets']), columns=self.targ_feats)
+            targets = pd.DataFrame(self.foldfile[f'fold_{idx}/targets'][()], columns=self.targ_feats)
             if len(self.reflect_axes) > 0 and self.rot_mult > 0:
                 rot_idx = aug_idx % self.rot_mult
                 ref_idx = self._get_ref_idx(aug_idx)

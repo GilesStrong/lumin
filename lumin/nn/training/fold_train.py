@@ -1,6 +1,7 @@
 from typing import Dict, List, Tuple, Any, Optional
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
+from fastprogress.fastprogress import IN_NOTEBOOK
 import pickle
 import timeit
 import numpy as np
@@ -121,13 +122,14 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     results,histories,cycle_losses = [],[],[]
     nb = len(fy.foldfile['fold_0/targets'])//bs
 
+    if not IN_NOTEBOOK: live_fdbk = False
     if live_fdbk:
         metric_log = MetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
                                   plot_settings=plot_settings)
     
     model_bar = master_bar(range(n_models))
     for model_num in (model_bar):
-        model_bar.show()
+        if IN_NOTEBOOK: model_bar.show()
         val_id = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_id}")
         if model_num == 1:
@@ -250,7 +252,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     print("\n______________________________________")
     print("Training finished")
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
-    plot_train_history(histories, savepath/'loss_history', settings=plot_settings)
+    plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
