@@ -30,6 +30,7 @@
 - Added new rescaling options to `ClassRegMulti` using linear outputs and scaling by mean and std of targets
 - `LsuvInit` now applies scaling to `nn.Conv3d` layers
 - `plot_lr_finders` and `fold_lr_find` now have options to save the resulting LR finder plot (currently limited to png due to problems with pdf)
+- Addition of AdamW and an optimiser, thanks to [@kiryteo](https://github.com/kiryteo)
 
 ## Removals
 
@@ -54,6 +55,8 @@
 - Errors when running in terminal due to trying to call `.show` on fastprogress bars
 - Bug due to encoding of readme when trying to install when deafult encoder is ascii
 - Bug when running `Model.predict` in batches when the data contains less than one batch
+- Include missing files in sdist, thanks to [@thatch](https://github.com/thatch)
+- Fix test path correction in example notebook, thanks to [@kiryteo](https://github.com/kiryteo)
 
 ## Changes
 
