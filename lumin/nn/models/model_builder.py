@@ -3,6 +3,8 @@ from typing import Dict, Union, Any, Callable, Tuple, Optional, List, Iterator
 import pickle
 import math
 import numpy as np
+import warnings
+from distutils.version import LooseVersion
 
 import torch.nn as nn
 import torch.optim as optim
@@ -187,7 +189,17 @@ class ModelBuilder(object):
         else:                opt_args = {k.lower(): opt_args[k] for k in opt_args}
         self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}
         if 'opt' not in opt_args:
-            print('No optimiser specified, defaulting to ADAM')
+            if 'weight_decay' in opt_args and LooseVersion(torch.__version__) >= LooseVersion("1.2"):
+                print('No optimiser specified but weight decay (L2) requested; defaulting to AdamW')
+                self.opt = optim.AdamW
+            else:
+                print('No optimiser specified; defaulting to ADAM')
+                self.opt = optim.Adam
+        elif opt_args['opt'] == 'adamw':
+            if LooseVersion(torch.__version__) >= LooseVersion("1.2"): self.opt = optim.AdamW
+            else:                                      raise Exception('AdamW requires PyTorch version >= 1.2.0')
+        elif opt_args['opt'] == 'adam' and 'weight_decay' in opt_args:
+            warnings.warn('According to arXiv:1711.05101, AdamW is recommended when using weight decay (L2) regularisation; continuing with Adam.')
             self.opt = optim.Adam
         else:
             self.opt = opt_args['opt'] if not isinstance(opt_args['opt'], str) else self._interp_opt(opt_args['opt'])
@@ -214,6 +226,7 @@ class ModelBuilder(object):
         opt = opt.lower()
         if   opt == 'adam':   return optim.Adam
         elif opt == 'sgd':    return optim.SGD
+        elif opt == 'adamw':  return optim.AdamW
         else: raise ValueError(f"Optimiser {opt} not interpretable from string, please pass as class")
 
     def _build_opt(self, model:nn.Module) -> optim.Optimizer:
