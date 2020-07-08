@@ -29,6 +29,7 @@
 - `plot_lr_finders` now has a `log_y` argument for logarithmic y-axis. Default `auto` set log_y if maximum fractional difference between losses is greater thn 50
 - Added new rescaling options to `ClassRegMulti` using linear outputs and scaling by mean and std of targets
 - `LsuvInit` now applies scaling to `nn.Conv3d` layers
+- `plot_lr_finders` and `fold_lr_find` now have options to save the resulting LR finder plot (currently limited to png due to problems with pdf)
 
 ## Removals
 
@@ -51,7 +52,8 @@
 - Bug in `model.predict_array` when predicting matrix data with a batch size
 - Added missing indexing in `AbsMatrixHead` to use `torch.bool` if PyTorch version is >= 1.2 (was `uint8` but now depreciated for indexing)
 - Errors when running in terminal due to trying to call `.show` on fastprogress bars
-- Fix due to encoding of readme when trying to install when deafult encoder is ascii
+- Bug due to encoding of readme when trying to install when deafult encoder is ascii
+- Bug when running `Model.predict` in batches when the data contains less than one batch
 
 ## Changes
 

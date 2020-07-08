@@ -43,12 +43,12 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.xlabel("Epoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
-        if savename is not None: plt.savefig(f'{savename}{settings.format}', bbox_inches='tight')
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         if show: plt.show()
 
 
 def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
-                    log_y:Union[str,bool]='auto', settings:PlotSettings=PlotSettings()) -> None:
+                    log_y:Union[str,bool]='auto', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by
     :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`.
@@ -63,6 +63,7 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
             if None, no limits;
             if 'auto', computes an upper limit automatically
         log_y: whether to plot y-axis as log. If 'auto', will set to log if maximal fractional difference in loss values is greater than 50
+        savename: Optional name of file to which to save the plot
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
     
@@ -92,4 +93,5 @@ def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tup
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.xlabel("Learning rate", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}.png', bbox_inches='tight')
         plt.show()

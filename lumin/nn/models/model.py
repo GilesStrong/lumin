@@ -237,11 +237,17 @@ class Model(AbsModel):
         else:
             pred = []
             if isinstance(inputs, tuple):
-                for i in range(0, len(inputs[1])-bs+1, bs): pred.append(_get_preds((inputs[0][i:i+bs], inputs[1][i:i+bs]), callbacks))
-                pred.append(_get_preds((inputs[0][i+bs:], inputs[1][i+bs:]), callbacks))
+                if len(inputs[1]) > bs:
+                    for i in range(0, len(inputs[1])-bs+1, bs): pred.append(_get_preds((inputs[0][i:i+bs], inputs[1][i:i+bs]), callbacks))
+                    pred.append(_get_preds((inputs[0][i+bs:], inputs[1][i+bs:]), callbacks))
+                else:
+                    pred.append(_get_preds((inputs[0], inputs[1]), callbacks))
             else:
-                for i in range(0, len(inputs)-bs+1, bs): pred.append(_get_preds(inputs[i:i+bs], callbacks))
-                pred.append(_get_preds(inputs[i+bs:], callbacks))
+                if len(inputs) > bs:
+                    for i in range(0, len(inputs)-bs+1, bs): pred.append(_get_preds(inputs[i:i+bs], callbacks))
+                    pred.append(_get_preds(inputs[i+bs:], callbacks))
+                else:
+                    pred.append(_get_preds(inputs, callbacks))
             pred = np.vstack(pred)
         if as_np:
             if 'multiclass' in self.objective: return np.exp(pred)

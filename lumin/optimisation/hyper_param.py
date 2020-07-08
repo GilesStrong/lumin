@@ -79,7 +79,7 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                  train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
                  callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
-                 bulk_move:bool=True) -> List[LRFinder]:
+                 bulk_move:bool=True, plot_savename:Optional[str]=None) -> List[LRFinder]:
     r'''
     Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
     using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
@@ -96,6 +96,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         lr_bounds: starting and ending LR values
         callback_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called        
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        savename: Optional name of file to which to save the plot
 
     Returns:
         List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which were used for each model trained
@@ -124,8 +125,11 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
                                      bulk_move=bulk_move)
         model.fit(batch_yielder, callbacks+[lr_finder])
         lr_finders.append(lr_finder)
+    del batch_yielder
+    del model
         
     print("LR finder took {:.3f}s ".format(timeit.default_timer()-tmr))
-    plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings, log_y='auto' if 'regress' in model_builder.objective.lower() else False)
+    plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings, log_y='auto' if 'regress' in model_builder.objective.lower() else False,
+                    savename=plot_savename)
     return lr_finders
 

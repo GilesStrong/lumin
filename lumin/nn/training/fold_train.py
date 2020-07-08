@@ -127,7 +127,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         metric_log = MetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
                                   plot_settings=plot_settings)
     
-    model_bar = master_bar(range(n_models))
+    model_bar = master_bar(range(n_models)) if IN_NOTEBOOK else progress_bar(range(n_models))
     for model_num in (model_bar):
         if IN_NOTEBOOK: model_bar.show()
         val_id = model_num % fy.n_folds
