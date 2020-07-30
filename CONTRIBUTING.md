@@ -24,17 +24,18 @@ conda uninstall lumin
 pip uninstall lumin
 ```
 
-2. Clone a copy of PyTorch from source:
+2. Clone a copy of LUMIN from source:
 
 ```bash
 git clone https://github.com/GilesStrong/lumin
-cd pytorch
+cd lumin
 ```
 
 3. Perform the modifications in source code and rebuild, test the changes locally.
 
 ```bash
-python setup.py install (after the changes)
+python setup.py install
 ```
+(after the changes)
 
 Create a Pull Request referencing the issue.
