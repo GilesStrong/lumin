@@ -35,7 +35,7 @@ def bin_binary_class_pred(df:pd.DataFrame, max_unc:float, consider_samples:Optio
     
     if consider_samples is None: consider_samples = set(df[sample_name])
     n_min = int((1/max_unc)**2)
-    edges,ub,lb = [1],1,0
+    edges,ub,lb = [1.],1.,0.
     if add_pure_signal_bin:
         max_zero = df.loc[df[class_name] == 0, pred_name].max()
         max_zero = (np.floor(max_zero/step_sz)+1)*step_sz
