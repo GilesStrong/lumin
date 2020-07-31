@@ -16,7 +16,7 @@ def _lookup_name(name:str) -> str:
     if '_val' in name:     return name[:name.find('_val')] + 'Validation'
 
 
-def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn=True, settings:PlotSettings=PlotSettings(),
+def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn:bool=True, settings:PlotSettings=PlotSettings(),
                        show:bool=True) -> None:
     r'''
     Plot histories object returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` showing the loss evolution over time per model trained.
@@ -41,7 +41,7 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
-        plt.xlabel("Epoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.xlabel("Subepoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         if show: plt.show()

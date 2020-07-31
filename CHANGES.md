@@ -3,7 +3,7 @@
 ## Important changes
 
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
-- Moved to Scikit-learn 0.23.1, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
+- Moved to Scikit-learn 0.22.2, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
 - Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
 
 ## Breaking
@@ -19,18 +19,19 @@
 - Classification `Eval` classes:
     - `BinaryAccuracy`: Computes and returns the accuracy of a single-output model for binary classification tasks.
     - `RocAucScore`: Computes and returns the area under the Receiver Operator Characteristic curve (ROC AUC) of a classifier model.
-- `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contibutions by sample for
+- `plot_binary_sample_feat`: a version of `plot_sample_pred` designed for plotting feature histograms with stacked contributions by sample for
     background.
 - Added compression arguments to `df2foldfile`, `fold2foldfile`, and `save_to_grp`
 - Tensor data:
-  - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the sacing of arbitrary matrices as a matrix input
+  - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the saving of arbitrary matrices as a matrix input
   - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
-    The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs inthe resulting foldfile
-- `plot_lr_finders` now has a `log_y` argument for logarithmic y-axis. Default `auto` set log_y if maximum fractional difference between losses is greater thn 50
+    The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs in the resulting foldfile
+- `plot_lr_finders` now has a `log_y` argument for logarithmic y-axis. Default `auto` set log_y if maximum fractional difference between losses is greater than 50
 - Added new rescaling options to `ClassRegMulti` using linear outputs and scaling by mean and std of targets
 - `LsuvInit` now applies scaling to `nn.Conv3d` layers
 - `plot_lr_finders` and `fold_lr_find` now have options to save the resulting LR finder plot (currently limited to png due to problems with pdf)
 - Addition of AdamW and an optimiser, thanks to [@kiryteo](https://github.com/kiryteo)
+- Contribution guide, thanks to [@kiryteo](https://github.com/kiryteo)
 
 ## Removals
 
@@ -53,10 +54,12 @@
 - Bug in `model.predict_array` when predicting matrix data with a batch size
 - Added missing indexing in `AbsMatrixHead` to use `torch.bool` if PyTorch version is >= 1.2 (was `uint8` but now depreciated for indexing)
 - Errors when running in terminal due to trying to call `.show` on fastprogress bars
-- Bug due to encoding of readme when trying to install when deafult encoder is ascii
+- Bug due to encoding of readme when trying to install when default encoder is ascii
 - Bug when running `Model.predict` in batches when the data contains less than one batch
 - Include missing files in sdist, thanks to [@thatch](https://github.com/thatch)
-- Fix test path correction in example notebook, thanks to [@kiryteo](https://github.com/kiryteo)
+- Test path correction in example notebook, thanks to [@kiryteo](https://github.com/kiryteo)
+- Doc links in `hep_proc`
+- Error in `MultiHead._set_feats` when `matrix_head` does not contain 'vecs' or 'feats_per_vec' keywords
 
 ## Changes
 
@@ -75,7 +78,7 @@
 
 ## Comments
 
-- RFPImp still imports from sklearn.ensemble.forest which is depreciated, and possibly part of the private API. Hopefully the package will remedy this in time for depreciation. For now, future warnings are displayed.
+- RFPImp still imports from `sklearn.ensemble.forest` which is depreciated, and possibly part of the private API. Hopefully the package will remedy this in time for depreciation. For now, future warnings are displayed.
 
 # V0.5.1 - The Gradient Must Flow - Micro Update
 
