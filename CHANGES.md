@@ -60,6 +60,7 @@
 - Test path correction in example notebook, thanks to [@kiryteo](https://github.com/kiryteo)
 - Doc links in `hep_proc`
 - Error in `MultiHead._set_feats` when `matrix_head` does not contain 'vecs' or 'feats_per_vec' keywords
+- Compatibility error in numpy >= 1.18 in `bin_binary_class_pred` due to float instead of int
 
 ## Changes
 
