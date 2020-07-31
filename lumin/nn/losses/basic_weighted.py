@@ -34,6 +34,7 @@ class WeightedMSE(nn.MSELoss):
             target: target tensor
         
         Returns:
+        
             (weighted) loss
         '''
 

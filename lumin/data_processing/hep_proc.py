@@ -276,14 +276,14 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
     
     Arguments:
         df: DataFrame to alter
-        fix_phi: whether to rotate events using :meth:`~lumin.data_prcoessing.hep.proc.fix_event_phi`
-        fix_y: whether to flip events using :meth:`~lumin.data_prcoessing.hep.proc.fix_event_y`
-        fix_z: whether to flip events using :meth:`~lumin.data_prcoessing.hep.proc.fix_event_z`
+        fix_phi: whether to rotate events using :meth:`~lumin.data_prcoessing.hep_proc.fix_event_phi`
+        fix_y: whether to flip events using :meth:`~lumin.data_prcoessing.hep_proc.fix_event_y`
+        fix_z: whether to flip events using :meth:`~lumin.data_prcoessing.hep_proc.fix_event_z`
         use_cartesian: wether to convert vectors to Cartesian coordinates
-        ref_vec_0: column prefix of vector components to use as reference (0) for :meth:~lumin.data_prcoessing.hep.proc.fix_event_phi`,
-            :meth:`~lumin.data_prcoessing.hep.proc.fix_event_y`, and :meth:`~lumin.data_prcoessing.hep.proc.fix_event_z`
+        ref_vec_0: column prefix of vector components to use as reference (0) for :meth:~lumin.data_prcoessing.hep_proc.fix_event_phi`,
+            :meth:`~lumin.data_prcoessing.hep_proc.fix_event_y`, and :meth:`~lumin.data_prcoessing.hep_proc.fix_event_z`
             e.g. 'muon' for columns ['muon_pT', 'muon_eta', 'muon_phi']
-        ref_vec_1: column prefix of vector components to use as reference 1 for :meth:`~lumin.data_prcoessing.hep.proc.fix_event_z`,
+        ref_vec_1: column prefix of vector components to use as reference (1) for :meth:`~lumin.data_prcoessing.hep_proc.fix_event_y`,
             e.g. 'muon' for columns ['muon_pT', 'muon_eta', 'muon_phi']
         keep_feats: columns to keep which would otherwise be dropped
         default_vals:  list of default values which might be used to represent missing vector components. These will be replaced with np.nan.

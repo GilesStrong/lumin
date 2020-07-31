@@ -285,9 +285,10 @@ class MultiHead(AbsHead):
 
         self.feats = self.cont_feats+self.cat_feats
         self.matrix_feats,tmp_fs = [],[]
-        for v in matrix_head.keywords['vecs']:
-            for c in matrix_head.keywords['feats_per_vec']:
-                tmp_fs.append(f'{v}_{c}')  # All features for matrix elements
+        if 'vecs' in matrix_head.keywords and 'feats_per_vec' in matrix_head.keywords:
+            for v in matrix_head.keywords['vecs']:
+                for c in matrix_head.keywords['feats_per_vec']:
+                    tmp_fs.append(f'{v}_{c}')  # All features for matrix elements
         for f in self.cont_feats:
             if f in tmp_fs: self.matrix_feats.append(f)  # Only subset of features present in flattened data, same ordering
         self.n_matrix_in = len(self.matrix_feats)

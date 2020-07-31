@@ -24,8 +24,8 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str, compression:Optional[s
 
     # TODO Option for string length
 
-    ds = grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64',
-                            data=arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64'), compression=compression)
+    grp.create_dataset(name, shape=arr.shape, dtype=arr.dtype.name if arr.dtype.name not in ['object', 'str864'] else 'S64',
+                       data=arr if arr.dtype.name not in ['object', 'str864'] else arr.astype('S64'), compression=compression)
 
 
 def _build_matrix_lookups(feats:List[str], vecs:List[str], feats_per_vec:List[str], row_wise:bool) -> Tuple[List[str],np.ndarray,Tuple[int,int]]:
