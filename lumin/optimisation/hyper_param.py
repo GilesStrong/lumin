@@ -121,7 +121,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         for c in callbacks:
             c.on_train_begin()
         lr_finder.on_train_begin()
-        batch_yielder = BatchYielder(**fy.get_fold(trn_id), objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold,
+        batch_yielder = BatchYielder(**trn_fold, objective=model_builder.objective, bs=bs, use_weights=train_on_weights, shuffle=shuffle_fold,
                                      bulk_move=bulk_move)
         model.fit(batch_yielder, callbacks+[lr_finder])
         lr_finders.append(lr_finder)
