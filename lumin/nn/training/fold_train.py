@@ -261,4 +261,3 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         sys.stdout = old_stdout
         log_file.close()
     return results, histories, cycle_losses
-    
