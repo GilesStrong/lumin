@@ -111,7 +111,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
                 strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None, cat_maps:Optional[Dict[str,Dict[int,Any]]]=None,
                 matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None,
-                tensor_data:Optional[np.ndarray]=None, tensor_name:Optional[str]=None, compression:Optional[str]=None) -> None:
+                tensor_data:Optional[np.ndarray]=None, tensor_name:Optional[str]=None, tensor_is_sparse:bool=False, compression:Optional[str]=None) -> None:
     r'''
     Convert dataframe into h5py file by splitting data into sub-folds to be accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
     
@@ -136,6 +136,8 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
             The array will be saved under matrix data, and this is incompatible with also setting `matrix_vecs`, `matrix_feats_per_vec`, and `matrix_row_wise`.
             The first dimension of the array must be compatible with the length of the data frame.
         tensor_name: if `tensor_data` is set, then this is the name that will to the foldfile's metadata.
+        tensor_is_sparse: Set to True if the matrix is in sparse COO format and should be densified later on
+            The format expected is `coo_x = sparse.as_coo(x); m = np.vstack((coo_x.data, coo_x.coords))`, where `m` is the tensor passed to `tensor_data`.
         compression: optional compression argument for h5py, e.g. 'lzf'
     '''
 
@@ -171,7 +173,7 @@ def df2foldfile(df:pd.DataFrame, n_folds:int, cont_feats:List[str], cat_feats:Li
                       compression=compression)
     add_meta_data(out_file=out_file, feats=df.columns, cont_feats=cont_feats, cat_feats=cat_feats, cat_maps=cat_maps, targ_feats=targ_feats, wgt_feat=wgt_feat,
                   matrix_vecs=matrix_vecs, matrix_feats_per_vec=matrix_feats_per_vec, matrix_row_wise=matrix_row_wise,
-                  tensor_name=tensor_name, tensor_shp=tensor_data[0].shape if tensor_data is not None else None)
+                  tensor_name=tensor_name, tensor_shp=tensor_data[0].shape if tensor_data is not None else None, tensor_is_sparse=tensor_is_sparse)
 
 
 def add_meta_data(out_file:h5py.File, feats:List[str], cont_feats:List[str], cat_feats:List[str], cat_maps:Optional[Dict[str,Dict[int,Any]]],

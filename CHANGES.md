@@ -26,6 +26,7 @@
   - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the saving of arbitrary matrices as a matrix input
   - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
     The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs in the resulting foldfile
+  - The matrices may also be passed as sparse format and be densified on loading by FoldYielder
 - `plot_lr_finders` now has a `log_y` argument for logarithmic y-axis. Default `auto` set log_y if maximum fractional difference between losses is greater than 50
 - Added new rescaling options to `ClassRegMulti` using linear outputs and scaling by mean and std of targets
 - `LsuvInit` now applies scaling to `nn.Conv3d` layers
