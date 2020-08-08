@@ -273,7 +273,7 @@ class FoldYielder:
             if column == 'matrix_inputs' and self.matrix_is_sparse:
                 c = data[1:].astype(int)
                 data = sparse.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
-        return data[:, None] if data[0].shape is () and add_newaxis else data
+        return data[:, None] if data[0].shape == () and add_newaxis else data
 
     def get_data(self, n_folds:Optional[int]=None, fold_idx:Optional[int]=None) -> Dict[str,np.ndarray]:
         r'''
