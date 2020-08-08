@@ -144,7 +144,7 @@ class FoldYielder:
             self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
 
     def _append_matrix(self, data, idx):
-        data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
+        data['inputs'] = (data['inputs'],self.get_column('matrix_inputs', n_folds=1, fold_idx=idx))
         return data
 
     def close(self) -> None:
@@ -223,7 +223,7 @@ class FoldYielder:
         r'''
         Get data for single fold. Data consists of dictionary of inputs, targets, and weights.
         Accounts for ignored features.
-        Inputs are passed through np.nan_to_num to deal with nans and infs.
+        Inputs, except for matrix data, are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
             idx: fold index to load
@@ -236,9 +236,9 @@ class FoldYielder:
         if len(self._ignore_feats) == 0:
             return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data
         else:
-            inputs = pd.DataFrame(self.foldfile[f'fold_{idx}/inputs'][()], columns=self.input_feats)
-            inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
-            data['inputs'] = np.nan_to_num(inputs.values)
+            inputs = pd.DataFrame(data['inputs'], columns=self.input_feats)
+            inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]  # TODO Improve this with preconfigured mask
+            data['inputs'] = inputs.values
             return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data
 
     def get_column(self, column:str, n_folds:Optional[int]=None, fold_idx:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
@@ -278,7 +278,7 @@ class FoldYielder:
     def get_data(self, n_folds:Optional[int]=None, fold_idx:Optional[int]=None) -> Dict[str,np.ndarray]:
         r'''
         Get data for single, specified fold or several of folds. Data consists of dictionary of inputs, targets, and weights.
-        Does not accounts for ignored features.
+        Does not account for ignored features.
         Inputs are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
@@ -483,7 +483,7 @@ class HEPAugFoldYielder(FoldYielder):
         r'''
         Get data for single fold applying random train-time data augmentaion. Data consists of dictionary of inputs, targets, and weights.
         Accounts for ignored features.
-        Inputs are passed through np.nan_to_num to deal with nans and infs.
+        Inputs, except for matrix data, are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
             idx: fold index to load
@@ -528,7 +528,7 @@ class HEPAugFoldYielder(FoldYielder):
         r'''
         Get test data for single fold applying test-time data augmentaion. Data consists of dictionary of inputs, targets, and weights.
         Accounts for ignored features.
-        Inputs are passed through np.nan_to_num to deal with nans and infs.
+        Inputs, except for matrix data, are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
             idx: fold index to load
