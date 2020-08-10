@@ -33,10 +33,10 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         for i, history in enumerate(histories):
             if i == 0:
                 for j, l in enumerate(history):
-                    if not('trn' in l and ignore_trn): plt.plot(history[l][xlow:], color=palette[j], label=_lookup_name(l))
+                    if not('trn' in l and ignore_trn): plt.plot(range(xlow,len(history[l])), history[l][xlow:], color=palette[j], label=_lookup_name(l))
             else:
                 for j, l in enumerate(history):
-                    if not('trn' in l and ignore_trn): plt.plot(history[l][xlow:], color=palette[j])
+                    if not('trn' in l and ignore_trn): plt.plot(range(xlow,len(history[l])), history[l][xlow:], color=palette[j])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
