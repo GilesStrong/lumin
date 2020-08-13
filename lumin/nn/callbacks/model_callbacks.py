@@ -140,14 +140,14 @@ class SWA(AbsModelCallback):
         for param in self.weights:
             self.weights[param] *= self.swa_n
             self.weights[param] += c_weights[param]
-            self.weights[param] = torch.true_div(self.weights[param], self.swa_n+1)
+            torch.true_divide_(self.weights[param], self.swa_n+1)
         
         if self.swa_n > self.renewal_period and self.first_completed and self.renewal_period > 0:
             if self.verbose: print(f"New model is {self.n_since_renewal} epochs old")
             for param in self.weights_new:
                 self.weights_new[param] *= self.n_since_renewal
                 self.weights_new[param] += c_weights[param]
-                self.weights_new[param] = torch.true_div(self.weights_new[param], self.n_since_renewal+1)
+                torch.true_divide_(self.weights_new[param], self.n_since_renewal+1)
             
     def _compare_averages(self) -> None:
         if self.loss is None:
