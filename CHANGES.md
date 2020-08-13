@@ -5,6 +5,7 @@
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
 - Moved to Scikit-learn 0.22.2, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
 - Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
+- Matrix data is no longer passed through `np.nan_to_num` in `FoldYielder`. Users should ensure that all values in matrix data are not NaN or Inf
 
 ## Breaking
 
@@ -26,12 +27,14 @@
   - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the saving of arbitrary matrices as a matrix input
   - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
     The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs in the resulting foldfile
+  - The matrices may also be passed as sparse format and be densified on loading by FoldYielder
 - `plot_lr_finders` now has a `log_y` argument for logarithmic y-axis. Default `auto` set log_y if maximum fractional difference between losses is greater than 50
 - Added new rescaling options to `ClassRegMulti` using linear outputs and scaling by mean and std of targets
 - `LsuvInit` now applies scaling to `nn.Conv3d` layers
 - `plot_lr_finders` and `fold_lr_find` now have options to save the resulting LR finder plot (currently limited to png due to problems with pdf)
 - Addition of AdamW and an optimiser, thanks to [@kiryteo](https://github.com/kiryteo)
 - Contribution guide, thanks to [@kiryteo](https://github.com/kiryteo)
+- OneCycle `lr_range` now supports a non-zero final LR; just supply a three-tuple to the `lr_range` argument.
 
 ## Removals
 
@@ -61,6 +64,8 @@
 - Doc links in `hep_proc`
 - Error in `MultiHead._set_feats` when `matrix_head` does not contain 'vecs' or 'feats_per_vec' keywords
 - Compatibility error in numpy >= 1.18 in `bin_binary_class_pred` due to float instead of int
+- Unnecessary second loading of fold data in `fold_lr_find`
+- Compatibility error when working in PyTorch 1.6 based on integer and true division
 
 ## Changes
 
@@ -74,6 +79,7 @@
 - `auto_filter_on_linear_correlation` now examines **all** features within correlated clusters, rather than just the most correlated pair. This means that the function now only needs to be run once, rather than the previously recommended multiple rerunning.
 - Improved data shuffling in `BatchYielder`, now runs much quicker
 - Slight speedup when loading data from foldfiles
+- Matrix data is no longer passed through `np.nan_to_num` in `FoldYielder`. Users should ensure that all values in matrix data are not NaN or Inf
 
 ## Depreciations
 

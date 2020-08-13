@@ -7,6 +7,7 @@ import warnings
 from pathlib import Path
 from collections import OrderedDict
 import json
+import sparse
 
 from sklearn.pipeline import Pipeline
 
@@ -139,6 +140,12 @@ class FoldYielder:
         if self.has_matrix:
             self.matrix_feats = json.loads(self.foldfile['meta_data/matrix_feats'][()])
             self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=np.bool)
+            self.matrix_is_sparse = self.matrix_feats['is_sparse'] if 'is_sparse' in self.matrix_feats else False
+            self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
+
+    def _append_matrix(self, data, idx):
+        data['inputs'] = (data['inputs'],self.get_column('matrix_inputs', n_folds=1, fold_idx=idx))
+        return data
 
     def close(self) -> None:
         r'''
@@ -216,7 +223,7 @@ class FoldYielder:
         r'''
         Get data for single fold. Data consists of dictionary of inputs, targets, and weights.
         Accounts for ignored features.
-        Inputs are passed through np.nan_to_num to deal with nans and infs.
+        Inputs, except for matrix data, are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
             idx: fold index to load
@@ -225,18 +232,14 @@ class FoldYielder:
             tuple of inputs, targets, and weights as Numpy arrays
         '''
 
-        def _append_matrix(data):
-            data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
-            return data
-
         data = self.get_data(n_folds=1, fold_idx=idx)
         if len(self._ignore_feats) == 0:
-            return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
+            return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data
         else:
-            inputs = pd.DataFrame(self.foldfile[f'fold_{idx}/inputs'][()], columns=self.input_feats)
-            inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
-            data['inputs'] = np.nan_to_num(inputs.values)
-            return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
+            inputs = pd.DataFrame(data['inputs'], columns=self.input_feats)
+            inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]  # TODO Improve this with preconfigured mask
+            data['inputs'] = inputs.values
+            return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data
 
     def get_column(self, column:str, n_folds:Optional[int]=None, fold_idx:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
         r'''
@@ -258,17 +261,24 @@ class FoldYielder:
             data = []
             for i, fold in enumerate([f for f in self.foldfile if 'fold_' in f]):
                 if n_folds is not None and i >= n_folds: break
-                data.append(self.foldfile[f'{fold}/{column}'][()])
+                tmp = self.foldfile[f'{fold}/{column}'][()]
+                if column == 'matrix_inputs' and self.matrix_is_sparse:
+                    c = tmp[1:].astype(int)
+                    tmp = sparse.COO(coords=c, data=tmp[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
+                data.append(tmp)
             data = np.concatenate(data)
         else:
             if f'fold_{fold_idx}' not in self.foldfile: raise IndexError(f"Fold {fold_idx} does not exist")
             data = self.foldfile[f'fold_{fold_idx}/{column}'][()]
-        return data[:, None] if data[0].shape is () and add_newaxis else data
+            if column == 'matrix_inputs' and self.matrix_is_sparse:
+                c = data[1:].astype(int)
+                data = sparse.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
+        return data[:, None] if data[0].shape == () and add_newaxis else data
 
     def get_data(self, n_folds:Optional[int]=None, fold_idx:Optional[int]=None) -> Dict[str,np.ndarray]:
         r'''
         Get data for single, specified fold or several of folds. Data consists of dictionary of inputs, targets, and weights.
-        Does not accounts for ignored features.
+        Does not account for ignored features.
         Inputs are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
@@ -473,7 +483,7 @@ class HEPAugFoldYielder(FoldYielder):
         r'''
         Get data for single fold applying random train-time data augmentaion. Data consists of dictionary of inputs, targets, and weights.
         Accounts for ignored features.
-        Inputs are passed through np.nan_to_num to deal with nans and infs.
+        Inputs, except for matrix data, are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
             idx: fold index to load
@@ -481,10 +491,6 @@ class HEPAugFoldYielder(FoldYielder):
         Returns:
             tuple of inputs, targets, and weights as Numpy arrays
         '''
-
-        def _append_matrix(data):
-            data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
-            return data
 
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data
@@ -509,7 +515,7 @@ class HEPAugFoldYielder(FoldYielder):
         if self.targ_feats is not None:
             targets = targets[self.targ_feats]
             data['targets'] = np.nan_to_num(targets.values)
-        return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
+        return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data
 
     def _get_ref_idx(self, aug_idx:int) -> str:
         n_axes = len(self.reflect_axes)
@@ -522,7 +528,7 @@ class HEPAugFoldYielder(FoldYielder):
         r'''
         Get test data for single fold applying test-time data augmentaion. Data consists of dictionary of inputs, targets, and weights.
         Accounts for ignored features.
-        Inputs are passed through np.nan_to_num to deal with nans and infs.
+        Inputs, except for matrix data, are passed through np.nan_to_num to deal with nans and infs.
 
         Arguments:
             idx: fold index to load
@@ -531,10 +537,6 @@ class HEPAugFoldYielder(FoldYielder):
         Returns:
             tuple of inputs, targets, and weights as Numpy arrays
         '''
-
-        def _append_matrix(data):
-            data['inputs'] = (data['inputs'],np.nan_to_num(self.get_column('matrix_inputs', n_folds=1, fold_idx=idx)))
-            return data
 
         if aug_idx >= self.aug_mult: raise ValueError(f"Invalid augmentation idx passed {aug_idx}")
         data = self.get_data(n_folds=1, fold_idx=idx)
@@ -588,4 +590,4 @@ class HEPAugFoldYielder(FoldYielder):
             
             targets = targets[self.targ_feats]
             data['targets'] = np.nan_to_num(targets.values)
-        return _append_matrix(data) if self.has_matrix and self.yield_matrix else data
+        return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data

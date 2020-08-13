@@ -17,7 +17,7 @@ def _lookup_name(name:str) -> str:
 
 
 def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn:bool=True, settings:PlotSettings=PlotSettings(),
-                       show:bool=True) -> None:
+                       show:bool=True, xlow:int=0, log_y:bool=False) -> None:
     r'''
     Plot histories object returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` showing the loss evolution over time per model trained.
 
@@ -33,16 +33,19 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         for i, history in enumerate(histories):
             if i == 0:
                 for j, l in enumerate(history):
-                    if not('trn' in l and ignore_trn): plt.plot(history[l], color=palette[j], label=_lookup_name(l))
+                    if not('trn' in l and ignore_trn): plt.plot(range(xlow,len(history[l])), history[l][xlow:], color=palette[j], label=_lookup_name(l))
             else:
                 for j, l in enumerate(history):
-                    if not('trn' in l and ignore_trn): plt.plot(history[l], color=palette[j])
+                    if not('trn' in l and ignore_trn): plt.plot(range(xlow,len(history[l])), history[l][xlow:], color=palette[j])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.xlabel("Subepoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if log_y:
+            plt.yscale('log')
+            plt.grid(b=True, which="both", axis="both")
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         if show: plt.show()
 

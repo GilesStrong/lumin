@@ -196,7 +196,7 @@ class OneCycle(AbsCyclicCallback):
 
     Arguments:
         lengths: tuple of number of (sub-)epochs in first and second stages of cycle
-        lr_range: tuple of initial and final LRs
+        lr_range: list of initial and max LRs and optionally a final LR. If only two LRs supplied, then final LR will be zero.
         mom_range: tuple of initial and final momenta
         interp: 'cosine' or 'linear' interpolation
         model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
@@ -212,6 +212,7 @@ class OneCycle(AbsCyclicCallback):
                  model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
+        if len(self.lr_range) == 2: self.lr_range.append(0)
 
     def on_batch_begin(self, **kargs) -> None:
         r'''
@@ -237,7 +238,7 @@ class OneCycle(AbsCyclicCallback):
             self.nb = self.lengths[1]*self.nb/self.lengths[0]
             self.cycle_count += 0.5
             self.cycle_end = self.cycle_count % 1 == 0
-            self.lr_range[0] = 0
+            self.lr_range[0] = self.lr_range[2]
         if self.cycle_count == 1: self.model.stop_train = True
 
     def plot(self):
