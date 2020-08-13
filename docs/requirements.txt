@@ -20,3 +20,4 @@ rfpimp>=1.3.5
 prettytable>=0.7.2
 m2r
 ipython>=6.4.0
+sparse
