@@ -256,5 +256,5 @@ class OneCycle(AbsCyclicCallback):
             for ax in axs:
                 ax.tick_params(axis='x', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
                 ax.tick_params(axis='y', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
-            ax[0].set_yscale('log', nonposy='clip')
+            axs[0].set_yscale('log', nonposy='clip')
             plt.show()
