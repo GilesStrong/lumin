@@ -239,7 +239,7 @@ class OneCycle(AbsCyclicCallback):
             self.cycle_count += 0.5
             self.cycle_end = self.cycle_count % 1 == 0
             self.lr_range[0] = self.lr_range[2]
-        if self.cycle_count == 1: self.model.stop_train = True; self.plot()
+        if self.cycle_count == 1: self.model.stop_train = True
 
     def plot(self):
         r'''
@@ -256,5 +256,4 @@ class OneCycle(AbsCyclicCallback):
             for ax in axs:
                 ax.tick_params(axis='x', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
                 ax.tick_params(axis='y', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
-            axs[0].set_yscale('log', nonposy='clip')
             plt.show()
