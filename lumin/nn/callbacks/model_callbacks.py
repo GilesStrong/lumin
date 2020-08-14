@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from abc import abstractmethod
 import copy
 
@@ -8,7 +8,9 @@ import torch
 from ..models.abs_model import AbsModel
 from .callback import Callback
 from .cyclic_callbacks import AbsCyclicCallback
+from .abs_callback import AbsCallback
 from ...plotting.plot_settings import PlotSettings
+from ..data.batch_yielder import BatchYielder
 
 __all__ = ['SWA', 'AbsModelCallback']
 
@@ -47,7 +49,7 @@ class AbsModelCallback(Callback):
             if self.update_on_cycle_end is None: self.update_on_cycle_end = True
 
     @abstractmethod
-    def get_loss(self) -> float: pass
+    def get_loss(self, bs:Optional[int]=None, , use_weights:bool=True, callbacks:Optional[List[AbsCallback]]=None) -> float: pass
 
 
 class SWA(AbsModelCallback):
@@ -173,9 +175,14 @@ class SWA(AbsModelCallback):
             self.test_model.set_weights(self.weights)
             self.cycle_since_replacement += 1
                 
-    def get_loss(self) -> float:
+    def get_loss(self, bs:Optional[int]=None, use_weights:bool=True, callbacks:Optional[List[AbsCallback]]=None) -> float:
         r'''
         Evaluates SWA model and returns loss
+
+        Arguments:
+            bs: If not None, will evaluate loss in batches, rather than loading whole fold onto device
+            use_weights: Whether to compute weighted loss if weights are present
+            callbacks: list of any callbacks to use during evaluation
 
         Returns:
             Loss on validation fold for oldest SWA average
@@ -183,6 +190,11 @@ class SWA(AbsModelCallback):
 
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'])
+            if bs is None:
+                self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'], callbacks=callbacks)
+            else:
+                by = BatchYielder(**self.val_fold, objective=self.model.objective,
+                                  bs=bs, use_weights=use_weights, shuffle=True, bulk_move=False)
+                self.loss = self.test_model.evaluate_from_by(by, callbacks=callbacks)
         return self.loss
         
