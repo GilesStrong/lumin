@@ -49,7 +49,7 @@ class AbsModelCallback(Callback):
             if self.update_on_cycle_end is None: self.update_on_cycle_end = True
 
     @abstractmethod
-    def get_loss(self, bs:Optional[int]=None, , use_weights:bool=True, callbacks:Optional[List[AbsCallback]]=None) -> float: pass
+    def get_loss(self, bs:Optional[int]=None, use_weights:bool=True, callbacks:Optional[List[AbsCallback]]=None) -> float: pass
 
 
 class SWA(AbsModelCallback):
