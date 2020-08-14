@@ -66,6 +66,7 @@
 - Compatibility error in numpy >= 1.18 in `bin_binary_class_pred` due to float instead of int
 - Unnecessary second loading of fold data in `fold_lr_find`
 - Compatibility error when working in PyTorch 1.6 based on integer and true division
+- SWA not evaluating in batches when running in non-bulk-move mode
 
 ## Changes
 

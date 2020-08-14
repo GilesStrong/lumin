@@ -195,7 +195,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                 loss_callback_idx = None
                 loss = val_loss
                 for i, lc in enumerate(loss_callbacks):
-                    l = lc.get_loss()
+                    l = lc.get_loss(bs=None if bulk_move else bs, use_weights=train_on_weights, callbacks=callbacks)
                     if l < loss: loss, loss_callback_idx = l, i
                     if verbose: print(f'{sub_epoch} {type(lc).__name__} loss {l}, default loss {val_loss}')
                     l = loss if l is None or not lc.active else l

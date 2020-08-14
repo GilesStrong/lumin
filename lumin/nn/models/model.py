@@ -37,7 +37,7 @@ class Model(AbsModel):
     '''
 
     # TODO: Improve mask description & user-friendlyness, change to indicate that 'masked' inputs are actually the ones which are used
-    # TODO: Chek if mask_inputs can be removed
+    # TODO: Check if mask_inputs can be removed
 
     def __init__(self, model_builder:Optional[ModelBuilder]=None):
         self.model_builder,self.input_mask = model_builder,None
@@ -193,6 +193,17 @@ class Model(AbsModel):
         return loss.data.item()
 
     def evaluate_from_by(self, by:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
+        r'''
+        Compute loss on provided data in batches provided by a `:class:~lumin.nn.data.batch_yielder.BatchYielder`.
+
+        Arguments:
+            by: `:class:~lumin.nn.data.batch_yielder.BatchYielder` with data
+            callbacks: list of any callbacks to use during evaluation
+
+        Returns:
+            (weighted) loss of model predictions on provided data
+        '''
+
         loss = 0
         for x, y, w in by: loss += self.evaluate(x, y, w, callbacks)*by.bs
         return loss/(len(by)*by.bs)
