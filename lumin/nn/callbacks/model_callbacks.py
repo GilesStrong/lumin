@@ -190,6 +190,7 @@ class SWA(AbsModelCallback):
 
         if self.loss is None:
             self.test_model.set_weights(self.weights)
+            print(bs)
             if bs is None:
                 self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'], callbacks=callbacks)
             else:
