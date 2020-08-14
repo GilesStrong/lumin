@@ -153,7 +153,7 @@ class MetricLogger():
                 self.fig = plt.figure(figsize=(self.settings.w_mid, self.settings.h_mid), constrained_layout=True)
                 gs = self.fig.add_gridspec(2, 3)
                 self.loss_ax = self.fig.add_subplot(gs[:,:-1])
-                self.vel_ax = self.fig.add_subplot(gs[:1,2:])
+                self.vel_ax  = self.fig.add_subplot(gs[:1,2:])
                 self.gen_ax  = self.fig.add_subplot(gs[1:2,2:])
                 for ax in [self.loss_ax, self.vel_ax, self.gen_ax]:
                     ax.tick_params(axis='x', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col)

@@ -37,7 +37,7 @@ class Model(AbsModel):
     '''
 
     # TODO: Improve mask description & user-friendlyness, change to indicate that 'masked' inputs are actually the ones which are used
-    # TODO: Chek if mask_inputs can be removed
+    # TODO: Check if mask_inputs can be removed
 
     def __init__(self, model_builder:Optional[ModelBuilder]=None):
         self.model_builder,self.input_mask = model_builder,None
