@@ -15,6 +15,7 @@ from torch.tensor import Tensor
 from .abs_ensemble import AbsEnsemble
 from ..callbacks.abs_callback import AbsCallback
 from ..models.model import Model
+from ..models.abs_model import AbsModel
 from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
@@ -114,6 +115,41 @@ class Ensemble(AbsEnsemble):
 
         ensemble = cls()
         ensemble.load(name)
+        return ensemble
+
+    @classmethod
+    def from_models(cls, models:List[AbsModel], weights:Optional[Union[np.ndarray,List[float]]]=None, results:Optional[List[Dict[str,float]]]=None,
+                    input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None, model_builder:Optional[ModelBuilder]=None) -> AbsEnsemble:
+        r'''
+        Instantiate :class:`~lumin.nn.ensemble.ensemble.Ensemble` from a list of :class:`~lumin.nn.model.model.Model`,
+        and the associated :class:`~lumin.nn.models.model_builder.ModelBuilder`.
+
+        Arguments:
+            models: list of :class:`~lumin.nn.model.model.Model`
+            weights: Optional list of weights, otherwise models will be weighted uniformly
+            results: Optional results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
+            input_pipe: Optional input pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_input_pipe`
+            output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_ouput_pipe`
+            model_builder: Optional :class:`~lumin.nn.models.model_builder.ModelBuilder` for constructing models from saved weights.
+
+        Returns:
+            Built :class:`~lumin.nn.ensemble.ensemble.Ensemble`
+
+        Examples::
+            >>> ensemble = Ensemble.from_models(models)
+            >>>
+            >>> ensemble = Ensemble.from_models(models, weights)
+            >>>
+            >>> ensemble = Ensemble(models, weights, input_pipe, output_pipe, model_builder)
+        '''
+
+        ensemble = cls(input_pipe=input_pipe, output_pipe=output_pipe, model_builder=model_builder)
+        ensemble.models = models
+        weights = np.ones((len(models))) if weights is None else np.array(weights)
+        ensemble.weights = weights/weights.sum()
+        ensemble.results = results
+        ensemble.size = len(ensemble.models)
+        ensemble.n_out = ensemble.models[0].get_out_size()
         return ensemble
 
     @classmethod
@@ -380,14 +416,15 @@ class Ensemble(AbsEnsemble):
             os.system(f"rm {name}*.json {name}*.h5 {name}*.pkl")
             for i, model in enumerate(progress_bar(self.models)): model.save(f'{name}_{i}.h5')    
             with open(f'{name}_weights.pkl', 'wb')         as fout: pickle.dump(self.weights, fout)
-            with open(f'{name}_results.pkl', 'wb')         as fout: pickle.dump(self.results, fout)
             with open(f'{name}_builder.pkl', 'wb')         as fout: pickle.dump(self.model_builder, fout)
             if self.input_pipe  is not None: 
-                with open(f'{name}_input_pipe.pkl', 'wb')  as fout: pickle.dump(self.input_pipe, fout)
+                with open(f'{name}_input_pipe.pkl',  'wb') as fout: pickle.dump(self.input_pipe, fout)
             if self.output_pipe is not None: 
                 with open(f'{name}_output_pipe.pkl', 'wb') as fout: pickle.dump(self.output_pipe, fout)
             if feats            is not None: 
-                with open(f'{name}_feats.pkl', 'wb')       as fout: pickle.dump(feats, fout)
+                with open(f'{name}_feats.pkl',   'wb')     as fout: pickle.dump(feats, fout)
+            if self.results     is not None:
+                with open(f'{name}_results.pkl', 'wb')     as fout: pickle.dump(self.results, fout)
                     
     def load(self, name:str) -> None:
         r'''

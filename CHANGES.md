@@ -35,6 +35,7 @@
 - Addition of AdamW and an optimiser, thanks to [@kiryteo](https://github.com/kiryteo)
 - Contribution guide, thanks to [@kiryteo](https://github.com/kiryteo)
 - OneCycle `lr_range` now supports a non-zero final LR; just supply a three-tuple to the `lr_range` argument.
+- `Ensemble.from_models` classmethod for combining in-memory models into an Ensemble.
 
 ## Removals
 
