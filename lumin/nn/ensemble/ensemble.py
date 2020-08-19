@@ -148,6 +148,8 @@ class Ensemble(AbsEnsemble):
         weights = np.ones((len(models))) if weights is None else np.array(weights)
         ensemble.weights = weights/weights.sum()
         ensemble.results = results
+        ensemble.size = len(ensemble.models)
+        ensemble.n_out = ensemble.models[0].get_out_size()
         return ensemble
 
     @classmethod
