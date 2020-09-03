@@ -198,7 +198,7 @@ class SWA(AbsModelCallback):
                 self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'], callbacks=callbacks)
             else:
                 by = BatchYielder(**self.val_fold, objective=self.model.objective,
-                                  bs=bs, use_weights=use_weights, shuffle=True, bulk_move=False)
+                                  bs=bs, use_weights=use_weights, shuffle=False, bulk_move=False)
                 self.loss = self.test_model.evaluate_from_by(by, callbacks=callbacks)
         return self.loss
         

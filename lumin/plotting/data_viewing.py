@@ -53,7 +53,6 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
     if not isinstance(cuts,   list): cuts   = [cuts]
     if plot_params is None: plot_params = {}
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
-    use_df = df.replace([np.inf,-np.inf],np.nan).dropna()
     
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
@@ -269,7 +268,7 @@ def plot_binary_sample_feat(df:pd.DataFrame, feat:str, targ_name:str='gen_target
     
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
     if not isinstance(bins,list): bins = np.linspace(df[feat].min(),df[feat].max(), bins if isinstance(bins, int) else 20)
-    hist_params = {'range': lim_x, 'bins': bins, 'normed': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
+    hist_params = {'range': lim_x, 'bins': bins, 'density': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)
     bkg_samples = _get_samples(df[bkg], sample_name, wgt_name)
     sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
