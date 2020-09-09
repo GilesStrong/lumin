@@ -1,4 +1,4 @@
-# Targeting V0.5.2
+# v0.6.0 - Train and Converge Until it is Done
 
 ## Important changes
 
@@ -6,7 +6,12 @@
 - Moved to Scikit-learn 0.22.2, and moved, where possible, to keyword argument calls for sklearn methods in preparation for 0.25 enforcement of keyword arguments
 - Fixed error in patience when using cyclical LR callbacks, now specify the number of cycles to go without improvement. Previously had to specify 1+number.
 - Matrix data is no longer passed through `np.nan_to_num` in `FoldYielder`. Users should ensure that all values in matrix data are not NaN or Inf
-
+- Tensor data:
+  - `df2foldfile`, `fold2foldfile`, and 'add_meta_data` can now support the saving of arbitrary matrices as a matrix input
+  - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
+    The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs in the resulting foldfile
+  - The matrices may also be passed as sparse format and be densified on loading by FoldYielder
+  
 ## Breaking
 
 - `plot_rank_order_dendrogram` now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
