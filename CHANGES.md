@@ -1,3 +1,21 @@
+# Targeting v0.6.1
+
+## Important changes
+  
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
 # v0.6.0 - Train and Converge Until it is Done
 
 ## Important changes
@@ -11,7 +29,7 @@
   - Pass a `numpy.array` whose first dimension matches the length of the DataFrame to the `tensor_data` argument of `df2foldfile` and a name to `tensor_name`.
     The array will be split along the first dimension and the sub-arrays will be saved as matrix inputs in the resulting foldfile
   - The matrices may also be passed as sparse format and be densified on loading by FoldYielder
-  
+
 ## Breaking
 
 - `plot_rank_order_dendrogram` now returns sets of all features in cluster with distance over the threshold, rather than just the closest features in each cluster
