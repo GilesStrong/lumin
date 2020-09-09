@@ -39,6 +39,9 @@
 
 ## Removals
 
+- `FeatureSubsample`
+- `plots` keyword in `fold_train_ensemble`
+
 ## Fixes
 
 - Docs bug for nn.training due to missing ipython in requirements
