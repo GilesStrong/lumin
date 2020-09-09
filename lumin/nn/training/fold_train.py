@@ -49,7 +49,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         shuffle_fold:bool=True, shuffle_folds:bool=True, bulk_move:bool=True,
                         live_fdbk:bool=True, live_fdbk_first_only:bool=True, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
-                        plot_settings:PlotSettings=PlotSettings(), plots:Optional[Any]=None) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
+                        plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
     Main training method for :class:`~lumin.nn.models.model.Model`.
     Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a
@@ -94,9 +94,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         verbose: whether to print out extra information during training
         log_output: whether to save printed results to a log file rather than printing them
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
-        plots: Depreciated: loss history will always be shown,
-            lr history will no longer be shown separately,
-            and live feedback is now controlled by `live_fdbk` argument
 
     Returns:
         - results list of validation losses and other eval_metrics results, ordered by model training. Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
@@ -113,10 +110,6 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         old_stdout = sys.stdout
         log_file = open(savepath/'training_log.log', 'w')
         sys.stdout = log_file
-
-    if plots is not None:
-        warnings.warn("The plots argument is now depreciated and ignored. Loss history will always be shown, lr history will no longer be shown separately, \
-                       and live feedback is now controlled by the four live_fdbk arguments. This argument will be removed in V0.6.")
 
     train_tmr = timeit.default_timer()
     results,histories,cycle_losses = [],[],[]

@@ -12,7 +12,7 @@ fastprogress==0.1.21
 scipy
 numpy>=1.12
 h5py
-scikit-learn>=0.22.2
+scikit-learn>=0.22.2,<0.23.0
 statsmodels>=0.9.0
 sympy
 pdpbox>=0.2.0

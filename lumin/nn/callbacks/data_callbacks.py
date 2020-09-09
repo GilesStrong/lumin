@@ -11,7 +11,7 @@ from ..data.fold_yielder import FoldYielder
 from ...utils.misc import to_np, to_device
 from ..models.abs_model import AbsModel
 
-__all__ = ['BinaryLabelSmooth', 'SequentialReweight', 'SequentialReweightClasses', 'BootstrapResample', 'FeatureSubsample', 'ParametrisedPrediction']
+__all__ = ['BinaryLabelSmooth', 'SequentialReweight', 'SequentialReweightClasses', 'BootstrapResample', 'ParametrisedPrediction']
 
 
 class BinaryLabelSmooth(Callback):
@@ -189,46 +189,6 @@ class BootstrapResample(Callback):
         self.iter += 1
         if self.objective is None: self.objective = by.objective
         self._resample(sample, by.inputs, by.targets, by.weights)
-
-
-class FeatureSubsample(Callback):
-    r'''
-    Callback for training a model on a random sub-sample of the range of possible input features.
-    Only sub-samples continuous features. Number of continuous inputs infered from model.
-    Associated :class:`~lumin.nn.models.model.Model` will automatically mask its inputs during inference; simply provide inputs with the same number of columns
-    as trainig data. 
-
-    .. Attention:: This callback is now depreciated in favour of passing `cont_subsample_rate` and  `guaranteed_feats` to
-        :class:`~lumin.nn.models.model_builder.ModelBuilder` as these offer greater functionality and are compatable with using a
-        :class:`~luminnn.models.blocks.body.MultiBlock` body. Will be removed in `V0.6`.
-
-    .. Caution:: This callback is incompatable with using a :class:`~luminnn.models.blocks.body.MultiBlock` body
-
-    Arguments:
-        cont_feats: list of all continuous features in input data. Order must match.
-        model: :class:`~lumin.nn.models.model.Model` being trained, alternatively call :meth:`~lumin.nn.models.Model.set_model`        
-
-    Examples::
-        >>> feat_subsample = FeatureSubsample(cont_feats=['pT', 'eta', 'phi'])
-    '''
-
-    def __init__(self, cont_feats:List[str], model:Optional[AbsModel]=None):
-        super().__init__(model=model)
-        self.cont_feats = cont_feats
-        
-    def _sample_feats(self) -> None:
-        cont_idxs = np.random.choice(range(len(self.cont_feats)), size=self.model.model_builder.n_cont_in, replace=False)
-        self.feat_idxs = np.hstack((cont_idxs, len(self.cont_feats)+np.arange(self.model.model_builder.cat_embedder.n_cat_in)))
-        self.feat_idxs.sort()
-    
-    def on_train_begin(self, **kargs) -> None:
-        r'''
-        Subsamples features for use in training and sets model's input mask for inference
-        '''
-
-        np.random.seed()  # Is this necessary?
-        self._sample_feats()
-        self.model.set_input_mask(self.feat_idxs)
 
 
 class ParametrisedPrediction(Callback):
