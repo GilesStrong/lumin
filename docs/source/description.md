@@ -52,7 +52,7 @@
 
 - Dendrograms of feature-pair monotonacity
 - Feature importance via auto-optimised SK-Learn random forests
-- Mutual dependance (via RFPImp) 
+- Mutual dependance (via RFPImp)
 - Automatic filtering and selection of features
 
 ### Interpretation
@@ -124,7 +124,7 @@ Full use of LUMIN requires the latest version of PDPbox, but this is not release
 
 TMVA contained in CERN's ROOT system, has been the default choice for BDT training for analysis and reconstruction algorithms due to never having to leave ROOT format. With the gradual move to DNN approaches, more scientists are looking to move their data out of ROOT to use the wider selection of tools which are available. Keras appears to be the first stop due to its ease of use, however implementing recent methods in Keras can be difficult, and sometimes requires dropping back to the tensor library that it aims to abstract. Indeed, the prequel to LUMIN was a similar wrapper for Keras ([HEPML_Tools](https://github.com/GilesStrong/hepml_tools)) which involved some pretty ugly hacks.
 The fastai framework provides access to these recent methods, however doesn't yet support sample weights to the extent that HEP requires.
-LUMIN aims to provides the best of both, Keras-style sample weighting and fastai training methods, while focussing on columnar data and providing domain-specific metrics, plotting, and statistical treatment of results and uncertainties.
+LUMIN aims to provide the best of both, Keras-style sample weighting and fastai training methods, while focussing on columnar data and providing domain-specific metrics, plotting, and statistical treatment of results and uncertainties.
 
 ### Data types
 
@@ -136,9 +136,9 @@ With just one main developer, I'm simply focussing on the data types and applica
 
 The current priority is to imporve the documentation, add unit tests, and expand the examples.
 
-The next step will be to try and increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
+The next step will be to try to increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
 
-Further improvments will be in the direction of implementing new methods and (HEP-specific) architectures, as well as providing helper functions and data exporters to statistical analysis packages like Combine and PYHF.
+Further improvements will be in the direction of implementing new methods and (HEP-specific) architectures, as well as providing helper functions and data exporters to statistical analysis packages like Combine and PYHF.
 
 ### Contributing & feedback
 
@@ -146,15 +146,17 @@ Contributions, suggestions, and feedback are most welcome! The issue tracker on 
 
 ### Code style
 
-Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. As a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises, in particular, reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations). A full list of the abbreviations used may be found in [abbr.md](https://github.com/GilesStrong/lumin/blob/master/abbr.md)
+Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. As a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead, I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises, in particular, reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations). A full list of the abbreviations used may be found in [abbr.md](https://github.com/GilesStrong/lumin/blob/master/abbr.md)
 
 ### Why is LUMIN called LUMIN?
 
-Aside from being a recursive accronym (and therefore the best kind of accronym) lumin is short for 'luminosity'. In high-energy physics, the integrated luminosity of the data collected by an experiment is the main driver in the results that analyses obtain. With the paradigm shift towards multivariate analyses, however, improved methods can be seen as providing 'artificial luminosity'; e.g. the gain offered by some DNN could be measured in terms of the amount of extra data that would have to be collected to achieve the same result with a more traditional analysis. Luminosity can also be connected to the fact that LUMIN is built around the python version of Torch.
+Aside from being a recursive acronym (and therefore the best kind of acronym) lumin is short for 'luminosity'. In high-energy physics, the integrated luminosity of the data collected by an experiment is the main driver in the results that analyses obtain. With the paradigm shift towards multivariate analyses, however, improved methods can be seen as providing 'artificial luminosity'; e.g. the gain offered by some DNN could be measured in terms of the amount of extra data that would have to be collected to achieve the same result with a more traditional analysis. Luminosity can also be connected to the fact that LUMIN is built around the python version of Torch.
 
 ### Who develops LUMIN
 
-Currently just me - Giles Strong; a British-born, Lisbon-based, PhD student in particle physics at IST, researcher at LIP-Lisbon, member of Marie Curie ITN [AMVA4NewPhysics](https://amva4newphysics.wordpress.com/) and the CMS collaboration.
+LUMIN is primarily developed by Giles Strong; a British-born PhD student in particle physics at IST (Portugal), and researcher at The University of Padova (Italy), and a member of the CMS collaboration at CERN.
+
+As LUMIN has grown, it has welcomed contributions from members of the scientific and software development community. Check out the [contributors page](https://github.com/GilesStrong/lumin/graphs/contributors) for a complete list.
 
 Certainly more developers and contributors are welcome to join and help out!
 

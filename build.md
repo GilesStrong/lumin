@@ -3,6 +3,7 @@
 1. Check scheduled depreceiations
 1. Run examples and fix errors
 1. Check an example on Google Colab
+1. Update readme and copy relevant information to docs/source/description.md
 1. Follow instructions in docs/build.md
 1. Run: python setup.py sdist bdist_wheel
 1. Run. twine upload --repository-url https://test.pypi.org/legacy/ dist/*

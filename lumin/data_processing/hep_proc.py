@@ -77,7 +77,7 @@ def delta_phi(arr_a:Union[float,np.ndarray], arr_b:Union[float,np.ndarray]) -> U
         arr_b: final angles
 
     Returns:
-        angular separation as float or np.array
+        angular separation as float or np.ndarray
     '''
 
     df = pd.DataFrame()  # Better way to do this without df?
@@ -96,7 +96,7 @@ def delta_r(dphi:Union[float,np.ndarray], deta:Union[float,np.ndarray]) -> Union
         deta: delta eta separations
 
     Returns:
-        delta R separation as float or np.array
+        delta R separation as float or np.ndarray
     '''
     
     return np.sqrt(np.square(dphi)+np.square(deta))
@@ -111,7 +111,7 @@ def twist(dphi:Union[float,np.ndarray], deta:Union[float,np.ndarray]) -> Union[f
         deta: delta eta separations
 
     Returns:
-        angular separation as float or np.array
+        angular separation as float or np.ndarray
     '''
     
     return np.arctan(np.abs(dphi/deta))
@@ -324,7 +324,7 @@ def calc_pair_mass(df:pd.DataFrame, masses:Union[Tuple[float,float],Tuple[np.nda
         feat_map: dictionary mapping of requested momentum components to the features in df
 
     Returns:
-        np.array of invarient masses
+        np.ndarray of invarient masses
     '''
 
     # TODO: rewrite to not use a DataFrame for holding parent vector
@@ -379,7 +379,7 @@ def boost(ref_vec:Union[np.ndarray,str], boost_vec:Union[np.ndarray,str], df:Opt
     return bv
 
 
-def boost2cm(vec:Union[np.array,str], df:Optional[pd.DataFrame]=None) -> np.array:
+def boost2cm(vec:Union[np.ndarray,str], df:Optional[pd.DataFrame]=None) -> np.ndarray:
     r'''
     Vectorised computation of boosting vector required to boost a vector to its centre-of-mass frame
 
@@ -396,7 +396,7 @@ def boost2cm(vec:Union[np.array,str], df:Optional[pd.DataFrame]=None) -> np.arra
     return -(v/v[:,3:4])[:,:3] 
 
 
-def get_momentum(df:pd.DataFrame, vec:str, include_E:bool=False, as_cart:bool=False) -> np.array:
+def get_momentum(df:pd.DataFrame, vec:str, include_E:bool=False, as_cart:bool=False) -> np.ndarray:
     r'''
     Extracts array of 3- or 4-momenta coordinates from DataFrame columns
     
@@ -424,8 +424,8 @@ def get_momentum(df:pd.DataFrame, vec:str, include_E:bool=False, as_cart:bool=Fa
     return v
 
 
-def cos_delta(vec_0:Union[np.array,str], vec_1:Union[np.array,str], df:Optional[pd.DataFrame]=None, name:Optional[str]=None,
-              inplace:bool=False) -> Union[None, np.array]:
+def cos_delta(vec_0:Union[np.ndarray,str], vec_1:Union[np.ndarray,str], df:Optional[pd.DataFrame]=None, name:Optional[str]=None,
+              inplace:bool=False) -> Union[None, np.ndarray]:
     r'''
     Vectorised compututation of the cosine of the angular seperation of `vec_1` from `vec_0`
     If `vec_*` are strings, then columns are extracted from DataFrame `df`.
@@ -454,8 +454,8 @@ def cos_delta(vec_0:Union[np.array,str], vec_1:Union[np.array,str], df:Optional[
     else:       return d/mag
 
 
-def delta_r_boosted(vec_0:Union[np.array,str], vec_1:Union[np.array,str], ref_vec:Union[np.array,str], df:Optional[pd.DataFrame]=None, name:Optional[str]=None,
-                    inplace:bool=False) -> Union[None, np.array]:
+def delta_r_boosted(vec_0:Union[np.ndarray,str], vec_1:Union[np.ndarray,str], ref_vec:Union[np.ndarray,str], df:Optional[pd.DataFrame]=None, name:Optional[str]=None,
+                    inplace:bool=False) -> Union[None, np.ndarray]:
     r'''
     Vectorised compututation of the deltaR seperation of `vec_1` from `vec_0` in the rest-frame of another vector
     If `vec_*` are strings, then columns are extracted from DataFrame `df`.
