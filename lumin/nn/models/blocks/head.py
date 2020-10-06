@@ -685,7 +685,10 @@ class AbsConv1dHead(AbsMatrixHead):
         '''
 
         x = torch.rand((1, self.n_fpv,self.n_v))
+        training = self.training
+        self.eval()
         x = self.forward(x)
+        if training: self.train()
         return x.size(-1)
             
     def get_conv1d_block(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,act:str='relu', bn:bool=False) -> Conv1DBlock:
@@ -941,7 +944,10 @@ class LorentzBoostNet(AbsMatrixHead):
         '''
         
         x = torch.rand((1,self.n_v, self.n_fpv))
+        training = self.training
+        self.eval()
         x = self.forward(x)
+        if training: self.train()
         return x.size(-1)
 
 

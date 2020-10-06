@@ -183,9 +183,9 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
     
-    hist_params = {'range': lim_x, 'bins': bins, 'density': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
     if not isinstance(bins,list): bins = np.linspace(df[pred_name].min(),df[pred_name].max(), bins if isinstance(bins, int) else 10)
+    hist_params = {'range': lim_x, 'bins': bins, 'density': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)
     bkg_samples = _get_samples(df[bkg], sample_name, wgt_name)
     sample2col = {k: v for v, k in enumerate(bkg_samples)} if settings.sample2col is None else settings.sample2col
