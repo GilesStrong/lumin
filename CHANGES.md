@@ -6,13 +6,15 @@
 
 ## Additions
 
+- `__del__` method to `FowardHook` class
+
 ## Removals
 
 ## Fixes
 
 - Potential bug in convolutional models where checking the out size of the head would affect the batchnorm averaging
 - Potential bug in `plot_sample_pred` to do with bin ranges
-
+- `ForwardHook` not working with passed hook functions
 
 ## Changes
 

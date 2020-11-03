@@ -2,6 +2,7 @@ import numpy as np
 from typing import Union, List, Tuple, Optional
 import pandas as pd
 import sympy
+from functools import partial
 
 from sklearn.utils import resample
 
@@ -128,8 +129,10 @@ class FowardHook():
     '''
     def __init__(self, module:nn.Module, hook_fn:Optional=None):
         self.input,self.output = None,None
-        if hook_fn is not None: self.hook_fn = hook_fn
+        if hook_fn is not None: self.hook_fn = partial(hook_fn, self)
         self.hook = module.register_forward_hook(self.hook_fn)
+
+    def __del__(self): self.remove()
         
     def hook_fn(self, module:nn.Module, input:Union[Tensor,Tuple[Tensor]], output:Union[Tensor,Tuple[Tensor]]) -> None:
         r'''

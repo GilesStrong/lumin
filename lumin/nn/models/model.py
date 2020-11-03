@@ -204,6 +204,8 @@ class Model(AbsModel):
             (weighted) loss of model predictions on provided data
         '''
 
+        # TODO: Fix this to work for incomplete batch
+
         loss = 0
         for x, y, w in by: loss += self.evaluate(x, y, w, callbacks)*by.bs
         return loss/(len(by)*by.bs)

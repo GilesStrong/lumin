@@ -1,6 +1,5 @@
 {   "editor.autoIndent": true,
     "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
     "python.linting.enabled": true,
     "python.linting.banditEnabled": false,
     "python.linting.mypyEnabled": false,
@@ -19,4 +18,13 @@
         "MD034": false
     },
     "restructuredtext.confPath": "${workspaceFolder}/docs",
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
+    ],
+    "python.linting.flake8Enabled": true,
 }
