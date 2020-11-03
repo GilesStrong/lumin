@@ -3,7 +3,6 @@ from typing import Any
 import torch
 import torch.nn as nn
 from torch import Tensor
-import torch.nn.functional as F
 
 __all__ = ['lookup_act', 'Swish']
 

@@ -21,3 +21,4 @@ prettytable>=0.7.2
 m2r
 ipython>=6.4.0
 sparse
+fastcore>=1.0.16

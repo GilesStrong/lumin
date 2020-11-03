@@ -1,20 +1,24 @@
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, Callable, Generator
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
 import warnings
+from fastcore.all import is_listy, store_attr, partialler
+from random import shuffle
+import inspect
 
 import torch
 from torch.tensor import Tensor
 import torch.nn as nn
+from torch import optim
 
 from .abs_model import AbsModel
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
-from ...utils.misc import to_np
+from ...utils.misc import to_np, to_tensor
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
@@ -22,6 +26,12 @@ from ...utils.misc import to_device
 from ...utils.statistics import uncert_round
 
 __all__ = ['Model']
+
+
+class FitParams():
+    def __init__(self, **kwargs):
+        store_attr()
+        self.epoch,self.sub_epoch = 0,0
 
 
 class Model(AbsModel):
@@ -112,13 +122,285 @@ class Model(AbsModel):
         '''
 
         self.input_mask = mask
+
+    def _fit_batch(self, x:Tensor, y:Tensor, w:Tensor) -> None:
+        self.fit_params.x,self.fit_params.y,self.fit_params.w = x,y,w
+        for c in self.fit_params.cbs: c.on_batch_begin()
+        self.fit_params.y_pred = self.model(self.fit_params.x)
+        if self.fit_params.state != 'test' and self.fit_params.loss_func is not None:
+            self.fit_params.loss_func.weights = self.fit_params.w
+            self.fit_params.loss_val = self.fit_params.fit_params.loss_func(self.fit_params.y_pred, self.fit_params.y)
+        for c in self.fit_params.cbs: c.on_forwards_end()
+        if self.fit_params.state != 'train': return
+
+        self.fit_params.opt.zero_grad()
+        for c in self.fit_params.cbs: c.on_backwards_begin()
+        self.fit_params.loss_val.backward()
+        for c in self.fit_params.cbs: c.on_backwards_end()
+        self.fit_params.opt.step()
+        for c in self.fit_params.cbs: c.on_batch_end()
+
+    def fit(self, n_epochs:int, fy:FoldYielder, val_idx:int, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
+            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
+            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None, mask_inputs:bool=True) -> List[AbsCallback]:
+        r'''
+        '''
         
+        if cbs is None: cbs = []
+        elif not is_listy(cbs): cbs = [cbs]
+        self.fit_params = FitParams(cbs=cbs,stop=False,n_epochs=n_epochs,fy=fy,val_idx=val_idx,bs=bs,bulk_move=bulk_move,train_on_weights=train_on_weights,
+                                    mask_inputs=mask_inputs)
+        self.fit_params.loss_func = self.loss if loss is None else loss
+        if inspect.isclass(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
+        self.fit_params.opt       = self.opt    if opt  is None else opt(self.model.parameters())
+        self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, bs=self.fit_params.bs, use_weights=self.fit_params.train_on_weights,
+                                                shuffle=True, bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask if mask_inputs else None)
+        self.fit_params.trn_idxs = shuffle([x for x in range(fy.n_folds) if x != val_idx])
+
+        def fit_epoch() -> None:
+            self.model.train()
+            self.fit_params.state = 'train'
+            self.fit_params.epoch += 1
+            for c in self.fit_params.cbs: c.on_epoch_begin()
+            for trn_idx in self.fit_params.trn_idxs:
+                self.fit_params.sub_epoch += 1
+                self.fit_params.by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.trn_idx))
+                for c in self.fit_params.cbs: c.on_fold_begin()
+                for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
+                for c in self.fit_params.cbs: c.on_fold_end()
+                if self.fit_params.stop: break
+            for c in self.fit_params.cbs: c.on_epoch_end()
+
+            self.model.eval()
+            self.fit_params.state = 'valid'
+            for c in self.fit_params.cbs: c.on_epoch_begin()
+            self.fit_params.by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
+            for c in self.fit_params.cbs: c.on_fold_begin()
+            for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
+            for c in self.fit_params.cbs: c.on_fold_end()
+            for c in self.fit_params.cbs: c.on_epoch_end()
+            del self.fit_params.by
+
+        for c in self.fit_params.cbs: c.set_model(self)
+        for c in self.fit_params.cbs: c.on_train_begin()
+        self.fit_params.mb = master_bar(range(self.fit_params.n_epochs))
+        for e in self.fit_params.mb:
+            fit_epoch()
+            if self.fit_params.stop: break
+        for c in self.fit_params.cbs: c.on_train_end()
+        return self.fit_params.cbs
+
+    def predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(),
+                   cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
+        if cbs is None: cbs = []
+        elif not is_listy(cbs): cbs = [cbs]
+        self.fit_params = FitParams(cbs=cbs)
+        self.fit_params.by = by
+        self.state = 'test'
+        for c in self.fit_params.cbs: c.set_model(self)
+        self.model.eval()
+        for c in self.cbs: c.on_pred_begin()
+        for b in progress_bar(self.fit_params.by): self._fit_batch(*b)
+        for c in self.cbs: c.on_pred_end()
+        return pred_cb.get_preds()
+
+    def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
+                      pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
+        r'''
+        '''
+
+        by = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective, shuffle=False, bulk_move=bs is None,
+                          input_mask=self.input_mask if mask_inputs else None, drop_last=False)
+        preds = self.predict_by(by, pred_cb=pred_cb, cbs=cbs)
+        if as_np:
+            preds = to_np(preds)
+            if 'multiclass' in self.objective: preds = np.exp(preds)
+        return preds
+
+    def predict_folds(self, fy:FoldYielder, pred_name:str='pred',  mask_inputs:bool=True,
+                      pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> None:
+        r'''
+        '''
+
+        pred_call = partialler(self.predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs, mask_inputs=mask_inputs)
+        mb = master_bar(range(len(fy)))
+        for fold_idx in mb:
+            if not fy.test_time_aug:
+                pred = pred_call(fy.get_fold(fold_idx)['inputs'])
+            else:
+                tmpPred = []
+                for aug in progress_bar(range(fy.aug_mult), parent=mb): tmpPred.append(pred_call(fy.get_test_fold(fold_idx, aug)['inputs']))
+                pred = np.mean(tmpPred, axis=0)
+
+            if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
+            else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
+
+    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
+                mask_inputs:bool=True, pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) \
+            -> Union[np.ndarray, Tensor, None]:
+        r'''
+        '''
+
+        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        self.predict_folds(inputs, pred_name, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
+
+    def get_weights(self) -> OrderedDict:
+        r'''
+        Get state_dict of weights for network
+
+        Returns:
+            state_dict of weights for network
+        '''
+        
+        return self.model.state_dict()
+
+    def set_weights(self, weights:OrderedDict) -> None:
+        r'''
+        Set state_dict of weights for network
+
+        Arguments:
+            weights: state_dict of weights for network
+        '''
+        
+        self.model.load_state_dict(weights)
+
+    def get_lr(self) -> float:
+        r'''
+        Get learning rate of optimiser
+
+        Returns:
+            learning rate of optimiser
+        '''
+        
+        return self.opt.param_groups[0]['lr']
+
+    def set_lr(self, lr:float) -> None:
+        r'''
+        set learning rate of optimiser
+
+        Arguments:
+            lr: learning rate of optimiser
+        '''
+        
+        self.opt.param_groups[0]['lr'] = lr
+
+    def get_mom(self) -> float:
+        r'''
+        Get momentum/beta_1 of optimiser
+
+        Returns:
+            momentum/beta_1 of optimiser
+        '''
+        
+        if   'betas'    in self.opt.param_groups: return self.opt.param_groups[0]['betas'][0]
+        elif 'momentum' in self.opt.param_groups: return self.opt.param_groups[0]['momentum']
+
+    def set_mom(self, mom:float) -> None:
+        r'''
+        Set momentum/beta_1 of optimiser
+
+        Arguments:
+            mom: momentum/beta_1 of optimiser
+        '''
+
+        if   'betas'    in self.opt.param_groups: self.opt.param_groups[0]['betas'][0] = mom
+        elif 'momentum' in self.opt.param_groups: self.opt.param_groups[0]['momentum'] = mom
+    
+    def save(self, name:str) -> None:
+        r'''
+        Save model, optimiser, and input mask states to file
+
+        Arguments:
+            name: name of save file
+        '''
+
+        torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict(), 'input_mask':self.input_mask}, str(name))
+        
+    def load(self, name:str, model_builder:ModelBuilder=None) -> None:
+        r'''
+        Load model, optimiser, and input mask states from file
+
+        Arguments:
+            name: name of save file
+            model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`, you will need to pass one here
+        '''
+
+        # TODO: update map location when device choice is changable by user
+
+        if model_builder is not None: self.model, self.opt, self.loss, self.input_mask = model_builder.get_model()
+        state = torch.load(name, map_location='cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.load_state_dict(state['model'])
+        self.opt.load_state_dict(state['opt'])
+        self.input_mask = state['input_mask']
+        self.objective = self.model_builder.objective if model_builder is None else model_builder.objective
+
+    def export2onnx(self, name:str, bs:int=1) -> None:
+        r'''
+        Export network to ONNX format.
+        Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
+
+        Arguments:
+            name: filename for exported file
+            bs: batch size for exported models
+        '''
+
+        # TODO: Pass FoldYielder to get example dummy input, or account for matrix inputs
+        
+        warnings.warn("""ONNX export of LUMIN models has not been fully explored or sufficiently tested yet.
+                         Please use with caution, and report any trouble""")
+        if '.onnx' not in name: name += '.onnx'
+        dummy_input = to_device(torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.cat_embedder.n_cat_in))
+        torch.onnx.export(self.model, dummy_input, name)
+    
+    def export2tfpb(self, name:str, bs:int=1) -> None:
+        r'''
+        Export network to Tensorflow ProtocolBuffer format, via ONNX.
+        Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
+
+        Arguments:
+            name: filename for exported file
+            bs: batch size for exported models
+        '''
+
+        import onnx
+        from onnx_tf.backend import prepare
+        warnings.warn("""Tensorflow ProtocolBuffer export of LUMIN models (via ONNX) has not been fully explored or sufficiently tested yet.
+                         Please use with caution, and report any trouble""")
+        self.export2onnx(name, bs)
+        m = onnx.load(f'{name}.onnx')
+        tf_rep = prepare(m)
+        tf_rep.export_graph(f'{name}.pb')
+           
+    def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+        r'''
+        Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.model.Model` and provided arguments
+
+        Arguments:
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance
+            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use for quantifying performance
+        '''
+
+        return get_nn_feat_importance(self, fy, eval_metric)
+
+    def get_out_size(self) -> int:
+        r'''
+        Get number of outputs of model
+
+        Returns:
+            Number of outputs of model
+        '''
+
+        return self.tail.get_out_size()
+
+
+class OldModel(Model):
     def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None, mask_inputs:bool=True) -> float:
         r'''
         Fit network for one complete iteration of a :class:`~lumin.nn.data.batch_yielder.BatchYielder`, i.e. one (sub-)epoch
 
         Arguments:
-            batch_yielder: :class:`~lumin.nn.data.batch_yielder.BatchYielder` providing training data in form of tuple of inputs, targtes, and weights as tensors on device
+            batch_yielder: :class:`~lumin.nn.data.batch_yielder.BatchYielder` providing training data in form of tuple of inputs, targtes, and weights as
+                tensors on device
             callbacks: list of :class:`~lumin.nn.callbacks.abs_callback.AbsCallback` to be used during training
             mask_inputs: whether to apply input mask if one has been set
 
@@ -321,151 +603,3 @@ class Model(AbsModel):
         '''
         if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, callbacks=callbacks, bs=bs)
         self.predict_folds(inputs, pred_name, callbacks=callbacks, verbose=verbose, bs=bs)
-
-    def get_weights(self) -> OrderedDict:
-        r'''
-        Get state_dict of weights for network
-
-        Returns:
-            state_dict of weights for network
-        '''
-        
-        return self.model.state_dict()
-
-    def set_weights(self, weights:OrderedDict) -> None:
-        r'''
-        Set state_dict of weights for network
-
-        Arguments:
-            weights: state_dict of weights for network
-        '''
-        
-        self.model.load_state_dict(weights)
-
-    def get_lr(self) -> float:
-        r'''
-        Get learning rate of optimiser
-
-        Returns:
-            learning rate of optimiser
-        '''
-        
-        return self.opt.param_groups[0]['lr']
-
-    def set_lr(self, lr:float) -> None:
-        r'''
-        set learning rate of optimiser
-
-        Arguments:
-            lr: learning rate of optimiser
-        '''
-        
-        self.opt.param_groups[0]['lr'] = lr
-
-    def get_mom(self) -> float:
-        r'''
-        Get momentum/beta_1 of optimiser
-
-        Returns:
-            momentum/beta_1 of optimiser
-        '''
-        
-        if   'betas'    in self.opt.param_groups: return self.opt.param_groups[0]['betas'][0]
-        elif 'momentum' in self.opt.param_groups: return self.opt.param_groups[0]['momentum']
-
-    def set_mom(self, mom:float) -> None:
-        r'''
-        Set momentum/beta_1 of optimiser
-
-        Arguments:
-            mom: momentum/beta_1 of optimiser
-        '''
-
-        if   'betas'    in self.opt.param_groups: self.opt.param_groups[0]['betas'][0] = mom
-        elif 'momentum' in self.opt.param_groups: self.opt.param_groups[0]['momentum'] = mom
-    
-    def save(self, name:str) -> None:
-        r'''
-        Save model, optimiser, and input mask states to file
-
-        Arguments:
-            name: name of save file
-        '''
-
-        torch.save({'model':self.model.state_dict(), 'opt':self.opt.state_dict(), 'input_mask':self.input_mask}, str(name))
-        
-    def load(self, name:str, model_builder:ModelBuilder=None) -> None:
-        r'''
-        Load model, optimiser, and input mask states from file
-
-        Arguments:
-            name: name of save file
-            model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`, you will need to pass one here
-        '''
-
-        # TODO: update map location when device choice is changable by user
-
-        if model_builder is not None: self.model, self.opt, self.loss, self.input_mask = model_builder.get_model()
-        state = torch.load(name, map_location='cuda' if torch.cuda.is_available() else 'cpu')
-        self.model.load_state_dict(state['model'])
-        self.opt.load_state_dict(state['opt'])
-        self.input_mask = state['input_mask']
-        self.objective = self.model_builder.objective if model_builder is None else model_builder.objective
-
-    def export2onnx(self, name:str, bs:int=1) -> None:
-        r'''
-        Export network to ONNX format.
-        Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
-
-        Arguments:
-            name: filename for exported file
-            bs: batch size for exported models
-        '''
-
-        # TODO: Pass FoldYielder to get example dummy input, or account for matrix inputs
-        
-        warnings.warn("""ONNX export of LUMIN models has not been fully explored or sufficiently tested yet.
-                         Please use with caution, and report any trouble""")
-        if '.onnx' not in name: name += '.onnx'
-        dummy_input = to_device(torch.rand(bs, self.model_builder.n_cont_in+self.model_builder.cat_embedder.n_cat_in))
-        torch.onnx.export(self.model, dummy_input, name)
-    
-    def export2tfpb(self, name:str, bs:int=1) -> None:
-        r'''
-        Export network to Tensorflow ProtocolBuffer format, via ONNX.
-        Note that ONNX expects a fixed batch size (bs) which is the number of datapoints your wish to pass through the model concurrently.
-
-        Arguments:
-            name: filename for exported file
-            bs: batch size for exported models
-        '''
-
-        import onnx
-        from onnx_tf.backend import prepare
-        warnings.warn("""Tensorflow ProtocolBuffer export of LUMIN models (via ONNX) has not been fully explored or sufficiently tested yet.
-                         Please use with caution, and report any trouble""")
-        self.export2onnx(name, bs)
-        m = onnx.load(f'{name}.onnx')
-        tf_rep = prepare(m)
-        tf_rep.export_graph(f'{name}.pb')
-           
-    def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
-        r'''
-        Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.model.Model` and provided arguments
-
-        Arguments:
-            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance
-            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use for quantifying performance
-        '''
-
-        return get_nn_feat_importance(self, fy, eval_metric)
-
-    def get_out_size(self) -> int:
-        r'''
-        Get number of outputs of model
-
-        Returns:
-            Number of outputs of model
-        '''
-
-        return self.tail.get_out_size()

@@ -1,12 +1,19 @@
-# Targeting v0.6.1
+# Targeting v0.7.0
 
 ## Important changes
+
+- Model fitting:
+    - `BatchYielder` now takes an `input_mask` argument to filter inputs
   
 ## Breaking
 
 ## Additions
 
 - `__del__` method to `FowardHook` class
+- `BatchYielder`:
+    - Now takes an `input_mask` argument to filter inputs
+    - Now takes an argument allowing incomplete batches to be yielded
+    - Target array can now be None
 
 ## Removals
 

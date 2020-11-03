@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 from fastprogress.fastprogress import IN_NOTEBOOK
@@ -11,14 +11,13 @@ from random import shuffle
 from collections import OrderedDict
 import math
 from functools import partial
-import warnings
 
 import torch.tensor as Tensor
 
 from ..data.fold_yielder import FoldYielder
 from ..data.batch_yielder import BatchYielder
 from ..models.model_builder import ModelBuilder
-from ..models.model import Model
+from ..models.model import OldModel
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.model_callbacks import AbsModelCallback
 from ...utils.misc import to_tensor, to_device
@@ -135,7 +134,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         loss_history = OrderedDict({'trn_loss': [], 'val_loss': []})
         cycle_losses.append({})
         trn_ids = _get_folds(val_id, fy.n_folds, shuffle_folds)
-        model = Model(model_builder)
+        model = OldModel(model_builder)
         val_fold = fy.get_fold(val_id)
         if not eval_on_weights: val_fold['weights'] = None
 
