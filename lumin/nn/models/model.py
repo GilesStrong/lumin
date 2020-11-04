@@ -18,6 +18,7 @@ from .abs_model import AbsModel
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
+from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
@@ -139,22 +140,31 @@ class Model(AbsModel):
         self.fit_params.opt.step()
         for c in self.fit_params.cbs: c.on_batch_end()
 
-    def fit(self, n_epochs:int, fy:FoldYielder, val_idx:int, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
+    def fit(self, n_epochs:int, fy:FoldYielder, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
+            trn_idxs:Optional[List[int]]=None, val_idx:Optional[int]=None,
             cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None, mask_inputs:bool=True) -> List[AbsCallback]:
+            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None) -> List[AbsCallback]:
         r'''
         '''
         
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
-        self.fit_params = FitParams(cbs=cbs,stop=False,n_epochs=n_epochs,fy=fy,val_idx=val_idx,bs=bs,bulk_move=bulk_move,train_on_weights=train_on_weights,
-                                    mask_inputs=mask_inputs)
+        cyclic_cbs = []
+        for c in cbs:
+            if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)
+
+        self.fit_params = FitParams(cbs=cbs,cyclic_cbs=cyclic_cbs,stop=False,n_epochs=n_epochs,fy=fy,val_idx=val_idx,bs=bs,bulk_move=bulk_move,
+                                    train_on_weights=train_on_weights)
         self.fit_params.loss_func = self.loss if loss is None else loss
         if inspect.isclass(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
-        self.fit_params.opt       = self.opt    if opt  is None else opt(self.model.parameters())
+        self.fit_params.opt = self.opt if opt is None else opt(self.model.parameters())
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, bs=self.fit_params.bs, use_weights=self.fit_params.train_on_weights,
-                                                shuffle=True, bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask if mask_inputs else None)
-        self.fit_params.trn_idxs = shuffle([x for x in range(fy.n_folds) if x != val_idx])
+                                                shuffle=True, bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
+
+        if trn_idxs is None: trn_idxs = list(range(fy.n_folds))
+        if val_idx is not None and val_idx in trn_idxs: trn_idxs.remove(val_idx)
+        shuffle(trn_idxs)
+        self.fit_params.trn_idxs,self.fit_params.val_idx = trn_idxs,val_idx
 
         def fit_epoch() -> None:
             self.model.train()
@@ -170,14 +180,15 @@ class Model(AbsModel):
                 if self.fit_params.stop: break
             for c in self.fit_params.cbs: c.on_epoch_end()
 
-            self.model.eval()
-            self.fit_params.state = 'valid'
-            for c in self.fit_params.cbs: c.on_epoch_begin()
-            self.fit_params.by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
-            for c in self.fit_params.cbs: c.on_fold_begin()
-            for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
-            for c in self.fit_params.cbs: c.on_fold_end()
-            for c in self.fit_params.cbs: c.on_epoch_end()
+            if self.fit_params.val_idx is not None:
+                self.model.eval()
+                self.fit_params.state = 'valid'
+                for c in self.fit_params.cbs: c.on_epoch_begin()
+                self.fit_params.by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
+                for c in self.fit_params.cbs: c.on_fold_begin()
+                for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
+                for c in self.fit_params.cbs: c.on_fold_end()
+                for c in self.fit_params.cbs: c.on_epoch_end()
             del self.fit_params.by
 
         for c in self.fit_params.cbs: c.set_model(self)
@@ -189,8 +200,7 @@ class Model(AbsModel):
         for c in self.fit_params.cbs: c.on_train_end()
         return self.fit_params.cbs
 
-    def predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(),
-                   cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
+    def predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
         self.fit_params = FitParams(cbs=cbs)

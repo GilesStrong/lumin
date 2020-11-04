@@ -44,6 +44,7 @@
     - OldCycleLR: Replaced by CycleLR
     - OldCycleMom: Replaced by CycleMom
     - OldOneCycle: Replaced by OneCycle
+    - OldLRFinder: Replaced by LRFinder
 
 ## Comments
 

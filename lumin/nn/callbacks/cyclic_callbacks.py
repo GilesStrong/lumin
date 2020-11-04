@@ -116,21 +116,10 @@ class AbsCyclicCallback(Callback):
     '''
 
     def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
-                 model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
+                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.param_range,self.cycle_mult,self.decrease_param,self.scale = param_range,cycle_mult,decrease_param,scale
         self.interp,self.cycle_iter,self.cycle_count,self.cycle_end,self.hist = interp.lower(),0,0,False,[]
-        if nb is not None: self.nb = self.scale*nb
-
-    def set_nb(self, nb:int) -> None:
-        r'''
-        Sets the callback's internal number of iterations per cycle equal to `nb*scale`
-
-        Arguments:
-            nb: number of minibatches per epoch
-        '''
-        
-        self.nb = self.scale*nb
 
     def _incr_cycle(self) -> None:
         self.cycle_iter += 1
@@ -172,6 +161,7 @@ class AbsCyclicCallback(Callback):
         '''
         
         if self.model.fit_params.state != 'train': return
+        if self.nb is None: self.nb = self.scale*len(self.model.fit_param.by)  # First epoch, get number of batches per fold
         self.cycle_end = False
     
     def on_batch_end(self) -> None:
@@ -247,10 +237,10 @@ class CycleLR(AbsCyclicCallback):
     # TODO sort lr-range or remove decrease_param
 
     def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
-                 model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
+                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = True if interp == 'cosine' else False
         super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult,
-                         decrease_param=decrease_param, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
+                         decrease_param=decrease_param, scale=scale, model=model, plot_settings=plot_settings)
         self.param_name = 'Learning Rate'
 
     def _set_param(self) -> None: self.model.set_lr(self.param)
@@ -306,10 +296,10 @@ class CycleMom(AbsCyclicCallback):
     # TODO sort lr-range or remove decrease_param
 
     def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
-                 model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
+                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = False if interp == 'cosine' else True
         super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult,
-                         decrease_param=decrease_param, scale=scale, model=model, nb=nb, plot_settings=plot_settings)
+                         decrease_param=decrease_param, scale=scale, model=model, plot_settings=plot_settings)
         self.param_name = 'Momentum'
 
     def _set_param(self) -> None: self.model.set_mom(self.param)
@@ -396,8 +386,8 @@ class OneCycle(AbsCyclicCallback):
     '''
 
     def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
-                 model:Optional[AbsModel]=None, nb:Optional[int]=None, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, nb=nb, plot_settings=plot_settings)
+                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+        super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, plot_settings=plot_settings)
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
         if len(self.lr_range) == 2: self.lr_range.append(0)
 
