@@ -28,6 +28,7 @@
 ## Depreciations
 
 - V0.8:
+    - Many classes and methods depreciated with new model. They have been copied and renamed to Old*.
     - OldAbsModel: Replaced by AbsModel
     - OldModel: Replaced by Model
     - OldAbsCallback: Replaced by AbsCallback
@@ -39,6 +40,10 @@
     - OldParametrisedPrediction: Replaced by ParametrisedPrediction
     - OldGradClip: Replaced by GradClip
     - OldLsuvInitL Replaced by LsuvInit
+    - OldAbsCyclicCallback: Replaced by AbsCyclicCallback
+    - OldCycleLR: Replaced by CycleLR
+    - OldCycleMom: Replaced by CycleMom
+    - OldOneCycle: Replaced by OneCycle
 
 ## Comments
 
