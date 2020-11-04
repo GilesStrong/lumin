@@ -37,6 +37,7 @@
     - SequentialReweightClasses: Will no be replaced
     - OldBootstrapResample: Replaced by BootstrapResample
     - OldParametrisedPrediction: Replaced by ParametrisedPrediction
+    - OldGradClip: Replaced by GradClip
 
 ## Comments
 
