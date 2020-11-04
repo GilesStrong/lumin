@@ -38,6 +38,7 @@
     - OldBootstrapResample: Replaced by BootstrapResample
     - OldParametrisedPrediction: Replaced by ParametrisedPrediction
     - OldGradClip: Replaced by GradClip
+    - OldLsuvInitL Replaced by LsuvInit
 
 ## Comments
 
