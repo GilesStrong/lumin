@@ -1,35 +1,30 @@
 from typing import Union, Tuple, Callable, Optional, List
 import numpy as np
 import pandas as pd
+from fastcor.all import is_listy
 
 import torch
 from torch import Tensor
 
-from .callback import Callback
+from .callback import Callback, OldCallback
 from ..data.batch_yielder import BatchYielder
 from ..data.fold_yielder import FoldYielder
 from ...utils.misc import to_np, to_device
-from ..models.abs_model import AbsModel
+from ..models.abs_model import AbsModel, OldAbsModel
 
-__all__ = ['BinaryLabelSmooth', 'SequentialReweight', 'SequentialReweightClasses', 'BootstrapResample', 'ParametrisedPrediction']
+__all__ = ['BinaryLabelSmooth', 'BootstrapResample', 'ParametrisedPrediction']
 
 
-class BinaryLabelSmooth(Callback):
+class OldBinaryLabelSmooth(OldCallback):
     r'''
-    Callback for applying label smoothing to binary classes, based on https://arxiv.org/abs/1512.00567
-    Applies smoothing during both training and inference.
-
-    Arguments:
-        coefs: Smoothing coefficients: 0->coef[0] 1->1-coef[1]. if passed float, coef[0]=coef[1]
-        model: not used, only for compatability
-
-    Examples::
-        >>> lbl_smooth = BinaryLabelSmooth(0.1)
-        >>>
-        >>> lbl_smooth = BinaryLabelSmooth((0.1, 0.02))
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.BinaryLabelSmooth`.
+        It is a copy of the old `BinaryLabelSmooth` class used in lumin<=0.6.
+        It will be removed in V0.8
     '''
 
-    def __init__(self, coefs:Union[float,Tuple[float,float]]=0, model:Optional[AbsModel]=None):
+    # XXX remove in V0.8
+
+    def __init__(self, coefs:Union[float,Tuple[float,float]]=0, model:Optional[OldAbsModel]=None):
         super().__init__(model=model)
         self.coefs = coefs if isinstance(coefs, tuple) else (coefs, coefs)
     
@@ -51,9 +46,43 @@ class BinaryLabelSmooth(Callback):
         targets[targets == 1] = 1-self.coefs[1]
 
 
-class SequentialReweight(Callback):
+class BinaryLabelSmooth(Callback):
+    r'''
+    Callback for applying label smoothing to binary classes, based on https://arxiv.org/abs/1512.00567
+    Applies smoothing during both training and inference.
+
+    Arguments:
+        coefs: Smoothing coefficients: 0->coef[0] 1->1-coef[1]. if passed float, coef[0]=coef[1]
+        model: not used, only for compatability
+
+    Examples::
+        >>> lbl_smooth = BinaryLabelSmooth(0.1)
+        >>>
+        >>> lbl_smooth = BinaryLabelSmooth((0.1, 0.02))
+    '''
+
+    def __init__(self, coefs:Union[float,Tuple[float,float]]=0, model:Optional[AbsModel]=None):
+        super().__init__(model=model)
+        self.coefs = coefs if isinstance(coefs, tuple) else (coefs, coefs)
+    
+    def on_fold_begin(self) -> None:
+        r'''
+        Apply smoothing
+        '''
+
+        if self.model.fit_params.state == 'test': return
+        self.model.fit_params.by.targets = self.model.fit_params.by.targets.astype(float)
+        m = self.model.fit_params.self.model.fit_params.by.targets == 0
+        self.model.fit_params.by.targets[m] = self.coefs[0]
+        self.model.fit_params.by.targets[m] = 1-self.coefs[1]
+
+
+class SequentialReweight(OldCallback):
     r'''
     .. Caution:: Experiemntal proceedure
+
+    .. Attention:: This class is depreciated.
+        It will be removed in V0.8
 
     During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
     Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
@@ -68,7 +97,9 @@ class SequentialReweight(Callback):
         ...     reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
     '''
 
-    def __init__(self, reweight_func:Callable[[Tensor,Tensor], Tensor], scale:float=1e-1, model:Optional[AbsModel]=None):
+    # XXX remove in V0.8
+
+    def __init__(self, reweight_func:Callable[[Tensor,Tensor], Tensor], scale:float=1e-1, model:Optional[OldAbsModel]=None):
         super().__init__(model=model)
         self.scale,self.reweight_func = scale,reweight_func
 
@@ -96,6 +127,10 @@ class SequentialReweight(Callback):
 class SequentialReweightClasses(SequentialReweight):
     r'''
     .. Caution:: Experiemntal proceedure
+
+    .. Attention:: This class is depreciated.
+        It will be removed in V0.8
+
     Version of :class:`~lumin.nn.callbacks.data_callbacks.SequentialReweight` designed for classification, which renormalises class weights to original weight-sum after reweighting
     During ensemble training, sequentially reweight training data in last validation fold based on prediction performance of last trained model.
     Reweighting highlights data which are easier or more difficult to predict to the next model being trained.
@@ -110,6 +145,8 @@ class SequentialReweightClasses(SequentialReweight):
         ...     reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
     '''
 
+    # XXX remove in V0.8
+
     def _reweight_fold(self, fy:FoldYielder, fold_id:int) -> None:
         fld = fy.get_fold(fold_id)
         preds = self.model.predict_array(fld['inputs'], as_np=False)
@@ -121,21 +158,16 @@ class SequentialReweightClasses(SequentialReweight):
         fy.foldfile[f'fold_{fold_id}/weights'][...] = fld['weights'].squeeze()
 
 
-class BootstrapResample(Callback):
+class OldBootstrapResample(OldCallback):
     r'''
-    Callback for bootstrap sampling new training datasets from original training data during (ensemble) training.
-
-    Arguments:
-        n_folds: the number of folds present in training :class:`~lumin.nn.data.fold_yielder.FoldYielder`
-        bag_each_time: whether to sample a new set for each sub-epoch or to use the same sample each time
-        reweight: whether to reweight the sampleed data to mathch the weight sum (per class) of the original data
-        model: not used, only for compatability
-
-    Examples::
-        >>> bs_resample BootstrapResample(n_folds=len(train_fy))
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.BootstrapResample`.
+        It is a copy of the old `BootstrapResample` class used in lumin<=0.6.
+        It will be removed in V0.8
     '''
 
-    def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True, model:Optional[AbsModel]=None):
+    # XXX remove in V0.8
+
+    def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True, model:Optional[OldAbsModel]=None):
         super().__init__(model=model)
         self.n_trn_flds,self.bag_each_time,self.reweight = n_folds-1,bag_each_time,reweight
         
@@ -191,6 +223,97 @@ class BootstrapResample(Callback):
         self._resample(sample, by.inputs, by.targets, by.weights)
 
 
+class BootstrapResample(Callback):
+    r'''
+    Callback for bootstrap sampling new training datasets from original training data during (ensemble) training.
+
+    Arguments:
+        n_folds: the number of folds present in training :class:`~lumin.nn.data.fold_yielder.FoldYielder`
+        bag_each_time: whether to sample a new set for each sub-epoch or to use the same sample each time
+        reweight: whether to reweight the sampleed data to mathch the weight sum (per class) of the original data
+        model: not used, only for compatability
+
+    Examples::
+        >>> bs_resample BootstrapResample(n_folds=len(train_fy))
+    '''
+
+    def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True, model:Optional[AbsModel]=None):
+        super().__init__(model=model)
+        self.n_trn_flds,self.bag_each_time,self.reweight = n_folds-1,bag_each_time,reweight
+        
+    def _get_sample(self, length:int) -> np.ndarray: return np.random.choice(range(length), length, replace=True)
+    
+    def _resample(self, sample:np.ndarray, by:BatchYielder) -> None:
+        # Get weight sums before resampling
+        if by.weights is not None and self.reweight:
+            if 'class' in self.model.objective:
+                weight_sum = {}
+                for c in torch.unique(by.targets.squeeze()): weight_sum[c] = torch.sum(by.weights[by.targets.squeeze() == c])
+            else:
+                weight_sum = torch.sum(by.weights)
+                    
+        # Resample
+        by.inputs[...] = by.inputs[sample]
+        by.targets[...] = by.targets[sample]
+        if by.weights is not None:
+            by.weights[...] = by.weights[sample]
+        
+            # Reweight
+            if self.reweight:
+                if 'class' in self.model.objective:
+                    for c in weight_sum: by.weights[by.targets.squeeze() == c] *= weight_sum[c]/torch.sum(by.weights[by.targets.squeeze() == c])
+                else: by.weights *= weight_sum/torch.sum(by.weights)
+        
+    def on_train_begin(self) -> None:
+        r'''
+        Resets internal parameters to prepare for a new training
+        '''
+
+        self.iter,self.samples = 0,[]
+        np.random.seed()  # Is this necessary?
+    
+    def on_fold_begin(self) -> None:
+        r'''
+        Resamples training data for new epoch
+        '''
+
+        if self.model.fit_params.state != 'train': return
+        if self.bag_each_time or self.iter < self.n_trn_flds:
+            sample = self._get_sample(len(self.model.fit_params.by.targets))
+            if not self.bag_each_time: self.samples.append(sample)
+        else:
+            sample = self.samples[self.iter % self.n_trn_flds]
+        self.iter += 1
+        self._resample(sample, self.model.fit_params.by)
+
+
+class OldParametrisedPrediction(OldCallback):
+    r'''
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.ParametrisedPrediction`.
+        It is a copy of the old `ParametrisedPrediction` class used in lumin<=0.6.
+        It will be removed in V0.8
+    '''
+
+    # XXX remove in V0.8
+
+    def __init__(self, feats:List[str], param_feat:Union[List[str],str], param_val:Union[List[float],float], model:Optional[AbsModel]=None):
+        super().__init__(model=model)
+        if not isinstance(param_feat, list): param_feat = [param_feat]
+        if not isinstance(param_val, list):  param_val  = [param_val]
+        self.feats,self.param_feat,self.param_val = feats,param_feat,param_val
+        self.param_idx = [self.feats.index(f) for f in self.param_feat]
+        
+    def on_pred_begin(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], **kargs) -> None:
+        r'''
+        Adjusts the data to be passed to the model by setting in place the parameterisation feature to the preset value
+        '''
+
+        if isinstance(inputs, pd.DataFrame):
+            for f, v in zip(self.param_feat, self.param_val): inputs[f] = v
+        else:
+            for f, v in zip(self.param_idx, self.param_val):  inputs[:, f] = v
+
+
 class ParametrisedPrediction(Callback):
     r'''
     Callback for running predictions for a parametersied network (https://arxiv.org/abs/1601.07913); one which has been trained using one of more inputs which
@@ -217,20 +340,14 @@ class ParametrisedPrediction(Callback):
 
     def __init__(self, feats:List[str], param_feat:Union[List[str],str], param_val:Union[List[float],float], model:Optional[AbsModel]=None):
         super().__init__(model=model)
-        if not isinstance(param_feat, list): param_feat = [param_feat]
-        if not isinstance(param_val, list):  param_val  = [param_val]
+        if not is_listy(param_feat): param_feat = [param_feat]
+        if not is_listy(param_val):  param_val  = [param_val]
         self.feats,self.param_feat,self.param_val = feats,param_feat,param_val
         self.param_idx = [self.feats.index(f) for f in self.param_feat]
         
-    def on_pred_begin(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor], **kargs) -> None:
+    def on_pred_begin(self) -> None:
         r'''
         Adjusts the data to be passed to the model by setting in place the parameterisation feature to the preset value
-
-        Arguments:
-            inputs: data which will later be passed to the model
         '''
 
-        if isinstance(inputs, pd.DataFrame):
-            for f, v in zip(self.param_feat, self.param_val): self.inputs[f] = v
-        else:
-            for f, v in zip(self.param_idx, self.param_val):  inputs[:, f] = v
+        for f, v in zip(self.param_idx, self.param_val):  self.fit_params.by.inputs[:, f] = v

@@ -18,12 +18,11 @@ from .abs_model import AbsModel
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
-from ...utils.misc import to_np, to_tensor
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
-from ...utils.misc import to_device
 from ...utils.statistics import uncert_round
+from ...utils.misc import to_np, to_device
 
 __all__ = ['Model']
 
@@ -394,6 +393,13 @@ class Model(AbsModel):
 
 
 class OldModel(Model):
+    r'''
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.models.model.Model`. It is a copy of the old `Model` class used in lumin<=0.6.
+        It will be removed in V0.8
+    '''
+
+    # XXX remove in V0.8
+
     def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None, mask_inputs:bool=True) -> float:
         r'''
         Fit network for one complete iteration of a :class:`~lumin.nn.data.batch_yielder.BatchYielder`, i.e. one (sub-)epoch

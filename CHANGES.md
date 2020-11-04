@@ -27,6 +27,17 @@
 
 ## Depreciations
 
+- V0.8:
+    - OldAbsModel: Replaced by AbsModel
+    - OldModel: Replaced by Model
+    - OldAbsCallback: Replaced by AbsCallback
+    - OldCallback: Replaced by Callback
+    - OldBinaryLabelSmooth: Replaced by BinaryLabelSmooth
+    - OldSequentialReweight: Will not be replaced
+    - SequentialReweightClasses: Will no be replaced
+    - OldBootstrapResample: Replaced by BootstrapResample
+    - OldParametrisedPrediction: Replaced by ParametrisedPrediction
+
 ## Comments
 
 # v0.6.0 - Train and Converge Until it is Done
