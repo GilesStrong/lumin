@@ -4,6 +4,7 @@ import numpy as np
 from collections import OrderedDict
 import timeit
 from functools import partial
+from fastcore.all import is_listy
 
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
@@ -21,7 +22,7 @@ from torch import optim, Tensor
 
 import matplotlib.pyplot as plt
 
-__all__ = ['get_opt_rf_params', 'fold_lr_find']
+__all__ = ['get_opt_rf_params', 'lr_find']
 
 
 def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_val:np.ndarray, objective:str,
@@ -77,13 +78,12 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
     return best_params, best_m
 
 
-def old_fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
-                     train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
-                     callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
-                     bulk_move:bool=True, plot_savename:Optional[str]=None) -> List[OldLRFinder]:
+def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
+                 train_on_weights:bool=True, shuffle_fold:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
+                 callback_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
+                 bulk_move:bool=True, plot_savename:Optional[str]=None) -> List[OldLRFinder]:
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.fold_lr_find`.
-        It is a copy of the old `fold_lr_find` class used in lumin<=0.6.
+    .. Attention:: This class is depreciated in favour of :meth:`~lumin.optimisation.hyper_param.lr_find`.
         It will be removed in V0.8
     '''
 
@@ -121,11 +121,11 @@ def old_fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
     return lr_finders
 
 
-def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
-                 train_on_weights:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
-                 cb_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
-                 bulk_move:bool=True, plot_savename:Optional[str]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-                 loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None) -> List[LRFinder]:
+def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
+            train_on_weights:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
+            cb_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
+            bulk_move:bool=True, plot_savename:Optional[str]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
+            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None) -> List[LRFinder]:
     r'''
     Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
     using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
@@ -150,6 +150,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:in
     '''
 
     if cb_partials is None: cb_partials = []
+    if not is_listy(cb_partials): cb_partials = [cb_partials]
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
     lr_finders,nb = [],None
     tmr = timeit.default_timer()

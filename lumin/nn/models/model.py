@@ -5,7 +5,7 @@ from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
 import warnings
-from fastcore.all import is_listy, store_attr, partialler
+from fastcore.all import is_listy, store_attr, partialler, Path
 from random import shuffle
 import inspect
 
@@ -142,19 +142,20 @@ class Model(AbsModel):
 
     def fit(self, n_epochs:int, fy:FoldYielder, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
             trn_idxs:Optional[List[int]]=None, val_idx:Optional[int]=None,
-            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
+            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights'), opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
             loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None) -> List[AbsCallback]:
         r'''
         '''
         
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
-        cyclic_cbs = []
+        cyclic_cbs,loss_cbs = [],[]
         for c in cbs:
-            if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)
+            if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)  # CBs that might prrevent a model from stopping training due to a hyper-param cycle
+            if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
 
-        self.fit_params = FitParams(cbs=cbs,cyclic_cbs=cyclic_cbs,stop=False,n_epochs=n_epochs,fy=fy,val_idx=val_idx,bs=bs,bulk_move=bulk_move,
-                                    train_on_weights=train_on_weights)
+        self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
+                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=cb_savepath)
         self.fit_params.loss_func = self.loss if loss is None else loss
         if inspect.isclass(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.opt = self.opt if opt is None else opt(self.model.parameters())

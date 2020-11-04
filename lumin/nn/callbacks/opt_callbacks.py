@@ -15,7 +15,7 @@ __all__ = ['LRFinder']
 
 class OldLRFinder(OldCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.LRFinder`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder`.
         It is a copy of the old `LRFinder` class used in lumin<=0.6.
         It will be removed in V0.8
     '''

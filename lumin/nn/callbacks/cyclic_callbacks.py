@@ -13,7 +13,7 @@ __all__ = ['AbsCyclicCallback', 'CycleLR', 'CycleMom', 'OneCycle']
 
 class OldAbsCyclicCallback(OldCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.AbsCyclicCallback`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`.
         It is a copy of the old `AbsCyclicCallback` class used in lumin<=0.6.
         It will be removed in V0.8
     '''
@@ -187,7 +187,7 @@ class AbsCyclicCallback(Callback):
 
 class OldCycleLR(OldAbsCyclicCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.CycleLR`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.cyclic_callbacks.CycleLR`.
         It is a copy of the old `CycleLR` class used in lumin<=0.6.
         It will be removed in V0.8
     '''
@@ -248,7 +248,7 @@ class CycleLR(AbsCyclicCallback):
 
 class OldCycleMom(OldAbsCyclicCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.CycleMom`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.cyclic_callbacks.CycleMom`.
         It is a copy of the old `CycleMom` class used in lumin<=0.6.
         It will be removed in V0.8
     '''
@@ -307,7 +307,7 @@ class CycleMom(AbsCyclicCallback):
 
 class OldOneCycle(OldAbsCyclicCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.OneCycle`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.cyclic_callbacks.OneCycle`.
         It is a copy of the old `OneCycle` class used in lumin<=0.6.
         It will be removed in V0.8
     '''

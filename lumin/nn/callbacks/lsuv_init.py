@@ -45,7 +45,7 @@ __all__ = ['LsuvInit']
 
 class OldLsuvInit(OldCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.LsuvInit`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.lsuv_init.LsuvInit`.
         It is a copy of the old `LsuvInit` class used in lumin<=0.6.
         It will be removed in V0.8
     '''

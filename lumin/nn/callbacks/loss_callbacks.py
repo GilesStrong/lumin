@@ -10,7 +10,7 @@ __all__ = ['GradClip']
 
 class OldGradClip(OldCallback):
     r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.data_callbacks.GradClip`.
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.loss_callbacks.GradClip`.
         It is a copy of the old `GradClip` class used in lumin<=0.6.
         It will be removed in V0.8
     '''
