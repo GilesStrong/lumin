@@ -19,6 +19,7 @@ from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
+from ..callbacks.pred_handlers import PredHandler
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
@@ -155,7 +156,7 @@ class Model(AbsModel):
             if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
-                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=cb_savepath)
+                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath))
         self.fit_params.loss_func = self.loss if loss is None else loss
         if inspect.isclass(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.opt = self.opt if opt is None else opt(self.model.parameters())

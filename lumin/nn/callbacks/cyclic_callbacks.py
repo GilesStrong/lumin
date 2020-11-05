@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Optional, Tuple, Union, List
+from fastcore.all import store_attr
 
 from .callback import Callback, OldCallback
 from ..models.abs_model import AbsModel, OldAbsModel
@@ -116,16 +117,21 @@ class AbsCyclicCallback(Callback):
     '''
 
     def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
-                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+                 cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
-        self.param_range,self.cycle_mult,self.decrease_param,self.scale = param_range,cycle_mult,decrease_param,scale
-        self.interp,self.cycle_iter,self.cycle_count,self.cycle_end,self.hist = interp.lower(),0,0,False,[]
+        store_attr(but=['model','plot_settings','interp'])
+        self.interp,self.cycle_iter,self.cycle_count,self.cycle_end,self.hist,self.cycle_losses = interp.lower(),0,0,False,[],[]
+
+    def _save_cycle(self) -> None:
+        self.model.save(self.model.fit_params.cb_savepath/f'cycle_{self.cycle_count}.h5')
+        self.cycle_losses.append(self.model.fit_params.loss_val)
 
     def _incr_cycle(self) -> None:
         self.cycle_iter += 1
         if self.cycle_iter == self.nb:
             self.cycle_iter = 0
             self.nb *= self.cycle_mult
+            if self.cycle_save: self._save_cycle()
             self.cycle_count += 1
             self.cycle_end = True
 
@@ -161,7 +167,7 @@ class AbsCyclicCallback(Callback):
         '''
         
         if self.model.fit_params.state != 'train': return
-        if self.nb is None: self.nb = self.scale*len(self.model.fit_param.by)  # First epoch, get number of batches per fold
+        if self.nb is None: self.nb = self.scale*len(self.model.fit_param.fy.get_data_count(self.model.fit_param.trn_idxs))
         self.cycle_end = False
     
     def on_batch_end(self) -> None:

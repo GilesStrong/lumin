@@ -152,8 +152,8 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
-    lr_finders,nb = [],None
-    tmr = timeit.default_timer()
+    lr_finders,nb = [],fy.get_data_count(0)
+    tmr = timeit.default_timer()    
     for trn_idx in progress_bar(idxs):
         model = Model(model_builder)
         cbs = []
@@ -161,7 +161,6 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
         lrf = LRFinder(lr_bounds=lr_bounds, nb=nb, model=model)
         model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=[trn_idx], cbs=cbs+[lrf], opt=opt,
                   loss=loss)
-        if nb is None: nb = lrf.nb  # Ensure all LR FInders follow same LR history
         lr_finders.append(lrf)
     del model
         

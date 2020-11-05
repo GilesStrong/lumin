@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Callable, Generator
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 from fastprogress.fastprogress import IN_NOTEBOOK
@@ -13,7 +13,7 @@ import math
 from functools import partial
 from fastcore.all import is_listy
 
-import torch.tensor as Tensor
+from torch import Tensor, optim
 
 from ..data.fold_yielder import FoldYielder
 from ..data.batch_yielder import BatchYielder
@@ -21,6 +21,8 @@ from ..models.model_builder import ModelBuilder
 from ..models.model import Model
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.model_callbacks import AbsModelCallback
+from ..callbacks.pred_handlers import PredHandler
+from ..callbacks.monitors import EarlyStopping, SaveBest
 from ...utils.misc import to_tensor, to_device
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
@@ -33,31 +35,21 @@ import matplotlib.pyplot as plt
 __all__ = ['train_models']
 
 
-def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, 
-                 cb_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None,
+def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
+                 cb_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None, pred_cb:Callable[[],PredHandler]=PredHandler,
                  train_on_weights:bool=True, eval_on_weights:bool=True,
                  bulk_move:bool=True,
                  live_fdbk:bool=True, live_fdbk_first_only:bool=True, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-                 loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None
+                 loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None,
                  plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
     '''
-    #     cbs = []
-    #     for c in cb_partials: cbs.append(c(model=model))
-    #     lrf = LRFinder(lr_bounds=lr_bounds, nb=nb, model=model)
-    #     model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=[trn_idx], cbs=cbs+[lrf], opt=opt,
-    #               loss=loss)
-    #     if nb is None: nb = lrf.nb  # Ensure all LR FInders follow same LR history
-    #     lr_finders.append(lrf)
-    # del model
 
-    os.makedirs(savepath, exist_ok=True)
-    os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png")
-
+    results,histories,cycle_losses,savepath = [],[],[],Path(savepath)
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
-    results,histories,cycle_losses = [],[],[]
+    if patience is not None: cb_partials.append(partial(EarlyStopping, patience=patience, loss_is_meaned=loss_is_meaned))
 
     # if not IN_NOTEBOOK: live_fdbk = False
     # if live_fdbk:
@@ -71,31 +63,41 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         val_idx = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_idx}")
 
-        # if model_num == 1:
-        #     if live_fdbk_first_only: live_fdbk = False  # Only show fdbk for first training
-        #     elif live_fdbk_extra_first_only: metric_log.extra_detail = False
+        if model_num == 1:
+            if live_fdbk_first_only: live_fdbk_extra = False  # Only show fdbk for first training
+
         # if live_fdbk: metric_log.reset()
         # if live_fdbk: metric_log.add_loss_name(type(c).__name__)
         # loss_history[f'{type(c).__name__}_val_loss'] = []
         # if live_fdbk: model_bar.show()
-        #  if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
+        # if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
         # if live_fdbk: metric_log.update_plot(best_loss)
 
+        model_dir = savepath/f'model_id_{model_num}'
+        model_dir.mkdir(parents=True, exist_ok=True)
+        os.system(f"rm {model_dir}/*.h5 {model_dir}/*.json {model_dir}/*.pkl {model_dir}/*.png")
         model = Model(model_builder)
         cbs = []
         for c in cb_partials: cbs.append(c(model=model))
+        save_best = SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)
+        metric_log = MetricLogger(loss_names=['Train', 'Validation'], display=IN_NOTEBOOK, extra_detail=live_fdbk_extra, plot_settings=plot_settings)
+        cbs += [save_best,metric_log]
 
         model_tmr = timeit.default_timer()
-        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, val_idx=val_idx, cbs=cbs, cb_savepath=savepath,
+        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, val_idx=val_idx, cbs=cbs, cb_savepath=model_dir,
                   opt=opt, loss=loss)
         print(f"Model took {timeit.default_timer()-model_tmr:.3f}s\n")
+        model.save(model_dir/f'train_{model_num}.h5')
 
-        histories[-1] = loss_history
+        histories.append(metric_log.loss_history)
+        cycle_losses.append([])
+        for c in model.fit_params.cyclic_cbs:
+            if c.cycle_save: cycle_losses[-1] = c.cycle_losses
         results.append({})
-        results[-1]['loss'] = best_loss
+        results[-1]['loss'] = save_best.min_loss
         if eval_metrics is not None and len(eval_metrics) > 0:
-            y_pred = model.predict(val_fold['inputs'], bs=bs if not bulk_move else None)
-            for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_id, y_pred)
+            y_pred = model.predict(fy[val_idx]['inputs'], bs=bs if not bulk_move else None)
+            for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_idx, y_pred)
         print(f"Scores are: {results[-1]}")
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)
         with open(savepath/'cycle_file.pkl', 'wb') as fout: pickle.dump(cycle_losses, fout)
@@ -110,7 +112,4 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
     print("______________________________________\n")
-    if log_output:
-        sys.stdout = old_stdout
-        log_file.close()
     return results, histories, cycle_losses

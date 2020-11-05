@@ -8,6 +8,7 @@ from pathlib import Path
 from collections import OrderedDict
 import json
 import sparse
+from fastcore.all import is_listy
 
 from sklearn.pipeline import Pipeline
 
@@ -128,6 +129,23 @@ class FoldYielder:
         self.foldfile, self.n_folds = foldfile, len([f for f in foldfile if 'fold_' in f])
         self.has_matrix = 'matrix_inputs' in self.columns()
         if 'meta_data' in self.foldfile: self._load_meta_data()
+        self.fld_szs = {i:self.foldfile[f'fold_{i}/targets'].shape[0] for i in range(self.n_folds)}
+
+    def get_data_count(self, idxs:Union[int,List[int]]) -> int:
+        r'''
+        Returns total number of data entries in requested folds
+
+        Arguments:
+            idxs: list of indices to check
+
+        Returns:
+            Total number of entries in the folds 
+        '''
+
+        if not is_listy: idxs = [idxs]
+        s = 0
+        for i in idxs: s += self.fld_szs[i]
+        return s
 
     def _load_meta_data(self) -> None:
         if self.cont_feats is not None:
