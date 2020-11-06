@@ -6,24 +6,16 @@ import pickle
 import timeit
 import numpy as np
 import os
-import sys
-from random import shuffle
-from collections import OrderedDict
-import math
 from functools import partial
 from fastcore.all import is_listy
 
 from torch import Tensor, optim
 
 from ..data.fold_yielder import FoldYielder
-from ..data.batch_yielder import BatchYielder
 from ..models.model_builder import ModelBuilder
 from ..models.model import Model
-from ..callbacks.cyclic_callbacks import AbsCyclicCallback
-from ..callbacks.model_callbacks import AbsModelCallback
 from ..callbacks.pred_handlers import PredHandler
 from ..callbacks.monitors import EarlyStopping, SaveBest
-from ...utils.misc import to_tensor, to_device
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history

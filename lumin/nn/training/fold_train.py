@@ -25,7 +25,7 @@ from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history
 from ...plotting.plot_settings import PlotSettings
-from .metric_logger import MetricLogger
+from .metric_logger import OldMetricLogger
 
 import matplotlib.pyplot as plt
 
@@ -121,8 +121,8 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
     if not IN_NOTEBOOK: live_fdbk = False
     if live_fdbk:
-        metric_log = MetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
-                                  plot_settings=plot_settings)
+        metric_log = OldMetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
+                                     plot_settings=plot_settings)
     
     model_bar = master_bar(range(n_models)) if IN_NOTEBOOK else progress_bar(range(n_models))
     for model_num in (model_bar):

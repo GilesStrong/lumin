@@ -8,14 +8,15 @@ import seaborn as sns
 from ...plotting.plot_settings import PlotSettings
 
 
-__all__ = ['MetricLogger']
+__all__ = []
 
 
-# TODO: Non-notebook version?
-
-
-class MetricLogger():
+class OldMetricLogger():
     r'''
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.monitors.MetricLogger`.
+        It is a copy of the old `MetricLogger` class used in lumin<=0.6.
+        It will be removed in V0.8
+        
     Provides live feedback during training showing a variety of metrics to help highlight problems or test hyper-parameters without completing a full training.
 
     Arguments:

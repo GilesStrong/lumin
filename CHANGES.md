@@ -47,6 +47,7 @@
     - OldLRFinder: Replaced by LRFinder
     - fold_lr_find: Replaced by lr_find
     - fold_train_ensemble: Replaced by train_models
+    - OldMetricLogger: Replaced by MetricLogger
 
 ## Comments
 
