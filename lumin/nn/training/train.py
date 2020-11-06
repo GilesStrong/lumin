@@ -72,7 +72,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         cbs = []
         for c in cb_partials: cbs.append(c(model=model))
         save_best = SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)
-        metric_log = MetricLogger(loss_names=['Train', 'Validation'], display=IN_NOTEBOOK, extra_detail=live_fdbk_extra, plot_settings=plot_settings)
+        metric_log = MetricLogger(extra_detail=live_fdbk_extra, plot_settings=plot_settings)
         cbs += [save_best,metric_log]
 
         model_tmr = timeit.default_timer()
