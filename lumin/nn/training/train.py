@@ -32,8 +32,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
                  train_on_weights:bool=True, eval_on_weights:bool=True,
                  bulk_move:bool=True,
                  live_fdbk:bool=True, live_fdbk_first_only:bool=True, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
-                 savepath:Path=Path('train_weights'), opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-                 loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None,
+                 savepath:Path=Path('train_weights'), 
                  plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
     '''
@@ -43,27 +42,13 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     if not is_listy(cb_partials): cb_partials = [cb_partials]
     if patience is not None: cb_partials.append(partial(EarlyStopping, patience=patience, loss_is_meaned=loss_is_meaned))
 
-    # if not IN_NOTEBOOK: live_fdbk = False
-    # if live_fdbk:
-    #     metric_log = MetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
-    #                               plot_settings=plot_settings)
-
     model_bar = master_bar(range(n_models)) if IN_NOTEBOOK else progress_bar(range(n_models))
     train_tmr = timeit.default_timer()
     for model_num in (model_bar):    
         if IN_NOTEBOOK: model_bar.show()
         val_idx = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_idx}")
-
-        if model_num == 1:
-            if live_fdbk_first_only: live_fdbk_extra = False  # Only show fdbk for first training
-
-        # if live_fdbk: metric_log.reset()
-        # if live_fdbk: metric_log.add_loss_name(type(c).__name__)
-        # loss_history[f'{type(c).__name__}_val_loss'] = []
-        # if live_fdbk: model_bar.show()
-        # if live_fdbk: metric_log.update_vals([loss_history[l][-1] for l in loss_history])
-        # if live_fdbk: metric_log.update_plot(best_loss)
+        if model_num == 1 and live_fdbk_first_only: live_fdbk_extra = False  # Only show fdbk for first training
 
         model_dir = savepath/f'model_id_{model_num}'
         model_dir.mkdir(parents=True, exist_ok=True)
@@ -76,8 +61,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         cbs += [save_best,metric_log]
 
         model_tmr = timeit.default_timer()
-        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, val_idx=val_idx, cbs=cbs, cb_savepath=model_dir,
-                  opt=opt, loss=loss)
+        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, val_idx=val_idx, cbs=cbs, cb_savepath=model_dir)
         print(f"Model took {timeit.default_timer()-model_tmr:.3f}s\n")
         model.save(model_dir/f'train_{model_num}.h5')
 

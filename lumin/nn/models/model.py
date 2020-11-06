@@ -143,8 +143,7 @@ class Model(AbsModel):
 
     def fit(self, n_epochs:int, fy:FoldYielder, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
             trn_idxs:Optional[List[int]]=None, val_idx:Optional[int]=None,
-            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights'), opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None) -> List[AbsCallback]:
+            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights')) -> List[AbsCallback]:
         r'''
         '''
         
@@ -156,10 +155,8 @@ class Model(AbsModel):
             if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
-                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath))
-        self.fit_params.loss_func = self.loss if loss is None else loss
+                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath), loss=self.loss, opt=self.opt)
         if inspect.isclass(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
-        self.fit_params.opt = self.opt if opt is None else opt(self.model.parameters())
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, bs=self.fit_params.bs, use_weights=self.fit_params.train_on_weights,
                                                 shuffle=True, bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
 
@@ -202,12 +199,10 @@ class Model(AbsModel):
         for c in self.fit_params.cbs: c.on_train_end()
         return self.fit_params.cbs
 
-    def predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
+    def _predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
-        self.fit_params = FitParams(cbs=cbs)
-        self.fit_params.by = by
-        self.state = 'test'
+        self.fit_params = FitParams(cbs=cbs, by=by, state='test')
         for c in self.fit_params.cbs: c.set_model(self)
         self.model.eval()
         for c in self.cbs: c.on_pred_begin()
@@ -215,8 +210,8 @@ class Model(AbsModel):
         for c in self.cbs: c.on_pred_end()
         return pred_cb.get_preds()
 
-    def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
-                      pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
+    def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
+                       pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
         r'''
         '''
 
@@ -228,8 +223,25 @@ class Model(AbsModel):
             if 'multiclass' in self.objective: preds = np.exp(preds)
         return preds
 
-    def predict_folds(self, fy:FoldYielder, pred_name:str='pred',  mask_inputs:bool=True,
-                      pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> None:
+    def evaluate(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple,BatchYielder], bs:Optional[int]=None) -> float:
+        r'''
+        TODO: Expand thios to take weights and targets and callbacks
+        '''
+
+        if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective,
+                                                                       shuffle=False, bulk_move=bs is None, input_mask=self.input_mask, drop_last=False)
+        self.fit_params = FitParams(cbs=[], by=inputs, state='val')
+        self.model.eval()
+        loss,cnt = 0,0
+        for b in progress_bar(self.fit_params.by):
+            self._fit_batch(*b)
+            sz = len(b[0])
+            loss += self.fit_params.loss_val.data.item()*sz
+            cnt += sz
+        return loss/cnt
+
+    def _predict_folds(self, fy:FoldYielder, pred_name:str='pred',  mask_inputs:bool=True,
+                       pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> None:
         r'''
         '''
 

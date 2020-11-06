@@ -48,6 +48,8 @@
     - fold_lr_find: Replaced by lr_find
     - fold_train_ensemble: Replaced by train_models
     - OldMetricLogger: Replaced by MetricLogger
+    - AbsModelCallback: Will not be replaced
+    - OldSWA: Replaced by SWA
 
 ## Comments
 

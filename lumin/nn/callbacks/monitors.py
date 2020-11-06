@@ -42,7 +42,7 @@ class EarlyStopping(Callback):
         if self.model.state != 'valid': return
         sz = len(self.model.x) if self.loss_is_meaned else 1
         self.loss[0] += self.model.loss_val.data.item()*sz
-        for i in range(len(self.model.fit_params.loss_cbs)): self.loss[i+1] += self.model.fit_params.loss_cbs[i].get_loss()
+        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss()*sz
         self.cnt += sz
 
     def on_epoch_end(self) -> None:
@@ -88,7 +88,8 @@ class SaveBest(Callback):
     def on_forwards_end(self) -> None:
         if self.model.state != 'valid': return
         sz = len(self.model.x) if self.loss_is_meaned else 1
-        self.loss += self.model.loss_val.data.item()*sz
+        self.loss[0] += self.model.loss_val.data.item()*sz
+        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss*sz
         self.cnt += sz
 
     def on_epoch_end(self) -> None:

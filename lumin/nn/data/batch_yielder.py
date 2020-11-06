@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from typing import List, Optional, Union, Tuple
 import math
 
@@ -39,6 +40,7 @@ class BatchYielder:
             inputs,targets,weights,bs,objective,shuffle,use_weights,bulk_move,input_mask,drop_last
         if isinstance(self.inputs, tuple): self.inputs,self.matrix_inputs = self.inputs
         else:                                          self.matrix_inputs = None
+        if isinstance(self.inputs, pd.DataFrame): self.inputs = self.inputs.values
         if self.input_mask is not None: self.inputs = self.inputs[:,self.input_mask]
 
     def __iter__(self) -> List[Tensor]:
