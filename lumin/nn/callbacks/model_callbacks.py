@@ -252,6 +252,7 @@ class SWA(Callback):
         r'''
         Initialises model variables to begin tracking new model averages
         '''
+        
         self.cyclic_callback = None if len(self.model.fit_params.cyclic_cbs) == 0 else self.model.fit_params.cyclic_cbs[-1]
         if self.weights is None:
             self.weights = copy.deepcopy(self.model.get_weights())
@@ -310,9 +311,9 @@ class SWA(Callback):
     def _compare_averages(self) -> None:
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'])
+            self.loss = self.test_model.evaluate(self.model.fit_params.by)
         self.test_model.set_weights(self.weights_new)
-        new_loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'])
+        new_loss = self.test_model.evaluate(self.model.fit_params.by)
         
         if self.verbose: print(f"Checking renewal of swa model, current model: {self.loss}, new model: {new_loss}")
         if new_loss < self.loss:
@@ -331,26 +332,13 @@ class SWA(Callback):
             self.test_model.set_weights(self.weights)
             self.cycle_since_replacement += 1
                 
-    def get_loss(self, bs:Optional[int]=None, use_weights:bool=True, callbacks:Optional[List[AbsCallback]]=None) -> float:
+    def get_loss(self) -> float:
         r'''
         Evaluates SWA model and returns loss
-
-        Arguments:
-            bs: If not None, will evaluate loss in batches, rather than loading whole fold onto device
-            use_weights: Whether to compute weighted loss if weights are present
-            callbacks: list of any callbacks to use during evaluation
-
-        Returns:
-            Loss on validation fold for oldest SWA average
         '''
 
         if self.loss is None:
             self.test_model.set_weights(self.weights)
-            if bs is None:
-                self.loss = self.test_model.evaluate(self.val_fold['inputs'], self.val_fold['targets'], self.val_fold['weights'], callbacks=callbacks)
-            else:
-                by = BatchYielder(**self.val_fold, objective=self.model.objective,
-                                  bs=bs, use_weights=use_weights, shuffle=False, bulk_move=False)
-                self.loss = self.test_model.evaluate_from_by(by, callbacks=callbacks)
+            self.loss = self.test_model.evaluate(self.model.fit_params.by)
         return self.loss
         

@@ -49,7 +49,7 @@ class OldBinaryLabelSmooth(OldCallback):
 class BinaryLabelSmooth(Callback):
     r'''
     Callback for applying label smoothing to binary classes, based on https://arxiv.org/abs/1512.00567
-    Applies smoothing during both training and inference.
+    Applies smoothing during both training.
 
     Arguments:
         coefs: Smoothing coefficients: 0->coef[0] 1->1-coef[1]. if passed float, coef[0]=coef[1]
@@ -70,7 +70,7 @@ class BinaryLabelSmooth(Callback):
         Apply smoothing
         '''
 
-        if self.model.fit_params.state == 'test': return
+        if self.model.fit_params.state != 'train': return
         self.model.fit_params.by.targets = self.model.fit_params.by.targets.astype(float)
         m = self.model.fit_params.self.model.fit_params.by.targets == 0
         self.model.fit_params.by.targets[m] = self.coefs[0]

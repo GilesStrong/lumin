@@ -14,8 +14,11 @@
     - Now takes an `input_mask` argument to filter inputs
     - Now takes an argument allowing incomplete batches to be yielded
     - Target array can now be None
+- `Model` now takes a `bs` argument for `evaluate`
 
 ## Removals
+
+- `Model` now no longer takes `callbacks` and `mask_inputs` as arguments for `evaluate`
 
 ## Fixes
 
@@ -25,31 +28,33 @@
 
 ## Changes
 
+- `BinaryLabelSmooth` now only applies smoothing during training and not in validation
+
 ## Depreciations
 
 - V0.8:
     - Many classes and methods depreciated with new model. They have been copied and renamed to Old*.
-    - OldAbsModel: Replaced by AbsModel
-    - OldModel: Replaced by Model
-    - OldAbsCallback: Replaced by AbsCallback
-    - OldCallback: Replaced by Callback
-    - OldBinaryLabelSmooth: Replaced by BinaryLabelSmooth
-    - OldSequentialReweight: Will not be replaced
-    - SequentialReweightClasses: Will no be replaced
-    - OldBootstrapResample: Replaced by BootstrapResample
-    - OldParametrisedPrediction: Replaced by ParametrisedPrediction
-    - OldGradClip: Replaced by GradClip
-    - OldLsuvInitL Replaced by LsuvInit
-    - OldAbsCyclicCallback: Replaced by AbsCyclicCallback
-    - OldCycleLR: Replaced by CycleLR
-    - OldCycleMom: Replaced by CycleMom
-    - OldOneCycle: Replaced by OneCycle
-    - OldLRFinder: Replaced by LRFinder
-    - fold_lr_find: Replaced by lr_find
-    - fold_train_ensemble: Replaced by train_models
-    - OldMetricLogger: Replaced by MetricLogger
-    - AbsModelCallback: Will not be replaced
-    - OldSWA: Replaced by SWA
+    - `OldAbsModel`: Replaced by `AbsModel`
+    - `OldModel`: Replaced by `Model`
+    - `OldAbsCallback`: Replaced by `AbsCallback`
+    - `OldCallback`: Replaced by `Callback`
+    - `OldBinaryLabelSmooth`: Replaced by `BinaryLabelSmooth`
+    - `OldSequentialReweight`: Will not be replaced
+    - `SequentialReweightClasses`: Will no be replaced
+    - `OldBootstrapResample`: Replaced by `BootstrapResample`
+    - `OldParametrisedPrediction`: Replaced by `ParametrisedPrediction`
+    - `OldGradClip`: Replaced by `GradClip`
+    - `OldLsuvInitL` Replaced by `LsuvInit`
+    - `OldAbsCyclicCallback`: Replaced by `AbsCyclicCallback`
+    - `OldCycleLR`: Replaced by `CycleLR`
+    - `OldCycleMom`: Replaced by `CycleMom`
+    - `OldOneCycle`: Replaced by `OneCycle`
+    - `OldLRFinder`: Replaced by `LRFinder`
+    - `fold_lr_find`: Replaced by `lr_find`
+    - `fold_train_ensemble`: Replaced by `train_models`
+    - `OldMetricLogger`: Replaced by `MetricLogger`
+    - `AbsModelCallback`: Will not be replaced
+    - `OldSWA`: Replaced by `SWA`
 
 ## Comments
 

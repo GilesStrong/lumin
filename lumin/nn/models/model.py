@@ -197,6 +197,7 @@ class Model(AbsModel):
             fit_epoch()
             if self.fit_params.stop: break
         for c in self.fit_params.cbs: c.on_train_end()
+        self.fit_params = None
         return self.fit_params.cbs
 
     def _predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
@@ -223,13 +224,16 @@ class Model(AbsModel):
             if 'multiclass' in self.objective: preds = np.exp(preds)
         return preds
 
-    def evaluate(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple,BatchYielder], bs:Optional[int]=None) -> float:
+    def evaluate(self, inputs:Union[np.ndarray,Tensor,Tuple,BatchYielder], targets:Optional[Union[np.ndarray,Tensor]]=None,
+                 weights:Optional[Union[np.ndarray,Tensor]]=None, bs:Optional[int]=None) -> float:
         r'''
-        TODO: Expand thios to take weights and targets and callbacks
         '''
 
-        if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective,
-                                                                       shuffle=False, bulk_move=bs is None, input_mask=self.input_mask, drop_last=False)
+        if hasattr(self, 'fit_params') and self.fit_params is not None:
+            raise ValueError('Evaluate will overright exisitng fit_params for this model. Most likely it is being called during training.')
+        if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, targets=targets, weights=weights, bs=len(inputs) if bs is None else bs,
+                                                                       objective=self.objective, shuffle=False, bulk_move=bs is None,
+                                                                       input_mask=self.input_mask, drop_last=False)
         self.fit_params = FitParams(cbs=[], by=inputs, state='val')
         self.model.eval()
         loss,cnt = 0,0
@@ -238,6 +242,7 @@ class Model(AbsModel):
             sz = len(b[0])
             loss += self.fit_params.loss_val.data.item()*sz
             cnt += sz
+        self.fit_params = None
         return loss/cnt
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred',  mask_inputs:bool=True,
@@ -245,7 +250,7 @@ class Model(AbsModel):
         r'''
         '''
 
-        pred_call = partialler(self.predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs, mask_inputs=mask_inputs)
+        pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs, mask_inputs=mask_inputs)
         mb = master_bar(range(len(fy)))
         for fold_idx in mb:
             if not fy.test_time_aug:
@@ -264,7 +269,8 @@ class Model(AbsModel):
         r'''
         '''
 
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        if isinstance(inputs, BatchYielder): return self._predict_by(inputs, pred_cb=pred_cb, cbs=cbs)
+        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
         self.predict_folds(inputs, pred_name, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
 
     def get_weights(self) -> OrderedDict:
@@ -463,7 +469,7 @@ class OldModel(Model):
         return np.mean(losses)
               
     def evaluate(self, inputs:Union[Tensor,np.ndarray,Tuple[Tensor,Tensor],Tuple[np.ndarray,np.ndarray]], targets:Union[Tensor,np.ndarray],
-                 weights:Optional[Union[Tensor,np.ndarray]]=None, callbacks:Optional[List[AbsCallback]]=None,
+                 weights:Optional[Union[Tensor,np.ndarray]]=None, bs=None, callbacks:Optional[List[AbsCallback]]=None,
                  mask_inputs:bool=True) -> float:
         r'''
         Compute loss on provided data.
