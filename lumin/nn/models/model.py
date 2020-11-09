@@ -156,7 +156,7 @@ class Model(AbsModel):
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
                                     bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath), loss=self.loss, opt=self.opt)
-        if inspect.isclass(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
+        if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, bs=self.fit_params.bs, use_weights=self.fit_params.train_on_weights,
                                                 shuffle=True, bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
 
@@ -508,7 +508,8 @@ class OldModel(Model):
         if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
         elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
 
-        loss = self.loss(weight=weights)(y_pred, targets) if weights is not None else self.loss()(y_pred, targets)
+        if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
+        loss = self.loss(y_pred, targets)
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
