@@ -193,6 +193,7 @@ class Model(AbsModel):
         elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
         
         if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
+        self.loss.weight = weights
         loss = self.loss(y_pred, targets)
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
