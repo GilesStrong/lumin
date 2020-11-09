@@ -507,7 +507,6 @@ class OldModel(Model):
 
         if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
         elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
-
         if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
         loss = self.loss(y_pred, targets)
         for c in callbacks: c.on_eval_end(loss=loss)        
