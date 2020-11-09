@@ -115,6 +115,7 @@ class LRFinder(Callback):
     def __init__(self, lr_bounds:Tuple[float,float]=[1e-7, 10], nb:Optional[int]=None, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         self.lr_bounds,self.nb = lr_bounds,nb
+        if self.nb is not None: self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/self.nb)
 
     def on_train_begin(self) -> None:
         r'''
@@ -125,14 +126,13 @@ class LRFinder(Callback):
         self.model.set_lr(self.lr_bounds[0])
         self.history = {'loss': [], 'lr': []}
 
-    def on_epoch_begin(self) -> None:
+    def on_fold_begin(self) -> None:
         r'''
-        Gets number of batches total on first epoch
+        Gets number of batches total on first fold
         '''
-        
         if self.model.fit_params.state != 'train': return
         if self.nb is None:
-            self.nb = self.model.fit_param.n_epochs*len(self.model.fit_param.by)
+            self.nb = self.model.fit_params.n_epochs*len(self.model.fit_params.by)
             self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/self.nb)
         
     def _calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
@@ -189,7 +189,7 @@ class LRFinder(Callback):
         '''
 
         if self.model.fit_params.state != 'train': return
-        loss = self.model.fit_params.loss_val
+        loss = self.model.fit_params.loss_val.data.item()
         self.history['loss'].append(loss)
         self.history['lr'].append(self.model.opt.param_groups[0]['lr'])
         self.iter += 1

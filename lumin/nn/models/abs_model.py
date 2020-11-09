@@ -28,7 +28,7 @@ class OldAbsModel(ABC):
     def fit(self, batch_yielder:BatchYielder, callbacks:List[AbsCallback]) -> float: pass
     
     @abstractmethod
-    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]=None) -> float: pass
+    def evaluate(self, inputs:Tensor, targets:Tensor, weights:Optional[Tensor]) -> float: pass
 
     @abstractmethod   
     def predict(self, inputs, as_np:bool=True) -> Union[np.ndarray, Tensor]: pass
@@ -39,11 +39,11 @@ class AbsModel(ABC):
     def __init__(self): pass
     
     @abstractmethod
-    def fit(self, n_epochs:int, fy:FoldYielder, val_idx:int, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
-            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None, mask_inputs:bool=True) -> List[AbsCallback]: pass
+    def fit(self, n_epochs:int, fy:FoldYielder, val_idx:int, bs:int, bulk_move:bool, train_on_weights:bool,
+            cbs:Optional[Union[AbsCallback,List[AbsCallback]]], opt:Optional[Callable[[Generator],optim.Optimizer]],
+            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]], mask_inputs:bool) -> List[AbsCallback]: pass
 
     @abstractmethod   
-    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
-                mask_inputs:bool=True, pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) \
+    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool, pred_name:str,
+                mask_inputs:bool, pred_cb:AbsCallback, cbs:Optional[List[AbsCallback]], bs:Optional[int]) \
         -> Union[np.ndarray, Tensor, None]: pass

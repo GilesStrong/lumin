@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Optional, Callable, Generator
+from typing import Dict, List, Tuple, Optional, Callable
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 from fastprogress.fastprogress import IN_NOTEBOOK
@@ -9,18 +9,15 @@ import os
 from functools import partial
 from fastcore.all import is_listy
 
-from torch import Tensor, optim
-
 from ..data.fold_yielder import FoldYielder
 from ..models.model_builder import ModelBuilder
 from ..models.model import Model
 from ..callbacks.pred_handlers import PredHandler
-from ..callbacks.monitors import EarlyStopping, SaveBest
+from ..callbacks.monitors import EarlyStopping, SaveBest, MetricLogger
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.training import plot_train_history
 from ...plotting.plot_settings import PlotSettings
-from .metric_logger import MetricLogger
 
 import matplotlib.pyplot as plt
 
@@ -65,10 +62,10 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         print(f"Model took {timeit.default_timer()-model_tmr:.3f}s\n")
         model.save(model_dir/f'train_{model_num}.h5')
 
-        histories.append(metric_log.loss_history)
+        histories.append(metric_log.get_loss_history())
         cycle_losses.append([])
-        for c in model.fit_params.cyclic_cbs:
-            if c.cycle_save: cycle_losses[-1] = c.cycle_losses
+        for c in cbs:
+            if hasattr(c, 'cycle_save') and c.cycle_save: cycle_losses[-1] = c.cycle_losses
         results.append({})
         results[-1]['loss'] = save_best.min_loss
         if eval_metrics is not None and len(eval_metrics) > 0:

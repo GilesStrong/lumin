@@ -19,6 +19,8 @@ def _lookup_name(name:str) -> str:
 def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn:bool=True, settings:PlotSettings=PlotSettings(),
                        show:bool=True, xlow:int=0, log_y:bool=False) -> None:
     r'''
+    TODO: fix this for new model
+
     Plot histories object returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` showing the loss evolution over time per model trained.
 
     Arguments:

@@ -167,7 +167,7 @@ class AbsCyclicCallback(Callback):
         '''
         
         if self.model.fit_params.state != 'train': return
-        if self.nb is None: self.nb = self.scale*len(self.model.fit_param.fy.get_data_count(self.model.fit_param.trn_idxs))
+        if self.nb is None: self.nb = self.scale*len(self.model.fit_params.fy.get_data_count(self.model.fit_params.trn_idxs))
         self.cycle_end = False
     
     def on_batch_end(self) -> None:

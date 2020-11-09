@@ -4,6 +4,7 @@ from typing import Optional
 import numpy as np
 from fastprogress.fastprogress import IN_NOTEBOOK
 from IPython.display import display
+from collections import OrderedDict
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -13,7 +14,6 @@ from ..models.abs_model import AbsModel
 from ...plotting.plot_settings import PlotSettings
 
 __all__ = ['EarlyStopping', 'SaveBest', 'MetricLogger']
-
 
 class EarlyStopping(Callback):
     r'''
@@ -34,19 +34,19 @@ class EarlyStopping(Callback):
         self.improve_in_cycle = False
 
     def on_epoch_begin(self) -> None:
-        if self.model.state != 'valid': return
+        if self.model.fit_params.state != 'valid': return
         self.cnt = 0
         self.loss = [0] + [0 for _ in self.model.fit_params.loss_cbs]  # Consider all losses e.g. SWA loss
 
     def on_forwards_end(self) -> None:
-        if self.model.state != 'valid': return
-        sz = len(self.model.x) if self.loss_is_meaned else 1
-        self.loss[0] += self.model.loss_val.data.item()*sz
+        if self.model.fit_params.state != 'valid': return
+        sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
+        self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
         for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss()*sz
         self.cnt += sz
 
     def on_epoch_end(self) -> None:
-        if self.model.state != 'valid': return
+        if self.model.fit_params.state != 'valid': return
         loss = np.min(self.loss)/self.cnt
         if loss <= self.min_loss:
             self.min_loss = loss
@@ -63,7 +63,7 @@ class EarlyStopping(Callback):
             self.epochs += 1
         if self.epochs >= self.patience:
             print('Early stopping')
-            self.model.stop = True
+            self.model.fit_params.stop = True
 
 
 class SaveBest(Callback):
@@ -81,30 +81,30 @@ class SaveBest(Callback):
     def on_train_begin(self) -> None: self._reset()
 
     def on_epoch_begin(self) -> None:
-        if self.model.state != 'valid': return
+        if self.model.fit_params.state != 'valid': return
         self.cnt = 0
         self.loss = [0] + [0 for _ in self.model.fit_params.loss_cbs]  # Consider all losses e.g. SWA loss
 
     def on_forwards_end(self) -> None:
-        if self.model.state != 'valid': return
-        sz = len(self.model.x) if self.loss_is_meaned else 1
-        self.loss[0] += self.model.loss_val.data.item()*sz
+        if self.model.fit_params.state != 'valid': return
+        sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
+        self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
         for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss*sz
         self.cnt += sz
 
     def on_epoch_end(self) -> None:
-        if self.model.state != 'valid': return
+        if self.model.fit_params.state != 'valid': return
         loss = np.array(self.loss)/self.cnt
         lm = np.min(loss)
         if lm < self.min_loss:
             self.min_loss = lm
             lam  = np.argmin(loss)
             m = self.model
-            if lam >= 0: m = self.model.fit_params.loss_cbs[lam-1].test_model
+            if lam > 0: m = self.model.fit_params.loss_cbs[lam-1].test_model
             m.save(self.model.fit_params.cb_savepath/'best.h5')
 
     def on_train_end(self) -> None:
-        print(f'Loading best model with loss {self.min_loss}')
+        print(f'Loading best model with loss {self.min_loss:.3E}')
         self.model.load(self.model.fit_params.cb_savepath/'best.h5')
 
 
@@ -113,7 +113,7 @@ class MetricLogger(Callback):
     '''
 
     def __init__(self, extra_detail:bool=True, loss_is_meaned:bool=True, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(mode=model, plot_settings=plot_settings)
+        super().__init__(model=model, plot_settings=plot_settings)
         store_attr(but=['model','plot_settings'])
 
     def on_train_begin(self) -> None:
@@ -124,27 +124,30 @@ class MetricLogger(Callback):
     def on_fold_begin(self) -> None: self.on_epoch_begin()
 
     def on_fold_end(self) -> None:
-        if self.wrapper.state != 'train': return
+        if self.model.fit_params.state != 'train': return
         self.loss_vals[0].append(self.loss/self.cnt)
 
     def on_epoch_end(self) -> None:
-        if self.wrapper.state != 'valid': return
+        if self.model.fit_params.state != 'valid': return
         self.epochs.append(self.epochs[-1]+1)
         self.loss_vals[1].append(self.loss/self.cnt)
         for i,c in enumerate(self.model.fit_params.loss_cbs):  self.loss_vals[i+2].append(c.get_loss())
 
-        for i, v in enumerate(self.loss_vals[1:]):
-            self.vel_vals[i].append(v[-1]-[v[-2]])
-            self.gen_vals[i].append(v[-1]/self.loss_vals[0][-1])
-            if self.loss_vals[i][-1] <= self.best_loss: self.best_loss = self.loss_vals[i][-1]
-            if not self.log:
-                if self.loss_vals[i][0]/self.loss_vals[i][-1] > 50: self.log = True
-        if self.show_plots: self.update_plot()
-        else:               self.print_losses()
+        if self.show_plots:
+            for i, v in enumerate(self.loss_vals[1:]):
+                if len(self.loss_vals[1]) > 1 and self.extra_detail:
+                    self.vel_vals[i].append(v[-1]-v[-2])
+                    self.gen_vals[i].append(v[-1]/self.loss_vals[0][-1])
+                if self.loss_vals[i+1][-1] <= self.best_loss: self.best_loss = self.loss_vals[i+1][-1]
+                if not self.log:
+                    if self.loss_vals[i+1][0]/self.loss_vals[i+1][-1] > 50: self.log = True
+            self.update_plot()
+        else:
+            self.print_losses()
 
     def on_forwards_end(self) -> None:
-        sz = len(self.wrapper.x) if self.loss_is_meaned else 1
-        self.loss += self.wrapper.loss_val.data.item()*sz
+        sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
+        self.loss += self.model.fit_params.loss_val.data.item()*sz
         self.cnt += sz
 
     def _add_loss_name(self, name:str) -> None:
@@ -154,7 +157,7 @@ class MetricLogger(Callback):
         self.gen_vals.append(list(np.zeros_like(self.gen_vals[1])))
 
     def print_losses(self) -> None:
-        p = f'Epoch {len(self.loss_vals[1])+1}: Training = {np.mean(self.loss_vals[-self.n_trn_flds]):.2E}'
+        p = f'Epoch {len(self.loss_vals[1])+1}: Training = {np.mean(self.loss_vals[0][-self.n_trn_flds:]):.2E}'
         for v,m in zip(self.loss_vals[1:],self.loss_names[1:]): p += f' {m} = {v[-1]:.2E}'
         print(p)
 
@@ -165,38 +168,39 @@ class MetricLogger(Callback):
 
         # Loss
         self.loss_ax.clear()
-        with sns.axes_style(**self.settings.style), sns.color_palette(self.settings.cat_palette):
+        with sns.axes_style(**self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             self.loss_ax.plot(range(1,len(self.loss_vals[0])+1), self.loss_vals[0], label=self.loss_names[0])
-            x = range(self.n_trn_flds+1, self.n_trn_flds*len(self.loss_vals[1])+1, len(self.loss_vals[1]))
-            for v,m in zip(self.loss_vals[1:],self.loss_names[1:]): self.loss_ax.plot(x, v, label=m)
-        self.loss_ax.plot([x[0],x[-1]], [self.best_loss,self.best_loss], label=f'Best = {self.best_loss:.3E}', linestyle='--')
+            x = range(self.n_trn_flds, self.n_trn_flds*len(self.loss_vals[1])+1, self.n_trn_flds)
+            for v,m in zip(self.loss_vals[1:],self.loss_names[1:]):
+                self.loss_ax.plot([1]+list(x), [self.loss_vals[0][0]]+v, label=m)
+        self.loss_ax.plot([1,x[-1]], [self.best_loss,self.best_loss], label=f'Best = {self.best_loss:.3E}', linestyle='--')
         if self.log:
             self.loss_ax.set_yscale('log', nonposy='clip')
-            self.loss_ax.tick_params(axis='y', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col, which='both')
+            self.loss_ax.tick_params(axis='y', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col, which='both')
         self.loss_ax.grid(True, which="both")
-        self.loss_ax.legend(loc='upper right', fontsize=0.8*self.settings.leg_sz)
-        self.loss_ax.set_xlabel('Sub-Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-        self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
+        self.loss_ax.legend(loc='upper right', fontsize=0.8*self.plot_settings.leg_sz)
+        self.loss_ax.set_xlabel('Sub-Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+        self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
 
-        if self.extra_detail:
+        if self.extra_detail and len(self.loss_vals[1]) > 1:
             # Velocity
             self.vel_ax.clear()
-            self.vel_ax.tick_params(axis='y', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col, which='both')
+            self.vel_ax.tick_params(axis='y', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col, which='both')
             self.vel_ax.grid(True, which="both")
-            with sns.color_palette(self.settings.cat_palette):
-                for v,m in zip(self.vel_vals,self.loss_names): self.vel_ax.plot(self.epochs[1:], v, label=f'{m} {v[-1]:.2E}')
-            self.vel_ax.legend(loc='lower right', fontsize=0.8*self.settings.leg_sz)
-            self.vel_ax.set_ylabel(r'$\Delta \bar{L}\ /$ Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
+            with sns.color_palette(self.plot_settings.cat_palette):
+                for v,m in zip(self.vel_vals,self.loss_names): self.vel_ax.plot(self.epochs[2:], v, label=f'{m} {v[-1]:.2E}')
+            self.vel_ax.legend(loc='lower right', fontsize=0.8*self.plot_settings.leg_sz)
+            self.vel_ax.set_ylabel(r'$\Delta \bar{L}\ /$ Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
 
             # Generalisation
             self.gen_ax.clear()
             self.gen_ax.grid(True, which="both")
-            with sns.color_palette(self.settings.cat_palette) as palette:
+            with sns.color_palette(self.plot_settings.cat_palette) as palette:
                 for i, (v,m) in enumerate(zip(self.gen_vals,self.loss_names[1:])):
-                    self.gen_ax.plot(self.epochs[1:], v, label=f'{m} {v[-1]:.2f}', color=palette[i+1])
-            self.gen_ax.legend(loc='upper left', fontsize=0.8*self.settings.leg_sz)
-            self.gen_ax.set_xlabel('Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-            self.gen_ax.set_ylabel('Validation / Train', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
+                    self.gen_ax.plot(self.epochs[2:], v, label=f'{m} {v[-1]:.2f}', color=palette[i+1])
+            self.gen_ax.legend(loc='upper left', fontsize=0.8*self.plot_settings.leg_sz)
+            self.gen_ax.set_xlabel('Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            self.gen_ax.set_ylabel('Validation / Train', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
             if len(self.epochs) > 5:
                 self.epochs = self.epochs[1:]
                 for i in range(len(self.vel_vals)): self.vel_vals[i],self.gen_vals[i] = self.vel_vals[i][1:],self.gen_vals[i][1:]
@@ -215,30 +219,34 @@ class MetricLogger(Callback):
         self.loss_vals = [[] for _ in self.loss_names]
         self.vel_vals, self.gen_vals = [[] for _ in range(len(self.loss_names)-1)], [[] for _ in range(len(self.loss_names)-1)]
         self.n_trn_flds = len(self.model.fit_params.trn_idxs)
-        self.log,self.best_loss,self.epochs = 1,False,math.inf,[0]
+        self.log,self.best_loss,self.epochs = False,math.inf,[0]
 
         if self.show_plots:
-            with sns.axes_style(**self.settings.style):
+            with sns.axes_style(**self.plot_settings.style):
                 if self.extra_detail:
-                    self.fig = plt.figure(figsize=(self.settings.w_mid, self.settings.h_mid), constrained_layout=True)
+                    self.fig = plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid), constrained_layout=True)
                     gs = self.fig.add_gridspec(2, 3)
                     self.loss_ax = self.fig.add_subplot(gs[:,:-1])
                     self.vel_ax  = self.fig.add_subplot(gs[:1,2:])
                     self.gen_ax  = self.fig.add_subplot(gs[1:2,2:])
                     for ax in [self.loss_ax, self.vel_ax, self.gen_ax]:
-                        ax.tick_params(axis='x', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col)
-                        ax.tick_params(axis='y', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col)
-                    self.loss_ax.set_xlabel('Sub-Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-                    self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-                    self.vel_ax.set_ylabel(r'$\Delta \bar{L}\ /$ Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-                    self.gen_ax.set_xlabel('Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-                    self.gen_ax.set_ylabel('Validation / Train', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
+                        ax.tick_params(axis='x', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+                        ax.tick_params(axis='y', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+                    self.loss_ax.set_xlabel('Sub-Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+                    self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+                    self.vel_ax.set_ylabel(r'$\Delta \bar{L}\ /$ Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+                    self.gen_ax.set_xlabel('Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+                    self.gen_ax.set_ylabel('Validation / Train', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
                     self.display = display(self.fig, display_id=True)
                 else:
-                    self.fig, self.loss_ax = plt.subplots(1, figsize=(self.settings.w_mid, self.settings.h_mid))
-                    self.loss_ax.tick_params(axis='x', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col)
-                    self.loss_ax.tick_params(axis='y', labelsize=0.8*self.settings.tk_sz, labelcolor=self.settings.tk_col)
-                    self.loss_ax.set_xlabel('Sub-Epoch', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
-                    self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.settings.lbl_sz, color=self.settings.lbl_col)
+                    self.fig, self.loss_ax = plt.subplots(1, figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
+                    self.loss_ax.tick_params(axis='x', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+                    self.loss_ax.tick_params(axis='y', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+                    self.loss_ax.set_xlabel('Sub-Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+                    self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
                     self.display = display(self.loss_ax.figure, display_id=True)
-        
+
+    def get_loss_history(self) -> OrderedDict:
+        history = OrderedDict()
+        for v,m in zip(self.loss_vals,self.loss_names): history[m] = v
+        return history

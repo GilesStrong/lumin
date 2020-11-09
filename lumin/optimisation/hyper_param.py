@@ -13,8 +13,8 @@ from ..nn.data.batch_yielder import BatchYielder
 from ..nn.models.model_builder import ModelBuilder
 from ..nn.models.model import Model, OldModel
 from ..nn.callbacks.opt_callbacks import LRFinder, OldLRFinder
-from ..nn.callbacks.cyclic_callbacks import AbsCyclicCallback
-from ..nn.callbacks.model_callbacks import AbsModelCallback
+from ..nn.callbacks.cyclic_callbacks import OldAbsCyclicCallback
+from ..nn.callbacks.model_callbacks import OldAbsModelCallback
 from ..plotting.training import plot_lr_finders
 from ..plotting.plot_settings import PlotSettings
 
@@ -98,13 +98,13 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
         model = OldModel(model_builder)
         trn_fold = fy.get_fold(trn_id)
         if nb is None: nb = len(trn_fold['targets'])//bs
-        lr_finder = LRFinder(nb=nb, lr_bounds=lr_bounds, model=model)
+        lr_finder = OldLRFinder(nb=nb, lr_bounds=lr_bounds, model=model)
         cyclic_callback,callbacks = None,[]
         for c in callback_partials: callbacks.append(c(model=model))
         for c in callbacks:
-            if isinstance(c, AbsCyclicCallback): c.set_nb(nb)
+            if isinstance(c, OldAbsCyclicCallback): c.set_nb(nb)
         for c in callbacks:
-            if isinstance(c, AbsModelCallback): c.set_cyclic_callback(cyclic_callback)
+            if isinstance(c, OldAbsModelCallback): c.set_cyclic_callback(cyclic_callback)
         for c in callbacks:
             c.on_train_begin()
         lr_finder.on_train_begin()
@@ -124,8 +124,7 @@ def fold_lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int,
 def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
             train_on_weights:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
             cb_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
-            bulk_move:bool=True, plot_savename:Optional[str]=None, opt:Optional[Callable[[Generator],optim.Optimizer]]=None,
-            loss:Optional[Callable[[],Callable[[Tensor,Tensor],Tensor]]]=None) -> List[LRFinder]:
+            bulk_move:bool=True, plot_savename:Optional[str]=None) -> List[LRFinder]:
     r'''
     Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
     using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
@@ -159,8 +158,7 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
         cbs = []
         for c in cb_partials: cbs.append(c(model=model))
         lrf = LRFinder(lr_bounds=lr_bounds, nb=nb, model=model)
-        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=[trn_idx], cbs=cbs+[lrf], opt=opt,
-                  loss=loss)
+        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=[trn_idx], cbs=cbs+[lrf])
         lr_finders.append(lrf)
     del model
         

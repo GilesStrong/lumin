@@ -5,7 +5,7 @@ from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
 import warnings
-from fastcore.all import is_listy, store_attr, partialler, Path
+from fastcore.all import is_listy, partialler, Path
 from random import shuffle
 import inspect
 from functools import partial
@@ -17,7 +17,7 @@ import torch.nn as nn
 from .abs_model import AbsModel
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
-from ..callbacks.abs_callback import AbsCallback
+from ..callbacks.abs_callback import AbsCallback, OldAbsCallback
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.pred_handlers import PredHandler
 from ..data.fold_yielder import FoldYielder
@@ -31,7 +31,7 @@ __all__ = ['Model']
 
 class FitParams():
     def __init__(self, **kwargs):
-        store_attr()
+        self.__dict__.update(kwargs)
         self.epoch,self.sub_epoch = 0,0
 
 
@@ -129,8 +129,8 @@ class Model(AbsModel):
         for c in self.fit_params.cbs: c.on_batch_begin()
         self.fit_params.y_pred = self.model(self.fit_params.x)
         if self.fit_params.state != 'test' and self.fit_params.loss_func is not None:
-            self.fit_params.loss_func.weights = self.fit_params.w
-            self.fit_params.loss_val = self.fit_params.fit_params.loss_func(self.fit_params.y_pred, self.fit_params.y)
+            self.fit_params.loss_func.weight = self.fit_params.w
+            self.fit_params.loss_val = self.fit_params.loss_func(self.fit_params.y_pred, self.fit_params.y)
         for c in self.fit_params.cbs: c.on_forwards_end()
         if self.fit_params.state != 'train': return
 
@@ -155,10 +155,18 @@ class Model(AbsModel):
             if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
-                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath), loss=self.loss, opt=self.opt)
+                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath), loss_func=self.loss,
+                                    opt=self.opt)
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
-        self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, bs=self.fit_params.bs, use_weights=self.fit_params.train_on_weights,
-                                                shuffle=True, bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
+        self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
+                                                bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
+        if bulk_move:
+            val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=True,
+                                                bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
+        else:
+            val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=True,
+                             bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
+        trn_by = partial(self.fit_params.partial_by, drop_last=True, bs=self.fit_params.bs, shuffle=True)
 
         if trn_idxs is None: trn_idxs = list(range(fy.n_folds))
         if val_idx is not None and val_idx in trn_idxs: trn_idxs.remove(val_idx)
@@ -170,9 +178,9 @@ class Model(AbsModel):
             self.fit_params.state = 'train'
             self.fit_params.epoch += 1
             for c in self.fit_params.cbs: c.on_epoch_begin()
-            for trn_idx in self.fit_params.trn_idxs:
+            for self.fit_params.trn_idx in self.fit_params.trn_idxs:
                 self.fit_params.sub_epoch += 1
-                self.fit_params.by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.trn_idx))
+                self.fit_params.by = trn_by(**self.fit_params.fy.get_fold(self.fit_params.trn_idx))
                 for c in self.fit_params.cbs: c.on_fold_begin()
                 for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
                 for c in self.fit_params.cbs: c.on_fold_end()
@@ -183,7 +191,7 @@ class Model(AbsModel):
                 self.model.eval()
                 self.fit_params.state = 'valid'
                 for c in self.fit_params.cbs: c.on_epoch_begin()
-                self.fit_params.by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
+                self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
                 for c in self.fit_params.cbs: c.on_fold_begin()
                 for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
                 for c in self.fit_params.cbs: c.on_fold_end()
@@ -196,19 +204,21 @@ class Model(AbsModel):
         for e in self.fit_params.mb:
             fit_epoch()
             if self.fit_params.stop: break
+        if bulk_move: del val_by
         for c in self.fit_params.cbs: c.on_train_end()
         self.fit_params = None
-        return self.fit_params.cbs
+        return cbs
 
     def _predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
+        cbs.append(pred_cb)
         self.fit_params = FitParams(cbs=cbs, by=by, state='test')
         for c in self.fit_params.cbs: c.set_model(self)
         self.model.eval()
-        for c in self.cbs: c.on_pred_begin()
+        for c in self.fit_params.cbs: c.on_pred_begin()
         for b in progress_bar(self.fit_params.by): self._fit_batch(*b)
-        for c in self.cbs: c.on_pred_end()
+        for c in self.fit_params.cbs: c.on_pred_end()
         return pred_cb.get_preds()
 
     def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
@@ -218,7 +228,7 @@ class Model(AbsModel):
 
         by = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective, shuffle=False, bulk_move=bs is None,
                           input_mask=self.input_mask if mask_inputs else None, drop_last=False)
-        preds = self.predict_by(by, pred_cb=pred_cb, cbs=cbs)
+        preds = self._predict_by(by, pred_cb=pred_cb, cbs=cbs)
         if as_np:
             preds = to_np(preds)
             if 'multiclass' in self.objective: preds = np.exp(preds)
@@ -430,7 +440,7 @@ class OldModel(Model):
 
     # XXX remove in V0.8
 
-    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[AbsCallback]]=None, mask_inputs:bool=True) -> float:
+    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[OldAbsCallback]]=None, mask_inputs:bool=True) -> float:
         r'''
         Fit network for one complete iteration of a :class:`~lumin.nn.data.batch_yielder.BatchYielder`, i.e. one (sub-)epoch
 
@@ -471,7 +481,7 @@ class OldModel(Model):
         return np.mean(losses)
               
     def evaluate(self, inputs:Union[Tensor,np.ndarray,Tuple[Tensor,Tensor],Tuple[np.ndarray,np.ndarray]], targets:Union[Tensor,np.ndarray],
-                 weights:Optional[Union[Tensor,np.ndarray]]=None, bs=None, callbacks:Optional[List[AbsCallback]]=None,
+                 weights:Optional[Union[Tensor,np.ndarray]]=None, bs=None, callbacks:Optional[List[OldAbsCallback]]=None,
                  mask_inputs:bool=True) -> float:
         r'''
         Compute loss on provided data.
@@ -508,11 +518,12 @@ class OldModel(Model):
         if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
         elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
         if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
+        self.loss.weight = weights
         loss = self.loss(y_pred, targets)
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
 
-    def evaluate_from_by(self, by:BatchYielder, callbacks:Optional[List[AbsCallback]]=None) -> float:
+    def evaluate_from_by(self, by:BatchYielder, callbacks:Optional[List[OldAbsCallback]]=None) -> float:
         r'''
         Compute loss on provided data in batches provided by a `:class:~lumin.nn.data.batch_yielder.BatchYielder`.
 
@@ -531,7 +542,7 @@ class OldModel(Model):
         return loss/(len(by)*by.bs)
 
     def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
-                      callbacks:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
+                      callbacks:Optional[List[OldAbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
         r'''
         Pass inputs through network and obtain predictions.
 
@@ -588,7 +599,7 @@ class OldModel(Model):
         else:
             return to_device(Tensor(pred))
 
-    def predict_folds(self, fy:FoldYielder, pred_name:str='pred', callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True,
+    def predict_folds(self, fy:FoldYielder, pred_name:str='pred', callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True,
                       bs:Optional[int]=None) -> None:
         r'''
         Apply model to all dataaccessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as new group in fold file
@@ -623,7 +634,7 @@ class OldModel(Model):
         if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
-                callbacks:Optional[List[AbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
+                callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
         A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`, depending on input type.

@@ -142,7 +142,7 @@ class FoldYielder:
             Total number of entries in the folds 
         '''
 
-        if not is_listy: idxs = [idxs]
+        if not is_listy(idxs): idxs = [idxs]
         s = 0
         for i in idxs: s += self.fld_szs[i]
         return s
