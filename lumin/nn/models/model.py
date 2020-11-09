@@ -5,6 +5,7 @@ from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
 import warnings
+import inspect
 
 import torch
 from torch.tensor import Tensor
@@ -136,7 +137,9 @@ class Model(AbsModel):
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
             y_pred = self.model(x)
-            loss = self.loss(weight=w)(y_pred, y) if w is not None else self.loss()(y_pred, y)
+            if inspect.isclass(self.loss): self.loss = self.loss()
+            self.loss.weight = w
+            loss = self.loss(y_pred, y)
             losses.append(loss.data.item())
             self.opt.zero_grad()
             for c in callbacks: c.on_backwards_begin(loss=loss)
