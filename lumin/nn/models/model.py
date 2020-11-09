@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Tuple, Callable, Generator
+from typing import List, Optional, Union, Tuple
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import timeit
@@ -12,7 +12,6 @@ import inspect
 import torch
 from torch.tensor import Tensor
 import torch.nn as nn
-from torch import optim
 
 from .abs_model import AbsModel
 from .model_builder import ModelBuilder
