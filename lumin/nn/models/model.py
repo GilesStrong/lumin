@@ -8,6 +8,7 @@ import warnings
 from fastcore.all import is_listy, store_attr, partialler, Path
 from random import shuffle
 import inspect
+from functools import partial
 
 import torch
 from torch.tensor import Tensor
@@ -449,11 +450,11 @@ class OldModel(Model):
         if callbacks is None: callbacks = []
         for c in callbacks: c.on_epoch_begin(by=batch_yielder)
         if self.input_mask is not None and mask_inputs: batch_yielder.inputs = batch_yielder.inputs[:,self.input_mask]
+        if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
 
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
             y_pred = self.model(x)
-            if inspect.isclass(self.loss): self.loss = self.loss()
             self.loss.weight = w
             loss = self.loss(y_pred, y)
             losses.append(loss.data.item())
