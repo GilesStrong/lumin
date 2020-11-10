@@ -23,6 +23,7 @@ from ..callbacks.pred_handlers import PredHandler
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
+from ...plotting.plot_settings import PlotSettings
 from ...utils.statistics import uncert_round
 from ...utils.misc import to_np, to_device
 
@@ -416,16 +417,20 @@ class Model(AbsModel):
         tf_rep = prepare(m)
         tf_rep.export_graph(f'{name}.pb')
            
-    def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+    def get_nn_feat_importance(self, fy:FoldYielder, bs:Optional[int]=None, eval_metric:Optional[EvalMetric]=None, savename:Optional[str]=None,
+                               settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
         r'''
         Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.model.Model` and provided arguments
 
         Arguments:
-            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance
-            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use for quantifying performance
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data used to train model
+            bs: If set, will evaluate model in batches of data, rather than all at once
+            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
+            savename: Optional name of file to which to save the plot of feature importances
+            settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         '''
 
-        return get_nn_feat_importance(self, fy, eval_metric)
+        return get_nn_feat_importance(self, fy=fy, bs=bs, eval_metric=eval_metric, savename=savename, plot_settings=settings)
 
     def get_out_size(self) -> int:
         r'''

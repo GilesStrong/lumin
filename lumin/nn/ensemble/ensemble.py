@@ -21,6 +21,7 @@ from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
+from ...plotting.plot_settings import PlotSettings
 from ...utils.statistics import uncert_round
 from ...utils.misc import to_device
 
@@ -289,10 +290,10 @@ class Ensemble(AbsEnsemble):
         weights = weights/weights.sum()
 
         if isinstance(arr, tuple):
-            arr = (to_device(Tensor(arr[0])),to_device(Tensor(arr[1])))
+            arr = (Tensor(arr[0]),Tensor(arr[1]))
             pred = np.zeros((len(arr[0]), self.n_out))
         else:
-            arr = to_device(Tensor(arr))
+            arr = Tensor(arr)
             pred = np.zeros((len(arr), self.n_out))
 
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
@@ -418,17 +419,21 @@ class Ensemble(AbsEnsemble):
 
         for i, m in enumerate(self.models): m.export2tfpb(f'{base_name}_{i}', bs)
 
-    def get_feat_importance(self, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None) -> pd.DataFrame:
+    def get_feat_importance(self, fy:FoldYielder, bs:Optional[int]=None, eval_metric:Optional[EvalMetric]=None, savename:Optional[str]=None,
+                            plot_settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
         r'''
         Call :meth:`~lumin.nn.interpretation.features.get_ensemble_feat_importance`,
         passing this :class:`~lumin.nn.ensemble.ensemble.Ensemble` and provided arguments
 
         Arguments:
             fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data on which to evaluate importance
-            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use for quantifying performance
+            bs: If set, will evaluate model in batches of data, rather than all at once
+            eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
+            savename: Optional name of file to which to save the plot of feature importances
+            plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         '''
         
-        return get_ensemble_feat_importance(self, fy, eval_metric)
+        return get_ensemble_feat_importance(self, fy=fy, bs=bs, eval_metric=eval_metric, savename=savename, settings=plot_settings)
 
 
 class OldEnsemble(Ensemble):

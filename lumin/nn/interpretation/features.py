@@ -29,7 +29,7 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, bs:Optional[int]=None
         bs: If set, will evaluate model in batches of data, rather than all at once
         eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
         pb_parent: Not used if calling method directly
-        plot: whetehr to plot resulting feature importances
+        plot: whether to plot resulting feature importances
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
