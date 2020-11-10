@@ -24,6 +24,8 @@ class OldAbsModelCallback(OldCallback):
         It will be removed in V0.8
     '''
 
+    # XXX remove in V0.8
+
     def __init__(self, model:Optional[AbsModel]=None, val_fold:Optional[Dict[str,np.ndarray]]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, update_on_cycle_end:Optional[bool]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
@@ -88,6 +90,8 @@ class OldSWA(OldAbsModelCallback):
     Examples::
         >>> swa = SWA(start_epoch=5, renewal_period=5)
     '''
+    
+    # XXX remove in V0.8
 
     def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[OldAbsModel]=None, val_fold:Optional[Dict[str,np.ndarray]]=None,
                  cyclic_callback:Optional[AbsCyclicCallback]=None, update_on_cycle_end:Optional[bool]=None,

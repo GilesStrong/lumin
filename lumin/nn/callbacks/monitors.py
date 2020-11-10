@@ -15,6 +15,7 @@ from ...plotting.plot_settings import PlotSettings
 
 __all__ = ['EarlyStopping', 'SaveBest', 'MetricLogger']
 
+
 class EarlyStopping(Callback):
     r'''
     Tracks validation loss during training and terminates training if loss doesn't decrease after `patience` number of epochs.
@@ -166,13 +167,15 @@ class MetricLogger(Callback):
         Updates the plot(s).
         '''
 
+        # TODO: make this faster
+
         # Loss
         self.loss_ax.clear()
         with sns.axes_style(**self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
             self.loss_ax.plot(range(1,len(self.loss_vals[0])+1), self.loss_vals[0], label=self.loss_names[0])
             x = range(self.n_trn_flds, self.n_trn_flds*len(self.loss_vals[1])+1, self.n_trn_flds)
             for v,m in zip(self.loss_vals[1:],self.loss_names[1:]):
-                self.loss_ax.plot([1]+list(x), [self.loss_vals[0][0]]+v, label=m)
+                self.loss_ax.plot(x, v, label=m)
         self.loss_ax.plot([1,x[-1]], [self.best_loss,self.best_loss], label=f'Best = {self.best_loss:.3E}', linestyle='--')
         if self.log:
             self.loss_ax.set_yscale('log', nonposy='clip')

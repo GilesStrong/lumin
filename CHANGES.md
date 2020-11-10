@@ -55,6 +55,7 @@
     - `OldMetricLogger`: Replaced by `MetricLogger`
     - `AbsModelCallback`: Will not be replaced
     - `OldSWA`: Replaced by `SWA`
+    - `old_plot_train_history`: Replaced by `plot_train_history`
 
 ## Comments
 

@@ -41,6 +41,8 @@ class OldMetricLogger():
         >>> plt.clf()
     '''
 
+    # XXX remove in V0.8
+
     def __init__(self, loss_names:List[str], n_folds:int, autolog_scale:bool=True, extra_detail:bool=True, plot_settings:PlotSettings=PlotSettings()):
         self.loss_names,self.n_folds,self.autolog_scale,self.extra_detail,self.settings = loss_names,n_folds,autolog_scale,extra_detail,plot_settings
 

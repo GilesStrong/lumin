@@ -160,18 +160,19 @@ class Model(AbsModel):
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
                                                 bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
-        if bulk_move:
-            val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=True,
-                                                bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
-        else:
-            val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=True,
-                             bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
-        trn_by = partial(self.fit_params.partial_by, drop_last=True, bs=self.fit_params.bs, shuffle=True)
 
         if trn_idxs is None: trn_idxs = list(range(fy.n_folds))
         if val_idx is not None and val_idx in trn_idxs: trn_idxs.remove(val_idx)
         shuffle(trn_idxs)
         self.fit_params.trn_idxs,self.fit_params.val_idx = trn_idxs,val_idx
+        if self.fit_params.val_idx is not None:
+            if bulk_move:
+                val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=True,
+                                                    bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
+            else:
+                val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=True,
+                                 bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
+        trn_by = partial(self.fit_params.partial_by, drop_last=True, bs=self.fit_params.bs, shuffle=True)
 
         def fit_epoch() -> None:
             self.model.train()
@@ -182,7 +183,7 @@ class Model(AbsModel):
                 self.fit_params.sub_epoch += 1
                 self.fit_params.by = trn_by(**self.fit_params.fy.get_fold(self.fit_params.trn_idx))
                 for c in self.fit_params.cbs: c.on_fold_begin()
-                for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
+                for b in self.fit_params.by: self._fit_batch(*b)
                 for c in self.fit_params.cbs: c.on_fold_end()
                 if self.fit_params.stop: break
             for c in self.fit_params.cbs: c.on_epoch_end()
@@ -193,20 +194,21 @@ class Model(AbsModel):
                 for c in self.fit_params.cbs: c.on_epoch_begin()
                 self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
                 for c in self.fit_params.cbs: c.on_fold_begin()
-                for b in progress_bar(self.fit_params.by, parent=self.fit_params.mb): self._fit_batch(*b)
+                for b in self.fit_params.by: self._fit_batch(*b)
                 for c in self.fit_params.cbs: c.on_fold_end()
                 for c in self.fit_params.cbs: c.on_epoch_end()
             del self.fit_params.by
 
-        for c in self.fit_params.cbs: c.set_model(self)
-        for c in self.fit_params.cbs: c.on_train_begin()
-        self.fit_params.mb = master_bar(range(self.fit_params.n_epochs))
-        for e in self.fit_params.mb:
-            fit_epoch()
-            if self.fit_params.stop: break
-        if bulk_move: del val_by
-        for c in self.fit_params.cbs: c.on_train_end()
-        self.fit_params = None
+        try:
+            for c in self.fit_params.cbs: c.set_model(self)
+            for c in self.fit_params.cbs: c.on_train_begin()
+            for e in progress_bar(range(self.fit_params.n_epochs)):
+                fit_epoch()
+                if self.fit_params.stop: break
+            if self.fit_params.val_idx is not None: del val_by
+            for c in self.fit_params.cbs: c.on_train_end()
+        finally:
+            self.fit_params = None
         return cbs
 
     def _predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
@@ -214,11 +216,14 @@ class Model(AbsModel):
         elif not is_listy(cbs): cbs = [cbs]
         cbs.append(pred_cb)
         self.fit_params = FitParams(cbs=cbs, by=by, state='test')
-        for c in self.fit_params.cbs: c.set_model(self)
-        self.model.eval()
-        for c in self.fit_params.cbs: c.on_pred_begin()
-        for b in progress_bar(self.fit_params.by): self._fit_batch(*b)
-        for c in self.fit_params.cbs: c.on_pred_end()
+        try:
+            for c in self.fit_params.cbs: c.set_model(self)
+            self.model.eval()
+            for c in self.fit_params.cbs: c.on_pred_begin()
+            for b in self.fit_params.by: self._fit_batch(*b)
+            for c in self.fit_params.cbs: c.on_pred_end()
+        finally:
+            self.fit_params = None
         return pred_cb.get_preds()
 
     def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
@@ -240,19 +245,22 @@ class Model(AbsModel):
         '''
 
         if hasattr(self, 'fit_params') and self.fit_params is not None:
-            raise ValueError('Evaluate will overright exisitng fit_params for this model. Most likely it is being called during training.')
+            raise ValueError('Evaluate will overwrite exisiting fit_params for this model. Most likely it is being called during training.')
         if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, targets=targets, weights=weights, bs=len(inputs) if bs is None else bs,
                                                                        objective=self.objective, shuffle=False, bulk_move=bs is None,
                                                                        input_mask=self.input_mask, drop_last=False)
-        self.fit_params = FitParams(cbs=[], by=inputs, state='val')
+        self.fit_params = FitParams(cbs=[], by=inputs, state='val', loss_func=self.loss)
+        if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.model.eval()
         loss,cnt = 0,0
-        for b in progress_bar(self.fit_params.by):
-            self._fit_batch(*b)
-            sz = len(b[0])
-            loss += self.fit_params.loss_val.data.item()*sz
-            cnt += sz
-        self.fit_params = None
+        try:
+            for b in self.fit_params.by:
+                self._fit_batch(*b)
+                sz = len(b[0])
+                loss += self.fit_params.loss_val.data.item()*sz
+                cnt += sz
+        finally:
+            self.fit_params = None
         return loss/cnt
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred',  mask_inputs:bool=True,
@@ -261,13 +269,12 @@ class Model(AbsModel):
         '''
 
         pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs, mask_inputs=mask_inputs)
-        mb = master_bar(range(len(fy)))
-        for fold_idx in mb:
+        for fold_idx in progress_bar(range(len(fy))):
             if not fy.test_time_aug:
                 pred = pred_call(fy.get_fold(fold_idx)['inputs'])
             else:
                 tmpPred = []
-                for aug in progress_bar(range(fy.aug_mult), parent=mb): tmpPred.append(pred_call(fy.get_test_fold(fold_idx, aug)['inputs']))
+                for aug in range(fy.aug_mult): tmpPred.append(pred_call(fy.get_test_fold(fold_idx, aug)['inputs']))
                 pred = np.mean(tmpPred, axis=0)
 
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
@@ -281,7 +288,7 @@ class Model(AbsModel):
 
         if isinstance(inputs, BatchYielder): return self._predict_by(inputs, pred_cb=pred_cb, cbs=cbs)
         if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
-        self.predict_folds(inputs, pred_name, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        self._predict_folds(inputs, pred_name, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
 
     def get_weights(self) -> OrderedDict:
         r'''
