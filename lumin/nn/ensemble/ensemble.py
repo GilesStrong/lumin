@@ -88,7 +88,6 @@ class Ensemble(AbsEnsemble):
         Returns:
             Model loaded from save
         '''
-
         model = Model(model_builder)
         model.load(f'{name}{model_idx}.h5')
         return model

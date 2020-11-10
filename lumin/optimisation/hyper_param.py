@@ -157,8 +157,8 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
     for trn_idx in mb:
         model = Model(model_builder)
         cbs = []
-        for c in cb_partials: cbs.append(c(model=model))
-        lrf = LRFinder(lr_bounds=lr_bounds, nb=nb, model=model)
+        for c in cb_partials: cbs.append(c())
+        lrf = LRFinder(lr_bounds=lr_bounds, nb=nb)
         model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=[trn_idx], cbs=cbs+[lrf], model_bar=mb)
         lr_finders.append(lrf)
     del model

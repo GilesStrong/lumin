@@ -53,6 +53,7 @@ class EarlyStopping(Callback):
             self.min_loss = loss
             self.epochs = 0
             self.improve_in_cycle = True
+            if self.cyclic_cb.cycle_end: self.improve_in_cycle = False
         elif self.cyclic_cb is not None:
             if self.cyclic_cb.cycle_end:
                 if self.improve_in_cycle:
@@ -113,7 +114,7 @@ class MetricLogger(Callback):
     r'''        
     '''
 
-    def __init__(self, extra_detail:bool=True, loss_is_meaned:bool=True, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+    def __init__(self, show_plots:bool=IN_NOTEBOOK, extra_detail:bool=True, loss_is_meaned:bool=True, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         store_attr(but=['model','plot_settings'])
 
@@ -218,7 +219,6 @@ class MetricLogger(Callback):
         '''
 
         self.loss_names = ['Training', 'Validation']
-        self.show_plots = IN_NOTEBOOK
         self.loss_vals = [[] for _ in self.loss_names]
         self.vel_vals, self.gen_vals = [[] for _ in range(len(self.loss_names)-1)], [[] for _ in range(len(self.loss_names)-1)]
         self.n_trn_flds = len(self.model.fit_params.trn_idxs)

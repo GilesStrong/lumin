@@ -28,7 +28,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
                  cb_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None, pred_cb:Callable[[],PredHandler]=PredHandler,
                  train_on_weights:bool=True, eval_on_weights:bool=True,
                  bulk_move:bool=True,
-                 live_fdbk:bool=True, live_fdbk_first_only:bool=True, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
+                 live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), 
                  plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
@@ -37,7 +37,6 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     results,histories,cycle_losses,savepath = [],[],[],Path(savepath)
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
-    if patience is not None: cb_partials.append(partial(EarlyStopping, patience=patience, loss_is_meaned=loss_is_meaned))
 
     model_bar = master_bar(range(n_models)) if IN_NOTEBOOK else progress_bar(range(n_models))
     train_tmr = timeit.default_timer()
@@ -45,17 +44,20 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         if IN_NOTEBOOK: model_bar.show()
         val_idx = model_num % fy.n_folds
         print(f"Training model {model_num+1} / {n_models}, Val ID = {val_idx}")
-        if model_num == 1 and live_fdbk_first_only: live_fdbk_extra = False  # Only show fdbk for first training
+        if model_num == 1:
+            if live_fdbk_first_only: live_fdbk = False  # Only show fdbk for first training
+            elif live_fdbk_extra_first_only: live_fdbk_extra = False  # Only show full fdbk info for first training
 
         model_dir = savepath/f'model_id_{model_num}'
         model_dir.mkdir(parents=True, exist_ok=True)
         os.system(f"rm {model_dir}/*.h5 {model_dir}/*.json {model_dir}/*.pkl {model_dir}/*.png")
         model = Model(model_builder)
         cbs = []
-        for c in cb_partials: cbs.append(c(model=model))
+        for c in cb_partials: cbs.append(c())
         save_best = SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)
-        metric_log = MetricLogger(extra_detail=live_fdbk_extra, plot_settings=plot_settings)
+        metric_log = MetricLogger(show_plots=live_fdbk, extra_detail=live_fdbk_extra, plot_settings=plot_settings)
         cbs += [save_best,metric_log]
+        if patience is not None: cbs.append(EarlyStopping(patience=patience, loss_is_meaned=loss_is_meaned))
 
         model_tmr = timeit.default_timer()
         model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, val_idx=val_idx, cbs=cbs, cb_savepath=model_dir)
@@ -83,6 +85,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
     plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
     for score in results[0]:
+        if score == 'path': continue
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
     print("______________________________________\n")

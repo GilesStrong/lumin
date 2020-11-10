@@ -131,7 +131,7 @@ class AbsCyclicCallback(Callback):
 
     def _incr_cycle(self) -> None:
         self.cycle_iter += 1
-        if self.cycle_iter == self.nb:
+        if self.cycle_iter >= self.nb:
             self.cycle_iter = 0
             self.nb *= self.cycle_mult
             if self.cycle_save: self._save_cycle()
@@ -172,7 +172,8 @@ class AbsCyclicCallback(Callback):
         '''
         
         if self.model.fit_params.state != 'train': return
-        if self.nb is None: self.nb = self.scale*self.model.fit_params.fy.get_data_count(self.model.fit_params.trn_idxs)//self.model.fit_params.bs
+        if self.nb is None:
+            self.nb = self.scale*np.sum([self.model.fit_params.fy.get_data_count(i)//self.model.fit_params.bs for i in self.model.fit_params.trn_idxs])
         self.cycle_end = False
     
     def on_batch_end(self) -> None:
