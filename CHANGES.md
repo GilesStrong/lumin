@@ -18,7 +18,9 @@
 
 ## Removals
 
-- `Model` now no longer takes `callbacks` and `mask_inputs` as arguments for `evaluate`
+- `Model`:
+    - Now no longer takes `callbacks` and `mask_inputs` as arguments for `evaluate`
+    - `evaluate_from_by` removed, just call `evaluate`
 
 ## Fixes
 
@@ -29,6 +31,11 @@
 ## Changes
 
 - `BinaryLabelSmooth` now only applies smoothing during training and not in validation
+- `Ensemble`
+    - `from_results` and `build_ensemble` now no longer take `location` as an argument. Instead, results should contain the savepath for the models
+    - `_build_ensemble` is now private
+- `Model`:
+    - `predict_array` and `predict_folds` are now private
 
 ## Depreciations
 
@@ -40,7 +47,7 @@
     - `OldCallback`: Replaced by `Callback`
     - `OldBinaryLabelSmooth`: Replaced by `BinaryLabelSmooth`
     - `OldSequentialReweight`: Will not be replaced
-    - `SequentialReweightClasses`: Will no be replaced
+    - `SequentialReweightClasses`: Will not be replaced
     - `OldBootstrapResample`: Replaced by `BootstrapResample`
     - `OldParametrisedPrediction`: Replaced by `ParametrisedPrediction`
     - `OldGradClip`: Replaced by `GradClip`
@@ -56,6 +63,7 @@
     - `AbsModelCallback`: Will not be replaced
     - `OldSWA`: Replaced by `SWA`
     - `old_plot_train_history`: Replaced by `plot_train_history`
+    - `OldEnsemble`: Replaced by `Ensemble`
 
 ## Comments
 

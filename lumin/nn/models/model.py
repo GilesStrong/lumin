@@ -141,9 +141,9 @@ class Model(AbsModel):
         self.fit_params.opt.step()
         for c in self.fit_params.cbs: c.on_batch_end()
 
-    def fit(self, n_epochs:int, fy:FoldYielder, bs:int, bulk_move:bool=True, train_on_weights:bool=True,
-            trn_idxs:Optional[List[int]]=None, val_idx:Optional[int]=None,
-            cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights')) -> List[AbsCallback]:
+    def fit(self, n_epochs:int, fy:FoldYielder, bs:int, bulk_move:bool=True, train_on_weights:bool=True, trn_idxs:Optional[List[int]]=None,
+            val_idx:Optional[int]=None,  cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights'),
+            model_bar:Optional[master_bar]=None) -> List[AbsCallback]:
         r'''
         '''
         
@@ -202,7 +202,7 @@ class Model(AbsModel):
         try:
             for c in self.fit_params.cbs: c.set_model(self)
             for c in self.fit_params.cbs: c.on_train_begin()
-            for e in progress_bar(range(self.fit_params.n_epochs)):
+            for e in progress_bar(range(self.fit_params.n_epochs), parent=model_bar):
                 fit_epoch()
                 if self.fit_params.stop: break
             if self.fit_params.val_idx is not None: del val_by
@@ -226,13 +226,13 @@ class Model(AbsModel):
             self.fit_params = None
         return pred_cb.get_preds()
 
-    def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
-                       pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
+    def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, pred_cb:PredHandler=PredHandler(),
+                       cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
         r'''
         '''
 
         by = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective, shuffle=False, bulk_move=bs is None,
-                          input_mask=self.input_mask if mask_inputs else None, drop_last=False)
+                          input_mask=self.input_mask, drop_last=False)
         preds = self._predict_by(by, pred_cb=pred_cb, cbs=cbs)
         if as_np:
             preds = to_np(preds)
@@ -263,12 +263,12 @@ class Model(AbsModel):
             self.fit_params = None
         return loss/cnt
 
-    def _predict_folds(self, fy:FoldYielder, pred_name:str='pred',  mask_inputs:bool=True,
-                       pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> None:
+    def _predict_folds(self, fy:FoldYielder, pred_name:str='pred', pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None,
+                      bs:Optional[int]=None) -> None:
         r'''
         '''
 
-        pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs, mask_inputs=mask_inputs)
+        pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs)
         for fold_idx in progress_bar(range(len(fy))):
             if not fy.test_time_aug:
                 pred = pred_call(fy.get_fold(fold_idx)['inputs'])
@@ -280,15 +280,14 @@ class Model(AbsModel):
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
             else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
 
-    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
-                mask_inputs:bool=True, pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) \
-            -> Union[np.ndarray, Tensor, None]:
+    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred', pred_cb:PredHandler=PredHandler(),
+                cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
         r'''
         '''
 
         if isinstance(inputs, BatchYielder): return self._predict_by(inputs, pred_cb=pred_cb, cbs=cbs)
-        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
-        self._predict_folds(inputs, pred_name, mask_inputs=mask_inputs, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        self._predict_folds(inputs, pred_name, pred_cb=pred_cb, cbs=cbs, bs=bs)
 
     def get_weights(self) -> OrderedDict:
         r'''

@@ -122,7 +122,7 @@ class LRFinder(Callback):
         Prepares variables and optimiser for new training
         '''
 
-        self.best,self.iter,self.nb = math.inf,0,None
+        self.best,self.iter = math.inf,0
         self.model.set_lr(self.lr_bounds[0])
         self.history = {'loss': [], 'lr': []}
 

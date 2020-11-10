@@ -120,7 +120,10 @@ class AbsCyclicCallback(Callback):
                  cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
         store_attr(but=['model','plot_settings','interp'])
-        self.interp,self.cycle_iter,self.cycle_count,self.cycle_end,self.hist,self.cycle_losses = interp.lower(),0,0,False,[],[]
+        self.interp = interp.lower()
+        self._reset()
+
+    def _reset(self) -> None: self.cycle_iter,self.cycle_count,self.cycle_end,self.hist,self.cycle_losses,self.nb = 0,0,False,[],[],None
 
     def _save_cycle(self) -> None:
         self.model.save(self.model.fit_params.cb_savepath/f'cycle_{self.cycle_count}.h5')
@@ -160,6 +163,8 @@ class AbsCyclicCallback(Callback):
             return self.param_range[1]-dx if self.decrease_param else dx+self.param_range[0]
         else:
             raise ValueError(f"Interpolation mode {self.interp} not implemented")
+    
+    def on_train_begin(self) -> None: self._reset()
 
     def on_epoch_begin(self) -> None:
         r'''
@@ -167,7 +172,7 @@ class AbsCyclicCallback(Callback):
         '''
         
         if self.model.fit_params.state != 'train': return
-        if self.nb is None: self.nb = self.scale*len(self.model.fit_params.fy.get_data_count(self.model.fit_params.trn_idxs))
+        if self.nb is None: self.nb = self.scale*self.model.fit_params.fy.get_data_count(self.model.fit_params.trn_idxs)//self.model.fit_params.bs
         self.cycle_end = False
     
     def on_batch_end(self) -> None:
@@ -187,7 +192,7 @@ class AbsCyclicCallback(Callback):
 
         if self.model.fit_params.state != 'train': return
         param = self._calc_param()
-        self.hist.append(self.param)
+        self.hist.append(param)
         self._set_param(param)
 
 
@@ -249,7 +254,7 @@ class CycleLR(AbsCyclicCallback):
                          decrease_param=decrease_param, scale=scale, model=model, plot_settings=plot_settings)
         self.param_name = 'Learning Rate'
 
-    def _set_param(self) -> None: self.model.set_lr(self.param)
+    def _set_param(self, param:float) -> None: self.model.set_lr(param)
 
 
 class OldCycleMom(OldAbsCyclicCallback):
@@ -308,7 +313,7 @@ class CycleMom(AbsCyclicCallback):
                          decrease_param=decrease_param, scale=scale, model=model, plot_settings=plot_settings)
         self.param_name = 'Momentum'
 
-    def _set_param(self) -> None: self.model.set_mom(self.param)
+    def _set_param(self, param:float) -> None: self.model.set_mom(param)
 
 
 class OldOneCycle(OldAbsCyclicCallback):

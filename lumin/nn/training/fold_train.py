@@ -23,7 +23,7 @@ from ..callbacks.model_callbacks import OldAbsModelCallback
 from ...utils.misc import to_tensor, to_device
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
-from ...plotting.training import plot_train_history
+from ...plotting.training import old_plot_train_history
 from ...plotting.plot_settings import PlotSettings
 from .metric_logger import OldMetricLogger
 
@@ -249,7 +249,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     print("\n______________________________________")
     print("Training finished")
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
-    plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
+    old_plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")
