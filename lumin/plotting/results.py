@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score, roc_curve 
 from typing import List, Optional, Dict, Any, Union, Tuple
 import multiprocessing as mp
+from fastcore.all import is_listy
 
 from .plot_settings import PlotSettings
 from ..utils.statistics import uncert_round
@@ -184,7 +185,7 @@ def plot_sample_pred(df:pd.DataFrame, pred_name:str='pred', targ_name:str='gen_t
     '''
     
     sig,bkg = (df[targ_name] == 1),(df[targ_name] == 0)
-    if not isinstance(bins,list): bins = np.linspace(df[pred_name].min(),df[pred_name].max(), bins if isinstance(bins, int) else 10)
+    if not (isinstance(bins,np.ndarray) or is_listy(bins)): bins = np.linspace(df[pred_name].min(),df[pred_name].max(), bins if isinstance(bins, int) else 10)
     hist_params = {'range': lim_x, 'bins': bins, 'density': density, 'alpha': 0.8, 'stacked':True, 'rwidth':1.0}
     sig_samples = _get_samples(df[sig], sample_name, wgt_name)
     bkg_samples = _get_samples(df[bkg], sample_name, wgt_name)

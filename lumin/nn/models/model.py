@@ -130,7 +130,8 @@ class Model(AbsModel):
         for c in self.fit_params.cbs: c.on_batch_begin()
         self.fit_params.y_pred = self.model(self.fit_params.x)
         if self.fit_params.state != 'test' and self.fit_params.loss_func is not None:
-            self.fit_params.loss_func.weight = self.fit_params.w
+            if hasattr(self.fit_params.loss_func, 'weights'): self.fit_params.loss_func.weights = self.fit_params.w  # Proper weighting required
+            else:                                             self.fit_params.loss_func.weight  = self.fit_params.w
             self.fit_params.loss_val = self.fit_params.loss_func(self.fit_params.y_pred, self.fit_params.y)
         for c in self.fit_params.cbs: c.on_forwards_end()
         if self.fit_params.state != 'train': return
@@ -265,7 +266,7 @@ class Model(AbsModel):
         return loss/cnt
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred', pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None,
-                      bs:Optional[int]=None) -> None:
+                       bs:Optional[int]=None) -> None:
         r'''
         '''
 
@@ -476,7 +477,8 @@ class OldModel(Model):
         for x, y, w in batch_yielder:
             for c in callbacks: c.on_batch_begin()
             y_pred = self.model(x)
-            self.loss.weight = w
+            if hasattr(self.loss, 'weights'): self.loss.weights = w  # Proper weighting required
+            else:                             self.loss.weight  = w
             loss = self.loss(y_pred, y)
             losses.append(loss.data.item())
             self.opt.zero_grad()
@@ -529,7 +531,8 @@ class OldModel(Model):
         if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
         elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
         if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
-        self.loss.weight = weights
+        if hasattr(self.loss, 'weights'): self.loss.weights = weights  # Proper weighting required
+        else:                             self.loss.weight  = weights
         loss = self.loss(y_pred, targets)
         for c in callbacks: c.on_eval_end(loss=loss)        
         return loss.data.item()
