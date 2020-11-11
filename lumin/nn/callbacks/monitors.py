@@ -53,7 +53,7 @@ class EarlyStopping(Callback):
             self.min_loss = loss
             self.epochs = 0
             self.improve_in_cycle = True
-            if self.cyclic_cb.cycle_end: self.improve_in_cycle = False
+            if self.cyclic_cb is not None and self.cyclic_cb.cycle_end: self.improve_in_cycle = False
         elif self.cyclic_cb is not None:
             if self.cyclic_cb.cycle_end:
                 if self.improve_in_cycle:
@@ -141,8 +141,8 @@ class MetricLogger(Callback):
                     self.vel_vals[i].append(v[-1]-v[-2])
                     self.gen_vals[i].append(v[-1]/self.loss_vals[0][-1])
                 if self.loss_vals[i+1][-1] <= self.best_loss: self.best_loss = self.loss_vals[i+1][-1]
-                if not self.log:
-                    if self.loss_vals[i+1][0]/self.loss_vals[i+1][-1] > 50: self.log = True
+            if not self.log:
+                if self.loss_vals[0][0]/self.loss_vals[0][-1] > 50: self.log = True
             self.update_plot()
         else:
             self.print_losses()
@@ -191,8 +191,9 @@ class MetricLogger(Callback):
             self.vel_ax.clear()
             self.vel_ax.tick_params(axis='y', labelsize=0.8*self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col, which='both')
             self.vel_ax.grid(True, which="both")
-            with sns.color_palette(self.plot_settings.cat_palette):
-                for v,m in zip(self.vel_vals,self.loss_names): self.vel_ax.plot(self.epochs[2:], v, label=f'{m} {v[-1]:.2E}')
+            with sns.color_palette(self.plot_settings.cat_palette) as palette:
+                for i, (v,m) in enumerate(zip(self.vel_vals,self.loss_names[1:])):
+                    self.vel_ax.plot(self.epochs[2:], v, label=f'{m} {v[-1]:.2E}', color=palette[i+1])
             self.vel_ax.legend(loc='lower right', fontsize=0.8*self.plot_settings.leg_sz)
             self.vel_ax.set_ylabel(r'$\Delta \bar{L}\ /$ Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
 

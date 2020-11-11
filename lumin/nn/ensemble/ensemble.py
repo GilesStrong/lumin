@@ -269,7 +269,7 @@ class Ensemble(AbsEnsemble):
                 end_cycle = len(cycle_losses[values[i]['model']])-patience-1
                 if load_cycles_only: end_cycle += 1
                 for n, c in enumerate(range(end_cycle, max(0, end_cycle-n_cycles), -1)):
-                    self.models.append(self.load_trained_model(c, self.model_builder, name=values[i]['path']/f'{values[i]["model"]}_cycle_'))
+                    self.models.append(self.load_trained_model(c, self.model_builder, name=values[i]['path']/'cycle_'))
                     weights.append((n+1 if load_cycles_only else n+2)**weighting_pwr)
                     if verbose: print(f"Model {i} cycle {c} has {metric} = {cycle_losses[values[i]['model']][c]} and weight {weights[-1]}")
         

@@ -127,7 +127,7 @@ class AbsCyclicCallback(Callback):
 
     def _save_cycle(self) -> None:
         self.model.save(self.model.fit_params.cb_savepath/f'cycle_{self.cycle_count}.h5')
-        self.cycle_losses.append(self.model.fit_params.loss_val)
+        self.cycle_losses.append(self.model.fit_params.loss_val.data.item())
 
     def _incr_cycle(self) -> None:
         self.cycle_iter += 1
@@ -249,10 +249,10 @@ class CycleLR(AbsCyclicCallback):
     # TODO sort lr-range or remove decrease_param
 
     def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
-                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+                 cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = True if interp == 'cosine' else False
-        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult,
-                         decrease_param=decrease_param, scale=scale, model=model, plot_settings=plot_settings)
+        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult, decrease_param=decrease_param, scale=scale, model=model,
+                         cycle_save=cycle_save, plot_settings=plot_settings)
         self.param_name = 'Learning Rate'
 
     def _set_param(self, param:float) -> None: self.model.set_lr(param)
@@ -308,10 +308,10 @@ class CycleMom(AbsCyclicCallback):
     # TODO sort lr-range or remove decrease_param
 
     def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
-                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+                 cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         if decrease_param == 'auto': decrease_param = False if interp == 'cosine' else True
-        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult,
-                         decrease_param=decrease_param, scale=scale, model=model, plot_settings=plot_settings)
+        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult, decrease_param=decrease_param, scale=scale, model=model,
+                         cycle_save=cycle_save, plot_settings=plot_settings)
         self.param_name = 'Momentum'
 
     def _set_param(self, param:float) -> None: self.model.set_mom(param)
