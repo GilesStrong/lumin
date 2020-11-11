@@ -27,7 +27,7 @@ __all__ = ['train_models']
 def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
                  cb_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None, pred_cb:Callable[[],PredHandler]=PredHandler,
                  train_on_weights:bool=True, eval_on_weights:bool=True,
-                 bulk_move:bool=True,
+                 bulk_move:bool=True, start_mode_id:int=0,
                  live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), 
                  plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
@@ -38,7 +38,9 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
 
-    model_bar = master_bar(range(n_models)) if IN_NOTEBOOK else progress_bar(range(n_models))
+    model_rng = range(start_mode_id, n_models)
+    for i in model_rng: os.system(f"rm -r {savepath}/model_id_{i}")
+    model_bar = master_bar(model_rng) if IN_NOTEBOOK else progress_bar(model_rng)
     train_tmr = timeit.default_timer()
     for model_num in (model_bar):    
         if IN_NOTEBOOK: model_bar.show()
@@ -49,8 +51,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
             elif live_fdbk_extra_first_only: live_fdbk_extra = False  # Only show full fdbk info for first training
 
         model_dir = savepath/f'model_id_{model_num}'
-        model_dir.mkdir(parents=True, exist_ok=True)
-        os.system(f"rm {model_dir}/*.h5 {model_dir}/*.json {model_dir}/*.pkl {model_dir}/*.png")
+        model_dir.mkdir(parents=True)
         model = Model(model_builder)
         cbs = []
         for c in cb_partials: cbs.append(c())

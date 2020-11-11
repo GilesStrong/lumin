@@ -403,6 +403,8 @@ class OneCycle(AbsCyclicCallback):
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
         if len(self.lr_range) == 2: self.lr_range.append(0)
 
+    def _reset(self) -> None: self.cycle_iter,self.cycle_count,self.cycle_end,self.hist,self.cycle_losses,self.nb = 0,0,False,{'lr': [], 'mom': []},[],None
+
     def on_batch_begin(self) -> None:
         r'''
         Computes the new lr and momentum and assignes them to the optimiser

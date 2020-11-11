@@ -417,8 +417,8 @@ class Model(AbsModel):
         tf_rep = prepare(m)
         tf_rep.export_graph(f'{name}.pb')
            
-    def get_nn_feat_importance(self, fy:FoldYielder, bs:Optional[int]=None, eval_metric:Optional[EvalMetric]=None, savename:Optional[str]=None,
-                               settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
+    def get_feat_importance(self, fy:FoldYielder, bs:Optional[int]=None, eval_metric:Optional[EvalMetric]=None, savename:Optional[str]=None,
+                            settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
         r'''
         Call :meth:`~lumin.nn.interpretation.features.get_nn_feat_importance` passing this :class:`~lumin.nn.models.model.Model` and provided arguments
 
@@ -430,7 +430,7 @@ class Model(AbsModel):
             settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         '''
 
-        return get_nn_feat_importance(self, fy=fy, bs=bs, eval_metric=eval_metric, savename=savename, plot_settings=settings)
+        return get_nn_feat_importance(self, fy=fy, bs=bs, eval_metric=eval_metric, savename=savename, settings=settings)
 
     def get_out_size(self) -> int:
         r'''
