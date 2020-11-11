@@ -91,7 +91,7 @@ class SaveBest(Callback):
         if self.model.fit_params.state != 'valid': return
         sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
         self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
-        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss*sz
+        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss()*sz
         self.cnt += sz
 
     def on_epoch_end(self) -> None:
@@ -155,8 +155,8 @@ class MetricLogger(Callback):
     def _add_loss_name(self, name:str) -> None:
         self.loss_names.append(name)
         self.loss_vals.append(list(np.zeros_like(self.loss_vals[1])))
-        self.vel_vals.append(list(np.zeros_like(self.vel_vals[1])))
-        self.gen_vals.append(list(np.zeros_like(self.gen_vals[1])))
+        self.vel_vals.append(list(np.zeros_like(self.vel_vals[0])))
+        self.gen_vals.append(list(np.zeros_like(self.gen_vals[0])))
 
     def print_losses(self) -> None:
         p = f'Epoch {len(self.loss_vals[1])+1}: Training = {np.mean(self.loss_vals[0][-self.n_trn_flds:]):.2E}'

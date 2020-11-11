@@ -119,6 +119,12 @@ class AbsCyclicCallback(Callback):
     def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
                  cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
+        if not isinstance(cycle_mult, int):
+            print('Coercing cycle_mult to int')
+            cycle_mult = int(cycle_mult)
+        if not isinstance(scale, int):
+            print('Coercing scale to int')
+            scale = int(scale)
         store_attr(but=['model','plot_settings','interp'])
         self.interp = interp.lower()
         self._reset()

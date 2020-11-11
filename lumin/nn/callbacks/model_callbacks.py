@@ -8,6 +8,7 @@ from fastcore.all import store_attr
 import torch
 
 from ..models.abs_model import AbsModel, OldAbsModel
+from ..models.model import Model
 from .callback import Callback, OldCallback
 from .cyclic_callbacks import AbsCyclicCallback
 from .abs_callback import AbsCallback
@@ -209,8 +210,6 @@ class OldSWA(OldAbsModelCallback):
 
 class SWA(Callback):
     r'''
-    TODO: fix model copying and evaluation and losses
-
     Callback providing Stochastic Weight Averaging based on (https://arxiv.org/abs/1803.05407)
     This adapted version allows the tracking of a pair of average models in order to avoid having to hardcode a specific start point for averaging:
     
@@ -248,6 +247,12 @@ class SWA(Callback):
     def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None,
                  update_on_cycle_end:Optional[bool]=None, verbose:bool=False, plot_settings:PlotSettings=PlotSettings()):
         super().__init__(model=model, plot_settings=plot_settings)
+        if not isinstance(start_epoch, int):
+            print('Coercing start_epoch to int')
+            start_epoch = int(start_epoch)
+        if not isinstance(renewal_period, int):
+            print('Coercing renewal_period to int')
+            renewal_period = int(renewal_period)
         store_attr(but=['model','plot_settings'])
         self.weights,self.loss = None,None
         self.true_div = True if LooseVersion(torch.__version__) >= LooseVersion("1.6") else False  # Integer division changed in PyTorch 1.6
@@ -261,7 +266,8 @@ class SWA(Callback):
         if self.weights is None:
             self.weights = copy.deepcopy(self.model.get_weights())
             self.weights_new = copy.deepcopy(self.model.get_weights())
-            self.test_model = copy.deepcopy(self.model)
+            self.test_model = Model(self.model.model_builder)  # Cant deep copy model since fit_params contains SWA callback
+            self.test_model.loss = copy.deepcopy(self.model.loss)  # In case user has manually changed the loss function
             self.epoch,self.swa_n,self.n_since_renewal,self.first_completed,self.cycle_since_replacement,self.active = 0,0,0,False,1,False
             
     def on_epoch_begin(self) -> None:
@@ -341,6 +347,7 @@ class SWA(Callback):
         Evaluates SWA model and returns loss
         '''
 
+        if self.epoch <= self.start_epoch: return self.model.fit_params.loss_val
         if self.loss is None:
             self.test_model.set_weights(self.weights)
             self.loss = self.test_model.evaluate(self.model.fit_params.by)

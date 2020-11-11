@@ -2,8 +2,10 @@
 
 ## Important changes
 
-- Model fitting:
+- Input masks (present if e.g using feature subsampling in `Model`Builder`)
     - `BatchYielder` now takes an `input_mask` argument to filter inputs
+    - `Model` prediction methods no longer take input mask arguments, instead the input mask (if present) is automatically used. If users have already filtered their data, they should manually remove the input mask from the model (i.e. set it to None)
+- Callbacks which take arguments related to (sub-)epochs (e.g. cycle length, scale, time to renewal. etc. for `CycleLR`, `OneCycle`, etc. and `SWA`) now take these arguments in terms of epochs. I.e. a OneCycle schedule with 9 training folds, running for 15 epochs would previously require e.g. `lenghts=(45,90)` in order to complete the cycle in 15 epochs (135 subepochs). Now it is specified as simply `lenghts=(5,10)`. Additionally, these arguments must be integers. Floats will be coerced to integers with warning.
   
 ## Breaking
 
@@ -36,6 +38,7 @@
     - `_build_ensemble` is now private
 - `Model`:
     - `predict_array` and `predict_folds` are now private
+    - `fit` now expects to perform the entire fitting of the model, rather than just one sup-epoch. Additionally, validation loss is now computed only at the end of the epoch, rather that previously where it was computed after each fold.
 
 ## Depreciations
 
