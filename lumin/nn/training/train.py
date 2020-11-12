@@ -116,11 +116,11 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
             if hasattr(c, 'cycle_save') and c.cycle_save: cycle_losses[-1] = c.cycle_losses
         results.append({})
         results[-1]['loss'] = save_best.min_loss
-        results[-1]['path'] = model_dir
         if eval_metrics is not None and len(eval_metrics) > 0:
             y_pred = model.predict(fy[val_idx]['inputs'], bs=bs if not bulk_move else None)
             for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_idx, y_pred)
         print(f"Scores are: {results[-1]}")
+        results[-1]['path'] = model_dir
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)
         with open(savepath/'cycle_file.pkl', 'wb') as fout: pickle.dump(cycle_losses, fout)
         

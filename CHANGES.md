@@ -2,6 +2,14 @@
 
 ## Important changes
 
+- Model training and callbacks have significantly changed:
+    - `Model.fit` now expects to perform the entire training proceedure, rather than just single epochs.
+    - A lot of the functionality of the old training method `fold_train_ensemble` is now delegated to `Model.fit`.
+    - A new ensemble training method `train_models` has replaced `fold_train_ensemble`. It provied a similar API, but aims to be more understandable to users. 
+    - `Model.fit` is now 'stateful': a `fit_params` class is created containing all the information and data relevant to training the model and trainig methods change their actions according to `fit_params.state` ('train', 'valid', and 'test')
+    - Callbacks now have greater potential: They have more action points during the training cycle, where they can affect training behaviour, and they have access to `fit_params`, allowing them to modify more aspects of the training and have indirect access to all other callbacks.
+    - The "tick" for the training loop is now one epoch, i.e. validation loss is computed after the entire use of the training data (as opposed to after every sub-epoch), cyclic callbacks now work on the scale of epochs, rather than sub-epochs. Due to the data being split into folds, the concept of a sup-epoch still exists, but the APIs are now simplified for the user (previously they were a mixture of sup-epoch and epoch arguments).
+    - For users who do not wish to transition to the new model behaviour, the existing behaviour can still be achieved by using the `Old*` models and classes. See the depreciations section for the full list. 
 - Input masks (present if e.g using feature subsampling in `Model`Builder`)
     - `BatchYielder` now takes an `input_mask` argument to filter inputs
     - `Model` prediction methods no longer take input mask arguments, instead the input mask (if present) is automatically used. If users have already filtered their data, they should manually remove the input mask from the model (i.e. set it to None)
@@ -44,6 +52,7 @@
     - `predict_array` and `predict_folds` are now private
     - `fit` now expects to perform the entire fitting of the model, rather than just one sup-epoch. Additionally, validation loss is now computed only at the end of the epoch, rather that previously where it was computed after each fold.
 - `SWA` `renewal_period` should now be None in order to prevent a second average being tracked (previously was negative)
+- Some examples have been renamed, and copies using the old model fitting proceedure and old callbacks are available in `examples/old`
 
 ## Depreciations
 
