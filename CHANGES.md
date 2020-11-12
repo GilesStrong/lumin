@@ -18,6 +18,8 @@
   
 ## Breaking
 
+- Heavy renaming of methods and classes due to changes in model trainng and callbacks.
+
 ## Additions
 
 - `__del__` method to `FowardHook` class
