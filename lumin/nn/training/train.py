@@ -70,11 +70,9 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Returns:
-        - results list of validation losses and other eval_metrics results, ordered by model training.
-            Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
+        - results list of validation losses and other eval_metrics results, ordered by model training. Can be used to create an :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
         - histories list of loss histories, ordered by model training
-        - cycle_losses if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed,
-            lists validation losses at the end of each cycle, ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
+        - cycle_losses if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed, lists validation losses at the end of each cycle, ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
     '''
 
     results,histories,cycle_losses,savepath = [],[],[],Path(savepath)

@@ -57,7 +57,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
 - Easy exporting of models to other libraries via Onnx
 - Use with CPU and NVidia GPU
 - Evaluation on domain-specific metrics such as Approximate Median Significance via `EvalMetric` class
-- Keras-style callbacks
+- fastai-style callbacks and stateful model-fitting, allowing training, models, losses, and data to be accessible and adjustable at any point
 
 ### Feature selection methods
 

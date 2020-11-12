@@ -1,7 +1,7 @@
 from typing import Union, Tuple, Callable, Optional, List
 import numpy as np
 import pandas as pd
-from fastcor.all import is_listy
+from fastcore.all import is_listy
 
 import torch
 from torch import Tensor

@@ -28,7 +28,6 @@
     - now takes a `bs` argument for `evaluate`
     - predictions can now be modified by passing a `PredHandler` callback to `pred_cb`. The default one simply returns the model predicitons, however other actions could be defined by the user, e.g. performing argmax for multiclass classifiers.
 
-
 ## Removals
 
 - `Model`:

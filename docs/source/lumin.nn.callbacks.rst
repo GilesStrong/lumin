@@ -52,10 +52,26 @@ lumin.nn.callbacks.model\_callbacks module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.callbacks.monitors module
+----------------------------------
+
+.. automodule:: lumin.nn.callbacks.monitors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.callbacks.opt\_callbacks module
 ----------------------------------------
 
 .. automodule:: lumin.nn.callbacks.opt_callbacks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lumin.nn.callbacks.pred\_handlers module
+----------------------------------------
+
+.. automodule:: lumin.nn.callbacks.pred_handlers
    :members:
    :undoc-members:
    :show-inheritance:

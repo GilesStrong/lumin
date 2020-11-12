@@ -15,7 +15,7 @@ from .abs_callback import AbsCallback
 from ...plotting.plot_settings import PlotSettings
 from ..data.batch_yielder import BatchYielder
 
-__all__ = []
+__all__ = ['SWA']
 
 
 class OldAbsModelCallback(OldCallback):
