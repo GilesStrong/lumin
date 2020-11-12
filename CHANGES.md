@@ -1,4 +1,22 @@
-# Targeting v0.7.0
+# Targeting v0.7.1
+
+## Important changes
+  
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
+# v0.7.0 - All you batch are belong to us
 
 ## Important changes
 
