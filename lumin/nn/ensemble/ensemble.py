@@ -36,7 +36,11 @@ class Ensemble(AbsEnsemble):
     However the output pipeline will be used to deprocess model predictions.
 
 
-    Once instanciated, :meth:`lumin.nn.ensemble.ensemble.Ensemble.build_ensemble` or :meth:load should be called. Alternatively, class_methods :meth:`lumin.nn.ensemble.ensemble.Ensemble.from_save` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.from_results` may be used.
+    Once instanciated, :meth:`lumin.nn.ensemble.ensemble.Ensemble.build_ensemble` or :meth:load should be called.
+    Alternatively, class_methods :meth:`lumin.nn.ensemble.ensemble.Ensemble.from_save` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.from_results` may be used.
+    
+    # TODO: check whether model_builder is necessary here
+    # TODO: Standardise pipeline treatment: currently inputs not processed, but outputs are
 
     Arguments:
         input_pipe: Optional input pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_input_pipe`
@@ -48,9 +52,6 @@ class Ensemble(AbsEnsemble):
         >>>
         >>> ensemble = Ensemble(input_pipe, output_pipe, model_builder)
     '''
-
-    # TODO: check whether model_builder is necessary here
-    # TODO: Standardise pipeline treatment: currently inputs not processed, but outputs are
 
     def __init__(self, input_pipe:Optional[Pipeline]=None, output_pipe:Optional[Pipeline]=None, model_builder:Optional[ModelBuilder]=None):
         super().__init__()
@@ -281,9 +282,6 @@ class Ensemble(AbsEnsemble):
         
     def _predict_array(self, arr:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None,
                        display:bool=True, pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> np.ndarray:
-        r'''
-        '''
-        
         n_models = len(self.models) if n_models is None else n_models
         models = self.models[:n_models]
         weights = self.weights[:n_models]
@@ -304,9 +302,6 @@ class Ensemble(AbsEnsemble):
     
     def _predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred', pred_cb:PredHandler=PredHandler(),
                        cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> None:
-        r'''
-        '''
-
         n_models = len(self.models) if n_models is None else n_models
         mb = master_bar(range(len(fy)))
         for fold_idx in mb:
@@ -327,6 +322,19 @@ class Ensemble(AbsEnsemble):
     def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred',
                 pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[None,np.ndarray]:
         r'''
+        Apply ensemble to inputed data and compute predictions.
+        
+        Arguments:
+            inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
+            as_np: whether to return predictions as Numpy array (otherwise tensor) if inputs are a Numpy array, Pandas DataFrame, or tensor
+            pred_name: name of group to which to save predictions if inputs are a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
+            pred_cb: :class:`~lumin.nn.callbacks.pred_handlers.PredHandler` callback to determin how predictions are computed.
+                Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
+            cbs: list of any instantiated callbacks to use during prediction
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
+
+        Returns:
+            if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
         
         if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, n_models, display=True, pred_cb=pred_cb, cbs=cbs, bs=bs)
