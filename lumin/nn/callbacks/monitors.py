@@ -221,15 +221,12 @@ class MetricLogger(Callback):
         self.epochs.append(self.epochs[-1]+1)
         self.loss_vals[1].append(self.loss/self.cnt)
         for i,c in enumerate(self.model.fit_params.loss_cbs):  self.loss_vals[i+2].append(c.get_loss())
-
         if self.show_plots:
             for i, v in enumerate(self.loss_vals[1:]):
                 if len(self.loss_vals[1]) > 1 and self.extra_detail:
                     self.vel_vals[i].append(v[-1]-v[-2])
                     self.gen_vals[i].append(v[-1]/self.loss_vals[0][-1])
                 if self.loss_vals[i+1][-1] <= self.best_loss: self.best_loss = self.loss_vals[i+1][-1]
-            if not self.log:
-                if self.loss_vals[0][0]/self.loss_vals[0][-1] > 50: self.log = True
             self.update_plot()
         else:
             self.print_losses()
@@ -254,7 +251,7 @@ class MetricLogger(Callback):
         Print training and validation losses for the last epoch
         '''
 
-        p = f'Epoch {len(self.loss_vals[1])+1}: Training = {np.mean(self.loss_vals[0][-self.n_trn_flds:]):.2E}'
+        p = f'Epoch {len(self.loss_vals[1])}: Training = {np.mean(self.loss_vals[0][-self.n_trn_flds:]):.2E}'
         for v,m in zip(self.loss_vals[1:],self.loss_names[1:]): p += f' {m} = {v[-1]:.2E}'
         print(p)
 
@@ -314,7 +311,8 @@ class MetricLogger(Callback):
         self.loss_vals = [[] for _ in self.loss_names]
         self.vel_vals, self.gen_vals = [[] for _ in range(len(self.loss_names)-1)], [[] for _ in range(len(self.loss_names)-1)]
         self.n_trn_flds = len(self.model.fit_params.trn_idxs)
-        self.log,self.best_loss,self.epochs = False,math.inf,[0]
+        self.log = 'regress' in self.model.objective.lower()
+        self.best_loss,self.epochs = math.inf,[0]
 
         if self.show_plots:
             with sns.axes_style(**self.plot_settings.style):

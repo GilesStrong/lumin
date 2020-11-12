@@ -3,9 +3,10 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
 from collections import OrderedDict
+from fastcore.all import is_listy
 
 from .plot_settings import PlotSettings
-from ..nn.callbacks.opt_callbacks import LRFinder
+from ..nn.callbacks.abs_callback import AbsCallback
 
 __all__ = ['plot_train_history', 'plot_lr_finders']
 
@@ -72,6 +73,7 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
         log_y: whether to plot the y-axis with a log scale
     '''
 
+    if not is_listy(histories): histories = [histories]
     n_folds = len(histories[0]['Training'])//len(histories[0]['Validation'])
 
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
@@ -94,7 +96,7 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
         if show: plt.show()
 
 
-def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
+def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
                     log_y:Union[str,bool]='auto', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by

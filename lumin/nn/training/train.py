@@ -127,7 +127,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     print("\n______________________________________")
     print("Training finished")
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
-    plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
+    plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK, log_y='regress' in model_builder.objective)
     for score in results[0]:
         if score == 'path': continue
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))

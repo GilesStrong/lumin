@@ -4,8 +4,9 @@ from typing import Tuple, Optional
 import pandas as pd
 
 from .callback import OldCallback, Callback
-from ..models.abs_model import AbsModel, OldAbsModel
+from ..models.abs_model import OldAbsModel
 from ...plotting.plot_settings import PlotSettings
+from ...plotting.training import plot_lr_finders
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -125,41 +126,24 @@ class LRFinder(Callback):
         self.model.set_lr(self.lr_bounds[0])
         self.history = {'loss': [], 'lr': []}
 
-    def on_fold_begin(self) -> None:
+    def on_epoch_begin(self) -> None:
         r'''
         Gets number of batches total on first fold
         '''
         if self.model.fit_params.state != 'train': return
         if self.nb is None:
-            self.nb = self.model.fit_params.n_epochs*len(self.model.fit_params.by)
+            self.nb = self.model.fit_params.n_epochs*np.sum([self.model.fit_params.fy.get_data_count(i)//self.model.fit_params.bs 
+                                                             for i in self.model.fit_params.trn_idxs])
             self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/self.nb)
         
     def _calc_lr(self): return self.lr_bounds[0]*(self.lr_mult**self.iter)
     
-    def plot(self, n_skip:int=0, n_max:Optional[int]=None, lim_y:Optional[Tuple[float,float]]=None) -> None:
+    def plot(self) -> None:
         r'''
         Plot the loss as a function of the LR.
-
-        Arguments:
-            n_skip: Number of initial iterations to skip in plotting
-            n_max: Maximum iteration number to plot
-            lim_y: y-range for plotting
         '''
 
-        # TODO: Decide on whether to keep this; could just pass to plot_lr_finders
-
-        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
-            plt.figure(figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
-            plt.plot(self.history['lr'][n_skip:n_max], self.history['loss'][n_skip:n_max], label='Training loss', color='g')
-            if np.log10(self.lr_bounds[1])-np.log10(self.lr_bounds[0]) >= 3: plt.xscale('log')
-            plt.ylim(lim_y)
-            plt.grid(True, which="both")
-            plt.legend(loc=self.plot_settings.leg_loc, fontsize=self.plot_settings.leg_sz)
-            plt.xticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
-            plt.yticks(fontsize=self.plot_settings.tk_sz, color=self.plot_settings.tk_col)
-            plt.ylabel("Loss", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
-            plt.xlabel("Learning rate", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
-            plt.show()
+        plot_lr_finders([self], loss_range='auto', settings=self.plot_settings, log_y='auto' if 'regress' in self.model.objective.lower() else False)
         
     def plot_lr(self) -> None:
         r'''

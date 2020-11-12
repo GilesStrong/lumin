@@ -151,15 +151,17 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
     idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
-    lr_finders,nb = [],fy.get_data_count(0)//bs
+    nb = (fy.n_folds-1)*fy.get_data_count(0)//bs
+    lr_finders = []
     tmr = timeit.default_timer()
     mb = master_bar(idxs)
-    for trn_idx in mb:
+    for idx in mb:
         model = Model(model_builder)
         cbs = []
         for c in cb_partials: cbs.append(c())
         lrf = LRFinder(lr_bounds=lr_bounds, nb=nb)
-        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=[trn_idx], cbs=cbs+[lrf], model_bar=mb)
+        trn_idxs = list(idxs).remove(idx)
+        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=trn_idxs, cbs=cbs+[lrf], model_bar=mb)
         lr_finders.append(lrf)
     del model
         
