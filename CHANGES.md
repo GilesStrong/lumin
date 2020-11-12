@@ -10,6 +10,8 @@
 
 ## Fixes
 
+- `Model` now creats `cb_savepath` is it didn't already exist
+
 ## Changes
 
 ## Depreciations
