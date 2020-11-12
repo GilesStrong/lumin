@@ -23,6 +23,7 @@
 - `Model`:
     - Now no longer takes `callbacks` and `mask_inputs` as arguments for `evaluate`
     - `evaluate_from_by` removed, just call `evaluate`
+- Callbacks no longer take model and plot_settings arguments during initialisation. These should be added by calling the relevant setters. `Model` will call them when relevant.
 
 ## Fixes
 
@@ -39,6 +40,7 @@
 - `Model`:
     - `predict_array` and `predict_folds` are now private
     - `fit` now expects to perform the entire fitting of the model, rather than just one sup-epoch. Additionally, validation loss is now computed only at the end of the epoch, rather that previously where it was computed after each fold.
+- `SWA` `renewal_period` should now be None in order to prevent a second average being tracked (previously was negative)
 
 ## Depreciations
 

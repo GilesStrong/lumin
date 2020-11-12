@@ -111,14 +111,12 @@ class AbsCyclicCallback(Callback):
         decrease_param: whether to begin by decreasing the parameter, otherwise begin by increasing it
         scale: multiplicative factor for setting the initial number of epochs per cycle.
             E.g `scale=1` means 1 epoch per cycle, `scale=5` means 5 epochs per cycle.
-        model: model to refer to during training
+        cycle_save: if true will save a copy of the model at the end of each cycle. Used for building ensembles from single trainings (e.g. snapshot ensembles)
         nb: number of minibatches (iterations) to expect per epoch
-        plot_settings: PlotSettings class
     '''
 
-    def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1,
-                 cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(model=model, plot_settings=plot_settings)
+    def __init__(self, interp:str, param_range:Tuple[float,float], cycle_mult:int=1, decrease_param:bool=False, scale:int=1, cycle_save:bool=False):
+        super().__init__()
         if not isinstance(cycle_mult, int):
             print('Coercing cycle_mult to int')
             cycle_mult = int(cycle_mult)
@@ -170,7 +168,9 @@ class AbsCyclicCallback(Callback):
         else:
             raise ValueError(f"Interpolation mode {self.interp} not implemented")
     
-    def on_train_begin(self) -> None: self._reset()
+    def on_train_begin(self) -> None:
+        super().on_train_begin()
+        self._reset()
 
     def on_epoch_begin(self) -> None:
         r'''
@@ -239,10 +239,9 @@ class CycleLR(AbsCyclicCallback):
         interp: 'cosine' or 'linear' interpolation
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the LR (effectively reverses lr_range order), 'auto' selects according to interp
-        scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`.
-        nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one epoch
+        cycle_save: if true will save a copy of the model at the end of each cycle. Used for building ensembles from single trainings (e.g. snapshot ensembles)
+        nb: Number of batches in a epoch
 
     Examples::
         >>> cosine_lr = CycleLR(lr_range=(0, 2e-3), cycle_mult=2, scale=1,
@@ -255,10 +254,9 @@ class CycleLR(AbsCyclicCallback):
     # TODO sort lr-range or remove decrease_param
 
     def __init__(self, lr_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
-                 cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+                 cycle_save:bool=False):
         if decrease_param == 'auto': decrease_param = True if interp == 'cosine' else False
-        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult, decrease_param=decrease_param, scale=scale, model=model,
-                         cycle_save=cycle_save, plot_settings=plot_settings)
+        super().__init__(interp=interp, param_range=lr_range, cycle_mult=cycle_mult, decrease_param=decrease_param, scale=scale, cycle_save=cycle_save)
         self.param_name = 'Learning Rate'
 
     def _set_param(self, param:float) -> None: self.model.set_lr(param)
@@ -301,10 +299,9 @@ class CycleMom(AbsCyclicCallback):
         interp: 'cosine' or 'linear' interpolation
         cycle_mult: Multiplicative constant for altering the cycle length after each complete cycle
         decrease_param: whether to increase or decrease the momentum (effectively reverses mom_range order), 'auto' selects according to interp
-        scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one (sub-)epoch
-        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
-        nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        scale: Multiplicative constant for altering the length of a cycle. 1 corresponds to one cycle = one epoch
+        cycle_save: if true will save a copy of the model at the end of each cycle. Used for building ensembles from single trainings (e.g. snapshot ensembles)
+        nb: Number of batches in a epoch
 
     Examples::
         >>> cyclical_mom = CycleMom(mom_range=(0.85 0.95), cycle_mult=1,
@@ -314,10 +311,9 @@ class CycleMom(AbsCyclicCallback):
     # TODO sort lr-range or remove decrease_param
 
     def __init__(self, mom_range:Tuple[float,float], interp:str='cosine', cycle_mult:int=1, decrease_param:Union[str,bool]='auto', scale:int=1,
-                 cycle_save:bool=False, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
+                 cycle_save:bool=False):
         if decrease_param == 'auto': decrease_param = False if interp == 'cosine' else True
-        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult, decrease_param=decrease_param, scale=scale, model=model,
-                         cycle_save=cycle_save, plot_settings=plot_settings)
+        super().__init__(interp=interp, param_range=mom_range, cycle_mult=cycle_mult, decrease_param=decrease_param, scale=scale, cycle_save=cycle_save)
         self.param_name = 'Momentum'
 
     def _set_param(self, param:float) -> None: self.model.set_mom(param)
@@ -390,22 +386,19 @@ class OneCycle(AbsCyclicCallback):
     Automatically triggers early stopping on cycle completion.
 
     Arguments:
-        lengths: tuple of number of (sub-)epochs in first and second stages of cycle
+        lengths: tuple of number of epochs in first and second stages of cycle
         lr_range: list of initial and max LRs and optionally a final LR. If only two LRs supplied, then final LR will be zero.
         mom_range: tuple of initial and final momenta
         interp: 'cosine' or 'linear' interpolation
-        model: :class:`~lumin.nn.models.model.Model` to alter, alternatively call :meth:`~lumin.nn.models.Model.set_model`
-        nb: Number of batches in a (sub-)epoch
-        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        nb: Number of batches in a epoch
 
     Examples::
         >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2],
         ...                     mom_range=(0.85, 0.95), interp='cosine', nb=100)
     '''
 
-    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
-                 model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0], model=model, plot_settings=plot_settings)
+    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine'):
+        super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0])
         self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
         if len(self.lr_range) == 2: self.lr_range.append(0)
 

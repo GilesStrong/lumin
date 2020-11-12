@@ -106,14 +106,12 @@ class LRFinder(Callback):
     Callback class for Smith learning-rate range test (https://arxiv.org/abs/1803.09820)
 
     Arguments:
-        nb: number of batches in a (sub-)epoch
+        nb: number of batches in a epoch
         lr_bounds: tuple of initial and final LR
-        model: :class:`~limin.nn.models.Model` to alter, alternatively call :meth:`set_model`
-        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
-    def __init__(self, lr_bounds:Tuple[float,float]=[1e-7, 10], nb:Optional[int]=None, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(model=model, plot_settings=plot_settings)
+    def __init__(self, lr_bounds:Tuple[float,float]=[1e-7, 10], nb:Optional[int]=None):
+        super().__init__()
         self.lr_bounds,self.nb = lr_bounds,nb
         if self.nb is not None: self.lr_mult = (self.lr_bounds[1]/self.lr_bounds[0])**(1/self.nb)
 
@@ -122,6 +120,7 @@ class LRFinder(Callback):
         Prepares variables and optimiser for new training
         '''
 
+        super().on_train_begin()
         self.best,self.iter = math.inf,0
         self.model.set_lr(self.lr_bounds[0])
         self.history = {'loss': [], 'lr': []}

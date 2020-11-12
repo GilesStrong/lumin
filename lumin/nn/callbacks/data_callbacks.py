@@ -53,7 +53,6 @@ class BinaryLabelSmooth(Callback):
 
     Arguments:
         coefs: Smoothing coefficients: 0->coef[0] 1->1-coef[1]. if passed float, coef[0]=coef[1]
-        model: not used, only for compatability
 
     Examples::
         >>> lbl_smooth = BinaryLabelSmooth(0.1)
@@ -61,8 +60,8 @@ class BinaryLabelSmooth(Callback):
         >>> lbl_smooth = BinaryLabelSmooth((0.1, 0.02))
     '''
 
-    def __init__(self, coefs:Union[float,Tuple[float,float]]=0, model:Optional[AbsModel]=None):
-        super().__init__(model=model)
+    def __init__(self, coefs:Union[float,Tuple[float,float]]=0):
+        super().__init__()
         self.coefs = coefs if isinstance(coefs, tuple) else (coefs, coefs)
     
     def on_fold_begin(self) -> None:
@@ -231,14 +230,13 @@ class BootstrapResample(Callback):
         n_folds: the number of folds present in training :class:`~lumin.nn.data.fold_yielder.FoldYielder`
         bag_each_time: whether to sample a new set for each sub-epoch or to use the same sample each time
         reweight: whether to reweight the sampleed data to mathch the weight sum (per class) of the original data
-        model: not used, only for compatability
 
     Examples::
         >>> bs_resample BootstrapResample(n_folds=len(train_fy))
     '''
 
-    def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True, model:Optional[AbsModel]=None):
-        super().__init__(model=model)
+    def __init__(self, n_folds:int, bag_each_time:bool=False, reweight:bool=True):
+        super().__init__()
         self.n_trn_flds,self.bag_each_time,self.reweight = n_folds-1,bag_each_time,reweight
         
     def _get_sample(self, length:int) -> np.ndarray: return np.random.choice(range(length), length, replace=True)
@@ -269,6 +267,7 @@ class BootstrapResample(Callback):
         Resets internal parameters to prepare for a new training
         '''
 
+        super().on_train_begin()
         self.iter,self.samples = 0,[]
         np.random.seed()  # Is this necessary?
     
@@ -326,7 +325,6 @@ class ParametrisedPrediction(Callback):
         feats: list of feature names used during training (in the same order)
         param_feat: the feature name which is to be adjusted, or a list of features to adjust
         param_val: the value to which to set the paramertisation feature, of the list of values to set the parameterisation features to
-        model: unused, purely for compatability, just leave it as None
 
     Examples::
         >>> mass_param = ParametrisedPrediction(train_feats, 'res_mass', 300)
@@ -338,8 +336,8 @@ class ParametrisedPrediction(Callback):
 
     '''
 
-    def __init__(self, feats:List[str], param_feat:Union[List[str],str], param_val:Union[List[float],float], model:Optional[AbsModel]=None):
-        super().__init__(model=model)
+    def __init__(self, feats:List[str], param_feat:Union[List[str],str], param_val:Union[List[float],float]):
+        super().__init__()
         if not is_listy(param_feat): param_feat = [param_feat]
         if not is_listy(param_val):  param_val  = [param_val]
         self.feats,self.param_feat,self.param_val = feats,param_feat,param_val

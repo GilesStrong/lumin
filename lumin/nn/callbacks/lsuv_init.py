@@ -181,7 +181,6 @@ class LsuvInit(Callback):
         max_attempts: number of times to attempt weight scaling per layer
         do_orthonorm: whether to apply orthonormal initialisation first, or rescale the exisiting values
         verbose: whether to print out details of the rescaling
-        model: :class:`~lumin.nn.models.model.Model` to provide parameters, alternatively call :meth:`~lumin.nn.models.Model.set_model`
 
     Example::
         >>> lsuv = LsuvInit()
@@ -191,8 +190,8 @@ class LsuvInit(Callback):
         >>> lsuv = LsuvInit(needed_std=0.5, std_tol=0.01, max_attempts=100, do_orthonorm=True)
     '''
 
-    def __init__(self, needed_std:float=1.0, std_tol:float=0.1, max_attempts:int=10, do_orthonorm:bool=True, verbose:bool=False, model:Optional[AbsModel]=None):
-        super().__init__(model=model)
+    def __init__(self, needed_std:float=1.0, std_tol:float=0.1, max_attempts:int=10, do_orthonorm:bool=True, verbose:bool=False):
+        super().__init__()
         self.needed_std,self.std_tol,self.max_attempts,self.do_orthonorm,self.verbose = needed_std,std_tol,max_attempts,do_orthonorm,verbose
     
     def on_train_begin(self) -> None:
@@ -200,6 +199,7 @@ class LsuvInit(Callback):
         Sets the callback to initialise the model the first time that `on_epoch_begin` is called.
         '''
 
+        super().on_train_begin()
         self.init = False
         self.gg = {'hook_position':0, 'total_fc_conv_layers':0,'done_counter':-1,'hook':None,'act_dict':{},'counter_to_apply_correction':0,
                    'correction_needed':False,'current_coef':1.0}

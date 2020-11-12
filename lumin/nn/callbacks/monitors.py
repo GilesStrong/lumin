@@ -20,6 +20,13 @@ class EarlyStopping(Callback):
     r'''
     Tracks validation loss during training and terminates training if loss doesn't decrease after `patience` number of epochs.
     Losses are assumed to be averaged and will be re-averaged over the epoch unless `loss_is_meaned` is false.
+
+    Arguments:
+        patience: number of epochs to wait without improvement before stopping training
+        loss_is_meaned: if the batch loss value has been averaged over the number of elements in the batch, this should be true;
+            average loss will be computed over all elements in batch.
+            If the batch loss is not an average value, then the average will be computed over the number of batches.
+        model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`           
     '''
     
     def __init__(self, patience:int, loss_is_meaned:bool=True, model:Optional[AbsModel]=None):

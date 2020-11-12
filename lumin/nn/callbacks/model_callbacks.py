@@ -61,25 +61,25 @@ class OldSWA(OldAbsModelCallback):
     Callback providing Stochastic Weight Averaging based on (https://arxiv.org/abs/1803.05407)
     This adapted version allows the tracking of a pair of average models in order to avoid having to hardcode a specific start point for averaging:
     
-    - Model average x0 will begin to be tracked start_epoch (sub-)epochs/cycles after training begins.
+    - Model average #0 will begin to be tracked start_epoch epochs/cycles after training begins.
     - `cycle_since_replacement` is set to 1
-    - Renewal_period (sub-)epochs/cycles later, a second average x1 will be tracked.
-    - At the next renewal period, the performance of x0 and x1 will be compared on data contained in val_fold.
+    - Renewal_period epochs/cycles later, a second average #1 will be tracked.
+    - At the next renewal period, the performance of #0 and #1 will be compared on data contained in val_fold.
         
-        - If x0 is better than x1:
-            - x1 is replaced by a copy of the current model
+        - If #0 is better than #1:
+            - #1 is replaced by a copy of the current model
             - cycle_since_replacement is increased by 1
             - renewal_period is multiplied by cycle_since_replacement
         - Else:
-            - x0 is replaced by x1
-            - x1 is replaced by a copy of the current model
+            - #0 is replaced by #1
+            - #1 is replaced by a copy of the current model
             - cycle_since_replacement is set to 1
             - renewal_period is set back to its original value
 
     Additonally, will optionally (default True) lock-in to any cyclical callbacks to only update at the end of a cycle.
 
     Arguments:
-        start_epoch: (sub-)epoch/cycle to begin averaging
+        start_epoch: epoch/cycle to begin averaging
         renewal_period: How often to check performance of averages, and renew tracking of least performant
         model: :class:`~lumin.nn.models.model.Model` to provide parameters, alternatively call :meth:`~lumin.nn.models.Model.set_model`
         val_fold: Dictionary containing inputs, targets, and weights (or None) as Numpy arrays
@@ -213,44 +213,39 @@ class SWA(Callback):
     Callback providing Stochastic Weight Averaging based on (https://arxiv.org/abs/1803.05407)
     This adapted version allows the tracking of a pair of average models in order to avoid having to hardcode a specific start point for averaging:
     
-    - Model average x0 will begin to be tracked start_epoch (sub-)epochs/cycles after training begins.
+    - Model average #0 will begin to be tracked start_epoch epochs/cycles after training begins.
     - `cycle_since_replacement` is set to 1
-    - Renewal_period (sub-)epochs/cycles later, a second average x1 will be tracked.
-    - At the next renewal period, the performance of x0 and x1 will be compared on data contained in val_fold.
+    - Renewal_period epochs/cycles later, a second average #1 will be tracked.
+    - At the next renewal period, the performance of #0 and #1 will be compared on data contained in val_fold.
         
-        - If x0 is better than x1:
-            - x1 is replaced by a copy of the current model
+        - If #0 is better than #1:
+            - #1 is replaced by a copy of the current model
             - cycle_since_replacement is increased by 1
             - renewal_period is multiplied by cycle_since_replacement
         - Else:
-            - x0 is replaced by x1
-            - x1 is replaced by a copy of the current model
+            - #0 is replaced by #1
+            - #1 is replaced by a copy of the current model
             - cycle_since_replacement is set to 1
             - renewal_period is set back to its original value
 
     Additonally, will optionally (default True) lock-in to any cyclical callbacks to only update at the end of a cycle.
 
     Arguments:
-        start_epoch: (sub-)epoch/cycle to begin averaging
-        renewal_period: How often to check performance of averages, and renew tracking of least performant
-        model: :class:`~lumin.nn.models.model.Model` to provide parameters, alternatively call :meth:`~lumin.nn.models.Model.set_model`
-        val_fold: Dictionary containing inputs, targets, and weights (or None) as Numpy arrays
-        cyclic_callback: Optional for any cyclical callback which is running
+        start_epoch: epoch/cycle to begin averaging
+        renewal_period: How often to check performance of averages, and renew tracking of least performant. If None, will not track a second average.
         update_on_cycle_end: Whether to lock in to the cyclic callback and only update at the end of a cycle. Default yes, if cyclic callback present.
         verbose: Whether to print out update information for testing and operation confirmation
-        plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
     Examples::
         >>> swa = SWA(start_epoch=5, renewal_period=5)
     '''
 
-    def __init__(self, start_epoch:int, renewal_period:int=-1, model:Optional[AbsModel]=None,
-                 update_on_cycle_end:Optional[bool]=None, verbose:bool=False, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(model=model, plot_settings=plot_settings)
+    def __init__(self, start_epoch:int, renewal_period:Optional[int]=None, update_on_cycle_end:Optional[bool]=None, verbose:bool=False):
+        super().__init__()
         if not isinstance(start_epoch, int):
             print('Coercing start_epoch to int')
             start_epoch = int(start_epoch)
-        if not isinstance(renewal_period, int):
+        if not (isinstance(renewal_period, int) or renewal_period is None):
             print('Coercing renewal_period to int')
             renewal_period = int(renewal_period)
         store_attr(but=['model','plot_settings'])
@@ -262,6 +257,7 @@ class SWA(Callback):
         Initialises model variables to begin tracking new model averages
         '''
         
+        super().on_train_begin()
         self.cyclic_callback = None if len(self.model.fit_params.cyclic_cbs) == 0 else self.model.fit_params.cyclic_cbs[-1]
         if self.weights is None:
             self.weights = copy.deepcopy(self.model.get_weights())
@@ -296,7 +292,7 @@ class SWA(Callback):
             if self.swa_n > self.renewal_period:
                 self.first_completed = True
                 self.n_since_renewal += 1
-                if self.n_since_renewal > self.cycle_since_replacement*self.renewal_period and self.renewal_period > 0: self._compare_averages()
+                if self.n_since_renewal > self.cycle_since_replacement*self.renewal_period and self.renewal_period is not None: self._compare_averages()
             
         if (not self.update_on_cycle_end) or self.cyclic_callback.cycle_end: self.epoch += 1
         if self.active and not ((not self.update_on_cycle_end) or self.cyclic_callback.cycle_end or self.cyclic_callback.cycle_mult == 1): self.active = False
@@ -310,7 +306,7 @@ class SWA(Callback):
             if self.true_div: self.weights[param] = torch.true_divide(self.weights[param], self.swa_n+1)
             else:             self.weights[param] /= self.swa_n+1
         
-        if self.swa_n > self.renewal_period and self.first_completed and self.renewal_period > 0:
+        if self.swa_n > self.renewal_period and self.first_completed and self.renewal_period is not None:
             if self.verbose: print(f"New model is {self.n_since_renewal} epochs old")
             for param in self.weights_new:
                 self.weights_new[param] *= self.n_since_renewal

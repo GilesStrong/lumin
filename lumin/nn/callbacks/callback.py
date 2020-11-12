@@ -44,15 +44,12 @@ class OldCallback(OldAbsCallback):
 class Callback(AbsCallback):
     r'''
     Base callback class from which other callbacks should inherit.
-
-    Arguments:
-        model: model to refer to during training
-        plot_settings: PlotSettings class
     '''
 
-    def __init__(self, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
-        if model is not None: self.set_model(model)
-        self.set_plot_settings(plot_settings)
+    def __init__(self): self.model,self.plot_settings = None,PlotSettings()
+    
+    def on_train_begin(self) -> None:
+        if self.model is None: raise AttributeError("The model for this callback has not been set. Please call set_model before on_train_begin.")
 
     def set_model(self, model:AbsModel) -> None:
         r'''
