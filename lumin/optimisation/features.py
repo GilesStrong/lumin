@@ -391,6 +391,8 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
         Filtered list of training features
     '''
 
+    # XXX remove in V0.8
+
     tmr = timeit.default_timer()
     # Get sets of linearly correlated features clustered by Spearman's rank-order correlation coefficient
     print("Computing Spearman's rank-order correlation coefficients")
@@ -520,6 +522,8 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
     Returns:
         Filtered list of training features
     '''
+
+    # XXX remove in V0.8
     
     tmr = timeit.default_timer()
     remove,skip = [],[]    

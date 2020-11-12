@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Tuple, Optional
 from pathlib import Path
 from fastprogress import master_bar, progress_bar
 from fastprogress.fastprogress import IN_NOTEBOOK
@@ -11,26 +11,25 @@ from random import shuffle
 from collections import OrderedDict
 import math
 from functools import partial
-import warnings
 
 import torch.tensor as Tensor
 
 from ..data.fold_yielder import FoldYielder
 from ..data.batch_yielder import BatchYielder
 from ..models.model_builder import ModelBuilder
-from ..models.model import Model
-from ..callbacks.cyclic_callbacks import AbsCyclicCallback
-from ..callbacks.model_callbacks import AbsModelCallback
+from ..models.model import OldModel
+from ..callbacks.cyclic_callbacks import OldAbsCyclicCallback
+from ..callbacks.model_callbacks import OldAbsModelCallback
 from ...utils.misc import to_tensor, to_device
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
-from ...plotting.training import plot_train_history
+from ...plotting.training import old_plot_train_history
 from ...plotting.plot_settings import PlotSettings
-from .metric_logger import MetricLogger
+from .metric_logger import OldMetricLogger
 
 import matplotlib.pyplot as plt
 
-__all__ = ['fold_train_ensemble']
+__all__ = []
 
 
 def _get_folds(val_idx, n_folds, shuffle_folds:bool=True):
@@ -51,6 +50,10 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
                         savepath:Path=Path('train_weights'), verbose:bool=False, log_output:bool=False,
                         plot_settings:PlotSettings=PlotSettings()) -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
     r'''
+    .. Attention:: This method is depreciated in favour of :class:`~lumin.nn.training.train.train_models`.
+        It is a copy of the old `fold_train_ensemble` class used in lumin<=0.6.
+        It will be removed in V0.8
+
     Main training method for :class:`~lumin.nn.models.model.Model`.
     Trains a specified numer of models created by a :class:`~lumin.nn.models.model_builder.ModelBuilder` on data provided by a
     :class:`~lumin.nn.data.fold_yielder.FoldYielder`, and save them to savepath.
@@ -100,7 +103,8 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         - histories list of loss histories, ordered by model training
         - cycle_losses if an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback` was passed, list of validation losses at the end of each cycle, ordered by model training. Can be passed to :class:`~lumin.nn.ensemble.ensemble.Ensemble`.
     '''
-    # TODO: fix returns part of doc string
+
+    # XXX remove in V0.8
 
     os.makedirs(savepath, exist_ok=True)
     os.system(f"rm {savepath}/*.h5 {savepath}/*.json {savepath}/*.pkl {savepath}/*.png {savepath}/*.log")
@@ -117,8 +121,8 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
 
     if not IN_NOTEBOOK: live_fdbk = False
     if live_fdbk:
-        metric_log = MetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
-                                  plot_settings=plot_settings)
+        metric_log = OldMetricLogger(loss_names=['Train', 'Validation'], n_folds=fy.n_folds, extra_detail=live_fdbk_extra or live_fdbk_extra_first_only,
+                                     plot_settings=plot_settings)
     
     model_bar = master_bar(range(n_models)) if IN_NOTEBOOK else progress_bar(range(n_models))
     for model_num in (model_bar):
@@ -135,19 +139,19 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
         loss_history = OrderedDict({'trn_loss': [], 'val_loss': []})
         cycle_losses.append({})
         trn_ids = _get_folds(val_id, fy.n_folds, shuffle_folds)
-        model = Model(model_builder)
+        model = OldModel(model_builder)
         val_fold = fy.get_fold(val_id)
         if not eval_on_weights: val_fold['weights'] = None
 
         cyclic_callback,callbacks,loss_callbacks = None,[],[]
         for c in callback_partials: callbacks.append(c(model=model))
         for c in callbacks:
-            if isinstance(c, AbsCyclicCallback):
+            if isinstance(c, OldAbsCyclicCallback):
                 c.set_nb(nb)
                 cyclic_callback = c
                 improv_in_cycle = False
         for c in callbacks:
-            if isinstance(c, AbsModelCallback):
+            if isinstance(c, OldAbsModelCallback):
                 c.set_val_fold(val_fold)
                 c.set_cyclic_callback(cyclic_callback)
                 if getattr(c, "get_loss", None):
@@ -245,7 +249,7 @@ def fold_train_ensemble(fy:FoldYielder, n_models:int, bs:int, model_builder:Mode
     print("\n______________________________________")
     print("Training finished")
     print(f"Cross-validation took {timeit.default_timer()-train_tmr:.3f}s ")
-    plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
+    old_plot_train_history(histories, savepath/'loss_history', settings=plot_settings, show=IN_NOTEBOOK)
     for score in results[0]:
         mean = uncert_round(np.mean([x[score] for x in results]), np.std([x[score] for x in results])/np.sqrt(len(results)))
         print(f"Mean {score} = {mean[0]}±{mean[1]}")

@@ -20,6 +20,14 @@ lumin.nn.training.metric\_logger module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.training.train module
+------------------------------
+
+.. automodule:: lumin.nn.training.train
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

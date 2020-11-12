@@ -310,7 +310,7 @@ class ModelBuilder(object):
         Construct model, loss, and optimiser, optionally loading pretrained weights
 
         Returns:
-            Instantiated network, optimiser linked to model parameters, and uninstantiated loss
+            Instantiated network, optimiser linked to model parameters, uninstantiated loss, and optional input mask
         '''
 
         model = self.build_model()

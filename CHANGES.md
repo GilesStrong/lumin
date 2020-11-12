@@ -1,14 +1,42 @@
-# Targeting v0.6.1
+# Targeting v0.7.0
 
 ## Important changes
+
+- Model training and callbacks have significantly changed:
+    - `Model.fit` now expects to perform the entire training proceedure, rather than just single epochs.
+    - A lot of the functionality of the old training method `fold_train_ensemble` is now delegated to `Model.fit`.
+    - A new ensemble training method `train_models` has replaced `fold_train_ensemble`. It provied a similar API, but aims to be more understandable to users. 
+    - `Model.fit` is now 'stateful': a `fit_params` class is created containing all the information and data relevant to training the model and trainig methods change their actions according to `fit_params.state` ('train', 'valid', and 'test')
+    - Callbacks now have greater potential: They have more action points during the training cycle, where they can affect training behaviour, and they have access to `fit_params`, allowing them to modify more aspects of the training and have indirect access to all other callbacks.
+    - The "tick" for the training loop is now one epoch, i.e. validation loss is computed after the entire use of the training data (as opposed to after every sub-epoch), cyclic callbacks now work on the scale of epochs, rather than sub-epochs. Due to the data being split into folds, the concept of a sup-epoch still exists, but the APIs are now simplified for the user (previously they were a mixture of sup-epoch and epoch arguments).
+    - For users who do not wish to transition to the new model behaviour, the existing behaviour can still be achieved by using the `Old*` models and classes. See the depreciations section for the full list. 
+- Input masks (present if e.g using feature subsampling in `Model`Builder`)
+    - `BatchYielder` now takes an `input_mask` argument to filter inputs
+    - `Model` prediction methods no longer take input mask arguments, instead the input mask (if present) is automatically used. If users have already filtered their data, they should manually remove the input mask from the model (i.e. set it to None)
+- Callbacks which take arguments related to (sub-)epochs (e.g. cycle length, scale, time to renewal. etc. for `CycleLR`, `OneCycle`, etc. and `SWA`) now take these arguments in terms of epochs. I.e. a OneCycle schedule with 9 training folds, running for 15 epochs would previously require e.g. `lenghts=(45,90)` in order to complete the cycle in 15 epochs (135 subepochs). Now it is specified as simply `lenghts=(5,10)`. Additionally, these arguments must be integers. Floats will be coerced to integers with warning.
+- `lr_find` now runds over all training folds, instead of just 1
   
 ## Breaking
+
+- Heavy renaming of methods and classes due to changes in model trainng and callbacks.
 
 ## Additions
 
 - `__del__` method to `FowardHook` class
+- `BatchYielder`:
+    - Now takes an `input_mask` argument to filter inputs
+    - Now takes an argument allowing incomplete batches to be yielded
+    - Target array can now be None
+- `Model`:
+    - now takes a `bs` argument for `evaluate`
+    - predictions can now be modified by passing a `PredHandler` callback to `pred_cb`. The default one simply returns the model predicitons, however other actions could be defined by the user, e.g. performing argmax for multiclass classifiers.
 
 ## Removals
+
+- `Model`:
+    - Now no longer takes `callbacks` and `mask_inputs` as arguments for `evaluate`
+    - `evaluate_from_by` removed, just call `evaluate`
+- Callbacks no longer take model and plot_settings arguments during initialisation. These should be added by calling the relevant setters. `Model` will call them when relevant.
 
 ## Fixes
 
@@ -18,7 +46,44 @@
 
 ## Changes
 
+- `BinaryLabelSmooth` now only applies smoothing during training and not in validation
+- `Ensemble`
+    - `from_results` and `build_ensemble` now no longer take `location` as an argument. Instead, results should contain the savepath for the models
+    - `_build_ensemble` is now private
+- `Model`:
+    - `predict_array` and `predict_folds` are now private
+    - `fit` now expects to perform the entire fitting of the model, rather than just one sup-epoch. Additionally, validation loss is now computed only at the end of the epoch, rather that previously where it was computed after each fold.
+- `SWA` `renewal_period` should now be None in order to prevent a second average being tracked (previously was negative)
+- Some examples have been renamed, and copies using the old model fitting proceedure and old callbacks are available in `examples/old`
+- `lr_find` now runds over all training folds, instead of just 1
+
 ## Depreciations
+
+- V0.8:
+    - Many classes and methods depreciated with new model. They have been copied and renamed to Old*.
+    - `OldAbsModel`: Replaced by `AbsModel`
+    - `OldModel`: Replaced by `Model`
+    - `OldAbsCallback`: Replaced by `AbsCallback`
+    - `OldCallback`: Replaced by `Callback`
+    - `OldBinaryLabelSmooth`: Replaced by `BinaryLabelSmooth`
+    - `OldSequentialReweight`: Will not be replaced
+    - `SequentialReweightClasses`: Will not be replaced
+    - `OldBootstrapResample`: Replaced by `BootstrapResample`
+    - `OldParametrisedPrediction`: Replaced by `ParametrisedPrediction`
+    - `OldGradClip`: Replaced by `GradClip`
+    - `OldLsuvInitL` Replaced by `LsuvInit`
+    - `OldAbsCyclicCallback`: Replaced by `AbsCyclicCallback`
+    - `OldCycleLR`: Replaced by `CycleLR`
+    - `OldCycleMom`: Replaced by `CycleMom`
+    - `OldOneCycle`: Replaced by `OneCycle`
+    - `OldLRFinder`: Replaced by `LRFinder`
+    - `fold_lr_find`: Replaced by `lr_find`
+    - `fold_train_ensemble`: Replaced by `train_models`
+    - `OldMetricLogger`: Replaced by `MetricLogger`
+    - `AbsModelCallback`: Will not be replaced
+    - `OldSWA`: Replaced by `SWA`
+    - `old_plot_train_history`: Replaced by `plot_train_history`
+    - `OldEnsemble`: Replaced by `Ensemble`
 
 ## Comments
 

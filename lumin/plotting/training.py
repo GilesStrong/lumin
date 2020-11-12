@@ -2,23 +2,22 @@ from typing import Optional, List, Dict, Union, Tuple
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
+from collections import OrderedDict
+from fastcore.all import is_listy
 
 from .plot_settings import PlotSettings
-from ..nn.callbacks.opt_callbacks import LRFinder
+from ..nn.callbacks.abs_callback import AbsCallback
 
 __all__ = ['plot_train_history', 'plot_lr_finders']
 
 
-def _lookup_name(name:str) -> str:
-    if name == 'trn_loss': return 'Training'
-    if name == 'val_loss': return 'Validation'
-    if '_trn' in name:     return name[:name.find('_trn')] + 'Training'
-    if '_val' in name:     return name[:name.find('_val')] + 'Validation'
-
-
-def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn:bool=True, settings:PlotSettings=PlotSettings(),
-                       show:bool=True, xlow:int=0, log_y:bool=False) -> None:
+def old_plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[str]=None, ignore_trn:bool=False, settings:PlotSettings=PlotSettings(),
+                           show:bool=True, xlow:int=0, log_y:bool=False) -> None:
     r'''
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.plotting.training.plot_train_history`.
+        It is a copy of the old `plot_train_history` class used in lumin<=0.6.
+        It will be removed in V0.8
+
     Plot histories object returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` showing the loss evolution over time per model trained.
 
     Arguments:
@@ -28,6 +27,15 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         show: whether or not to show the plot, or just save it
     '''
+
+    # XXX remove in V0.8
+
+    def _lookup_name(name:str) -> str:
+        if name == 'trn_loss': return 'Training'
+        if name == 'val_loss': return 'Validation'
+        if '_trn' in name:     return name[:name.find('_trn')] + 'Training'
+        if '_val' in name:     return name[:name.find('_val')] + 'Validation'
+
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, history in enumerate(histories):
@@ -50,7 +58,45 @@ def plot_train_history(histories:List[Dict[str,List[float]]], savename:Optional[
         if show: plt.show()
 
 
-def plot_lr_finders(lr_finders:List[LRFinder], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
+def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None, ignore_trn:bool=False, settings:PlotSettings=PlotSettings(),
+                       show:bool=True, xlow:int=0, log_y:bool=False) -> None:
+    r'''
+    Plot histories object returned by :meth:`~lumin.nn.training.train.train_models` showing the loss evolution over time per model trained.
+
+    Arguments:
+        histories: list of dictionaries mapping loss type to values at each (sub)-epoch
+        savename: Optional name of file to which to save the plot of feature importances
+        ignore_trn: whether to ignore training loss
+        settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        show: whether or not to show the plot, or just save it
+        xlow: if set, will cut out the first given number of epochs
+        log_y: whether to plot the y-axis with a log scale
+    '''
+
+    if not is_listy(histories): histories = [histories]
+    n_folds = len(histories[0]['Training'])//len(histories[0]['Validation'])
+
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
+        plt.figure(figsize=(settings.w_mid, settings.h_mid))
+        for i, history in enumerate(histories):
+            for j, l in enumerate(history):
+                if j > 0 or not ignore_trn:
+                    x = range(1,len(history[l])+1)[xlow*n_folds:] if j == 0 else range(n_folds,(n_folds*len(history[l]))+1,n_folds)[xlow:]
+                    plt.plot(x, history[l][xlow:], color=palette[j], label=l if i == 0 else None)
+
+        plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+        plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
+        plt.xlabel("Subepoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
+        if log_y:
+            plt.yscale('log')
+            plt.grid(b=True, which="both", axis="both")
+        if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
+        if show: plt.show()
+
+
+def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
                     log_y:Union[str,bool]='auto', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
     r'''
     Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by

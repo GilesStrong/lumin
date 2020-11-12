@@ -16,7 +16,7 @@ from ...plotting.plot_settings import PlotSettings
 __all__ = ['get_nn_feat_importance', 'get_ensemble_feat_importance']
 
 
-def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
+def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, bs:Optional[int]=None, eval_metric:Optional[EvalMetric]=None, pb_parent:master_bar=None,
                            plot:bool=True, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     r'''
     Compute permutation importance of features used by a :class:`~lumin.nn.models.model.Model` on provided data using either loss or an 
@@ -26,9 +26,10 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
     Arguments:
         model: :class:`~lumin.nn.models.model.Model` to use to evaluate feature importance
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data used to train model
+        bs: If set, will evaluate model in batches of data, rather than all at once
         eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
         pb_parent: Not used if calling method directly
-        plot: whetehr to plot resulting feature importances
+        plot: whether to plot resulting feature importances
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
 
@@ -44,8 +45,6 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
         ...                             eval_metric=AMS(n_total=100000))
     '''
 
-    # TODO extend to work over matrix data
-
     feats = fy.cont_feats + fy.cat_feats
     scores = []
     fold_bar = progress_bar(range(fy.n_folds), parent=pb_parent)
@@ -54,7 +53,7 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
         if val_fold['weights'] is not None: val_fold['weights'] /= val_fold['weights'].sum()
         targs = val_fold['targets']
         weights = val_fold['weights']
-        if eval_metric is None: nom = model.evaluate(val_fold['inputs'], targs, weights=weights)
+        if eval_metric is None: nom = model.evaluate(val_fold['inputs'], targs, weights=weights, bs=bs)
         else:                   nom = eval_metric.evaluate(fy, fold_idx, model.predict(val_fold['inputs']))
         tmp = []
         for i in range(len(feats)):
@@ -64,7 +63,7 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
             else:
                 x = val_fold['inputs'].copy()
                 x[:,i] = sklearn.utils.shuffle(x[:,i])
-            if eval_metric is None: tmp.append(model.evaluate(x, targs, weights=weights))
+            if eval_metric is None: tmp.append(model.evaluate(x, targs, weights=weights, bs=bs))
             else:                   tmp.append(eval_metric.evaluate(fy, fold_idx, model.predict(x)))
 
         if eval_metric is None: tmp = (np.array(tmp)-nom)/nom
@@ -85,7 +84,7 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, eval_metric:Optional[
     return fi
 
 
-def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metric:Optional[EvalMetric]=None,
+def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, bs:Optional[int]=None, eval_metric:Optional[EvalMetric]=None,
                                  savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> pd.DataFrame:
     r'''
     Compute permutation importance of features used by an :class:`~lumin.nn.ensemble.ensemble.Ensemble` on provided data using either loss or an
@@ -95,6 +94,7 @@ def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metr
     Arguments:
         ensemble: :class:`~lumin.nn.ensemble.ensemble.Ensemble` to use to evaluate feature importance
         fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data used to train models in ensemble
+        bs: If set, will evaluate model in batches of data, rather than all at once
         eval_metric: Optional :class:`~lumin.nn.metric.eval_metric.EvalMetric` to use to quantify performance in place of loss
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
@@ -118,7 +118,7 @@ def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, eval_metr
     model_bar = master_bar(ensemble.models)
 
     for m, model in enumerate(model_bar):  # Average over models per fold
-        fi = get_nn_feat_importance(model, fy, eval_metric=eval_metric, plot=False, pb_parent=model_bar)
+        fi = get_nn_feat_importance(model, fy, bs=bs, eval_metric=eval_metric, plot=False, pb_parent=model_bar)
         mean_fi.append(fi.Importance.values)
         std_fi.append(fi.Uncertainty.values)
     
