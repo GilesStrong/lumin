@@ -16,7 +16,10 @@
     - Now takes an `input_mask` argument to filter inputs
     - Now takes an argument allowing incomplete batches to be yielded
     - Target array can now be None
-- `Model` now takes a `bs` argument for `evaluate`
+- `Model`:
+    - now takes a `bs` argument for `evaluate`
+    - predictions can now be modified by passing a `PredHandler` callback to `pred_cb`. The default one simply returns the model predicitons, however other actions could be defined by the user, e.g. performing argmax for multiclass classifiers.
+
 
 ## Removals
 

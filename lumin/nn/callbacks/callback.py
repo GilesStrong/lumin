@@ -49,7 +49,8 @@ class Callback(AbsCallback):
     def __init__(self): self.model,self.plot_settings = None,PlotSettings()
     
     def on_train_begin(self) -> None:
-        if self.model is None: raise AttributeError("The model for this callback has not been set. Please call set_model before on_train_begin.")
+        if self.model is None:
+            raise AttributeError(f"The model for {type(self).__name__} callback has not been set. Please call set_model before on_train_begin.")
 
     def set_model(self, model:AbsModel) -> None:
         r'''

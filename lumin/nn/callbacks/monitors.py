@@ -25,28 +25,39 @@ class EarlyStopping(Callback):
         patience: number of epochs to wait without improvement before stopping training
         loss_is_meaned: if the batch loss value has been averaged over the number of elements in the batch, this should be true;
             average loss will be computed over all elements in batch.
-            If the batch loss is not an average value, then the average will be computed over the number of batches.
-        model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`           
+            If the batch loss is not an average value, then the average will be computed over the number of batches.         
     '''
     
-    def __init__(self, patience:int, loss_is_meaned:bool=True, model:Optional[AbsModel]=None):
-        super().__init__(model=model)
-        store_attr(but=['model'])
-        self._reset()
+    def __init__(self, patience:int, loss_is_meaned:bool=True):
+        super().__init__()
+        store_attr()
 
     def _reset(self) -> None: self.epochs,self.min_loss = 0,math.inf
 
     def on_train_begin(self) -> None:
+        r'''
+        Resets variables and prepares for new training
+        '''
+
+        super().on_train_begin()
         self._reset()
         self.cyclic_cb = None if len(self.model.fit_params.cyclic_cbs) == 0 else self.model.fit_params.cyclic_cbs[-1]
         self.improve_in_cycle = False
 
     def on_epoch_begin(self) -> None:
+        r'''
+        Prepares to track validation losses
+        '''
+
         if self.model.fit_params.state != 'valid': return
         self.cnt = 0
         self.loss = [0] + [0 for _ in self.model.fit_params.loss_cbs]  # Consider all losses e.g. SWA loss
 
     def on_forwards_end(self) -> None:
+        r'''
+        Records losses for batch
+        '''
+
         if self.model.fit_params.state != 'valid': return
         sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
         self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
@@ -54,6 +65,10 @@ class EarlyStopping(Callback):
         self.cnt += sz
 
     def on_epoch_end(self) -> None:
+        r'''
+        Computes best average validation losses and acts according to it
+        '''
+
         if self.model.fit_params.state != 'valid': return
         loss = np.min(self.loss)/self.cnt
         if loss <= self.min_loss:
@@ -79,22 +94,42 @@ class SaveBest(Callback):
     r'''
     Tracks validation loss during training and automatically saves a copy of the weights to indicated file whenever validation loss decreases.
     Losses are assumed to be averaged and will be re-averaged over the epoch unless `loss_is_meaned` is false.
+
+    Arguments:
+        auto_reload: if true, will automatically reload the best model at the end of training
+        loss_is_meaned: if the batch loss value has been averaged over the number of elements in the batch, this should be true;
+            average loss will be computed over all elements in batch.
+            If the batch loss is not an average value, then the average will be computed over the number of batches.
     '''
 
-    def __init__(self, auto_reload:bool=True, loss_is_meaned:bool=True, model:Optional[AbsModel]=None):
-        super().__init__(model=model)
-        store_attr(but=['model'])
-        self._reset()
+    def __init__(self, auto_reload:bool=True, loss_is_meaned:bool=True):
+        super().__init__()
+        store_attr()
 
     def _reset(self) -> None: self.min_loss = math.inf
-    def on_train_begin(self) -> None: self._reset()
+
+    def on_train_begin(self) -> None:
+        r'''
+        Resets variables and prepares for new training
+        '''
+
+        super().on_train_begin()
+        self._reset()
 
     def on_epoch_begin(self) -> None:
+        r'''
+        Prepares to track validation losses
+        '''
+
         if self.model.fit_params.state != 'valid': return
         self.cnt = 0
         self.loss = [0] + [0 for _ in self.model.fit_params.loss_cbs]  # Consider all losses e.g. SWA loss
 
     def on_forwards_end(self) -> None:
+        r'''
+        Records losses for batch
+        '''
+
         if self.model.fit_params.state != 'valid': return
         sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
         self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
@@ -102,6 +137,10 @@ class SaveBest(Callback):
         self.cnt += sz
 
     def on_epoch_end(self) -> None:
+        r'''
+        Computes best average validation losses and if it is better than the current best, saves a copy of the model which produced it
+        '''
+
         if self.model.fit_params.state != 'valid': return
         loss = np.array(self.loss)/self.cnt
         lm = np.min(loss)
@@ -113,30 +152,71 @@ class SaveBest(Callback):
             m.save(self.model.fit_params.cb_savepath/'best.h5')
 
     def on_train_end(self) -> None:
-        print(f'Loading best model with loss {self.min_loss:.3E}')
-        self.model.load(self.model.fit_params.cb_savepath/'best.h5')
+        r'''
+        Optionally reload best performing model
+        '''
+
+        if self.auto_reload:
+            print(f'Loading best model with loss {self.min_loss:.3E}')
+            self.model.load(self.model.fit_params.cb_savepath/'best.h5')
 
 
 class MetricLogger(Callback):
-    r'''        
+    r'''
+    Provides live feedback during training showing a variety of metrics to help highlight problems or test hyper-parameters without completing a full training.
+    If `show_plots` is false, will instead print training and validation losses at the end of each epoch.
+    The full history is available as a dictionary by calling :meth:`~lumin.nn.callbacks.monitors.MetricLogger.get_loss_history`.
+
+    Arguments:
+        loss_names: List of names of losses which will be passed to the logger in the order in which they will be passed.
+            By convention the first name will be used as the training loss when computing the ratio of training to validation losses
+        n_folds: Number of folds present in the training data.
+            The logger assumes that one of these folds is for validation, and so 1 training epoch = (n_fold-1) folds.
+        autolog_scale: Whether to automatically change the scale of the y-axis for loss to logarithmic when the current loss drops below one 50th of its
+            starting value
+        extra_detail: Whether to include extra detail plots (loss velocity and training validation ratio), slight slower but potentially useful.
     '''
 
-    def __init__(self, show_plots:bool=IN_NOTEBOOK, extra_detail:bool=True, loss_is_meaned:bool=True, model:Optional[AbsModel]=None, plot_settings:PlotSettings=PlotSettings()):
-        super().__init__(model=model, plot_settings=plot_settings)
-        store_attr(but=['model','plot_settings'])
+    def __init__(self, show_plots:bool=IN_NOTEBOOK, extra_detail:bool=True, loss_is_meaned:bool=True):
+        super().__init__()
+        store_attr()
 
     def on_train_begin(self) -> None:
-        self.reset()
+        r'''
+        Prepare for new training
+        '''
+
+        super().on_train_begin()
+        self._reset()
         for c in self.model.fit_params.loss_cbs: self._add_loss_name(type(c).__name__)
 
-    def on_epoch_begin(self) -> None: self.loss,self.cnt = 0,0
-    def on_fold_begin(self) -> None: self.on_epoch_begin()
+    def on_epoch_begin(self) -> None:
+        r'''
+        Prepare to track new loss
+        '''
+
+        self.loss,self.cnt = 0,0
+
+    def on_fold_begin(self) -> None:
+        r'''
+        Prepare to track new loss
+        '''
+        
+        self.on_epoch_begin()
 
     def on_fold_end(self) -> None:
+        r'''
+        Record training loss for fold
+        '''
+
         if self.model.fit_params.state != 'train': return
         self.loss_vals[0].append(self.loss/self.cnt)
 
     def on_epoch_end(self) -> None:
+        r'''
+        If validation epoch finished, record validation losses, compute info and update plots
+        '''
+
         if self.model.fit_params.state != 'valid': return
         self.epochs.append(self.epochs[-1]+1)
         self.loss_vals[1].append(self.loss/self.cnt)
@@ -155,6 +235,10 @@ class MetricLogger(Callback):
             self.print_losses()
 
     def on_forwards_end(self) -> None:
+        r'''
+        Record batch loss
+        '''
+
         sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
         self.loss += self.model.fit_params.loss_val.data.item()*sz
         self.cnt += sz
@@ -166,6 +250,10 @@ class MetricLogger(Callback):
         self.gen_vals.append(list(np.zeros_like(self.gen_vals[0])))
 
     def print_losses(self) -> None:
+        r'''
+        Print training and validation losses for the last epoch
+        '''
+
         p = f'Epoch {len(self.loss_vals[1])+1}: Training = {np.mean(self.loss_vals[0][-self.n_trn_flds:]):.2E}'
         for v,m in zip(self.loss_vals[1:],self.loss_names[1:]): p += f' {m} = {v[-1]:.2E}'
         print(p)
@@ -173,9 +261,9 @@ class MetricLogger(Callback):
     def update_plot(self) -> None:
         r'''
         Updates the plot(s).
-        '''
 
         # TODO: make this faster
+        '''
 
         # Loss
         self.loss_ax.clear()
@@ -221,11 +309,7 @@ class MetricLogger(Callback):
         else:
             self.display.update(self.loss_ax.figure)
 
-    def reset(self) -> None:
-        r'''
-        Resets/initialises the logger's values and plots, and produces a placeholder plot. Should be called prior to `update_vals` or `update_plot`.
-        '''
-
+    def _reset(self) -> None:
         self.loss_names = ['Training', 'Validation']
         self.loss_vals = [[] for _ in self.loss_names]
         self.vel_vals, self.gen_vals = [[] for _ in range(len(self.loss_names)-1)], [[] for _ in range(len(self.loss_names)-1)]
@@ -258,6 +342,13 @@ class MetricLogger(Callback):
                     self.display = display(self.loss_ax.figure, display_id=True)
 
     def get_loss_history(self) -> OrderedDict:
+        r'''
+        Get the current history of losses
+
+        Returns:
+            history: ordered dictionary (training first, validations subsequent) mapping loss names to lists of loss values
+        '''
+
         history = OrderedDict()
         for v,m in zip(self.loss_vals,self.loss_names): history[m] = v
         return history

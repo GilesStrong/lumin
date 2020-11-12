@@ -40,16 +40,15 @@ class Model(AbsModel):
     r'''
     Wrapper class to handle training and inference of NNs created via a :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Note that saved models can be instantiated direcly via :meth:`~lumin.nn.models.model.Model.from_save` classmethod.
+
+    # TODO: Improve mask description & user-friendlyness, change to indicate that 'masked' inputs are actually the ones which are used
     
     Arguments:
-        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` which will construct the network, loss, and optimiser
+        model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` which will construct the network, loss, optimiser, and input mask
 
     Examples::
         >>> model = Model(model_builder)
     '''
-
-    # TODO: Improve mask description & user-friendlyness, change to indicate that 'masked' inputs are actually the ones which are used
-    # TODO: Check if mask_inputs can be removed
 
     def __init__(self, model_builder:Optional[ModelBuilder]=None):
         self.model_builder,self.input_mask = model_builder,None
@@ -147,6 +146,27 @@ class Model(AbsModel):
             val_idx:Optional[int]=None,  cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights'),
             model_bar:Optional[master_bar]=None) -> List[AbsCallback]:
         r'''
+        Fit network to training data according to the model's loss and optimiser.
+        
+        Training continues until:
+        - All of the training folds are used n_epoch number of times;
+        - Or a callback triggers training to stop, e.g. :class:`~lumin.nn.callbacks.cyclic_callbacks.OneCycle`,
+            or :class:`~lumin.nn.callbacks.monitors.EarlyStopping`
+
+        Arguments:
+            n_epochs: number of epochs for which to train
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` containing training and validation data
+            bs: Batch size
+            bulk_move: if true, will optimise for speed by using more RAM and VRAM
+            train_on_weights: whether to actually use data weights, if present
+            trn_idxs: Fold indexes in `fy` to use for training. If not set, will use all folds except val_idx
+            val_idx: Fold index in `fy` to use for validation. If not set, will not compute validation losses
+            cbs: list of instantiated callbacks to adjust training
+            cb_savepath: General save directory for any callbacks which require saving models and other information (accessible from `fit_params`),
+            model_bar: Optional `master_bar` for aligning progress bars, i.e. if training multiple models
+
+        Returns:
+            List of all callbacks used during training
         '''
         
         if cbs is None: cbs = []
@@ -230,9 +250,6 @@ class Model(AbsModel):
 
     def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, pred_cb:PredHandler=PredHandler(),
                        cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
-        r'''
-        '''
-
         by = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective, shuffle=False, bulk_move=bs is None,
                           input_mask=self.input_mask, drop_last=False)
         preds = self._predict_by(by, pred_cb=pred_cb, cbs=cbs)
@@ -244,6 +261,16 @@ class Model(AbsModel):
     def evaluate(self, inputs:Union[np.ndarray,Tensor,Tuple,BatchYielder], targets:Optional[Union[np.ndarray,Tensor]]=None,
                  weights:Optional[Union[np.ndarray,Tensor]]=None, bs:Optional[int]=None) -> float:
         r'''
+        Compute loss on provided data.
+
+        Arguments:
+            inputs: input data, or :class:`~lumin.nn.data.batch_yielder.BatchYielder` with input, target, and weight data
+            targets: targets, not required if :class:`~lumin.nn.data.batch_yielder.BatchYielder` is passed to inputs
+            weights: Optional weights, not required if :class:`~lumin.nn.data.batch_yielder.BatchYielder`, or no weights should be considered
+            bs: batch size to use. If `None`, will evaluate all data at once
+
+        Returns:
+            (weighted) loss of model predictions on provided data
         '''
 
         if hasattr(self, 'fit_params') and self.fit_params is not None:
@@ -267,9 +294,6 @@ class Model(AbsModel):
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred', pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None,
                        bs:Optional[int]=None) -> None:
-        r'''
-        '''
-
         pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs)
         for fold_idx in progress_bar(range(len(fy))):
             if not fy.test_time_aug:
@@ -285,6 +309,19 @@ class Model(AbsModel):
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred', pred_cb:PredHandler=PredHandler(),
                 cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
         r'''
+        Apply model to inputed data and compute predictions.
+        
+        Arguments:
+            inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
+            as_np: whether to return predictions as Numpy array (otherwise tensor) if inputs are a Numpy array, Pandas DataFrame, or tensor
+            pred_name: name of group to which to save predictions if inputs are a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
+            pred_cb: :class:`~lumin.nn.callbacks.pred_handlers.PredHandler` callback to determin how predictions are computed.
+                Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
+            cbs: list of any instantiated callbacks to use during prediction
+            bs: if not `None`, will run prediction in batches of specified size to save of memory
+
+        Returns:
+            if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
 
         if isinstance(inputs, BatchYielder): return self._predict_by(inputs, pred_cb=pred_cb, cbs=cbs)
@@ -369,7 +406,8 @@ class Model(AbsModel):
 
         Arguments:
             name: name of save file
-            model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`, you will need to pass one here
+            model_builder: if :class:`~lumin.nn.models.model.Model` was not initialised with a :class:`~lumin.nn.models.model_builder.ModelBuilder`,
+                you will need to pass one here
         '''
 
         # TODO: update map location when device choice is changable by user
@@ -651,7 +689,8 @@ class OldModel(Model):
                 callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
-        A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`, depending on input type.
+        A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`,
+            depending on input type.
 
         Arguments:
             inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
