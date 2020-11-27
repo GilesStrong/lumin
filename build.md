@@ -14,3 +14,4 @@
 1. git pull
 1. Increment lumin.version.py
 1. Add build to readthedocs and check docs
+1. Update authorship on Zenodo

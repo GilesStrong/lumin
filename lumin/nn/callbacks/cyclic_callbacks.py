@@ -390,16 +390,17 @@ class OneCycle(AbsCyclicCallback):
         lr_range: list of initial and max LRs and optionally a final LR. If only two LRs supplied, then final LR will be zero.
         mom_range: tuple of initial and final momenta
         interp: 'cosine' or 'linear' interpolation
-        nb: Number of batches in a epoch
+        cycle_ends_training: whether to stop training once the cycle finishes, or continue running at the last LR and momentum
 
     Examples::
         >>> onecycle = OneCycle(lengths=(15, 30), lr_range=[1e-4, 1e-2],
         ...                     mom_range=(0.85, 0.95), interp='cosine', nb=100)
     '''
 
-    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine'):
+    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
+                 cycle_ends_training:bool=True):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0])
-        self.lengths,self.lr_range,self.mom_range,self.hist = lengths,lr_range,mom_range,{'lr': [], 'mom': []}
+        self.lengths,self.lr_range,self.mom_range,self.cycle_ends_training,self.hist = lengths,lr_range,mom_range,cycle_ends_training,{'lr': [], 'mom': []}
         if len(self.lr_range) == 2: self.lr_range.append(0)
 
     def _reset(self) -> None: self.cycle_iter,self.cycle_count,self.cycle_end,self.hist,self.cycle_losses,self.nb = 0,0,False,{'lr': [], 'mom': []},[],None
@@ -409,7 +410,7 @@ class OneCycle(AbsCyclicCallback):
         Computes the new lr and momentum and assignes them to the optimiser
         '''
 
-        if self.model.fit_params.state != 'train': return
+        if self.model.fit_params.state != 'train' or self.cycle_count == 1: return
 
         self.decrease_param = self.cycle_count % 1 != 0
         self.param_range = self.lr_range
@@ -431,7 +432,7 @@ class OneCycle(AbsCyclicCallback):
             self.cycle_count += 0.5
             self.cycle_end = self.cycle_count % 1 == 0
             self.lr_range[0] = self.lr_range[2]
-        if self.cycle_count == 1: self.model.stop_train = True
+        if self.cycle_count == 1 and self.cycle_ends_training: self.model.stop_train = True
 
     def plot(self):
         r'''

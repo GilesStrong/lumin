@@ -6,11 +6,13 @@
 
 ## Additions
 
+- `OneCycle` now has a `cycle_ends_training` which allows training to continue at the final LR and Momentum. keeping at default of `True` ends the training once the cycle is complete, as usual.
+
 ## Removals
 
 ## Fixes
 
-- `Model` now creats `cb_savepath` is it didn't already exist
+- `Model` now creates `cb_savepath` is it didn't already exist
 
 ## Changes
 
