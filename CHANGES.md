@@ -13,6 +13,7 @@
 ## Fixes
 
 - `Model` now creates `cb_savepath` is it didn't already exist
+- Bug in `PredHandler` where predictions were kept on device leading to increased memory usage
 
 ## Changes
 
