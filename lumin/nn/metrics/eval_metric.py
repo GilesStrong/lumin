@@ -85,6 +85,7 @@ class EvalMetric(Callback):
         '''
 
         super().on_train_begin()
+        self.metric = None
         if self.main_metric:
             for c in self.model.fit_params.cbs:
                 if hasattr(c, 'main_metric'): c.main_metric = False

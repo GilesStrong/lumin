@@ -4,6 +4,7 @@ import numpy as np
 from fastprogress.fastprogress import IN_NOTEBOOK
 from IPython.display import display
 from collections import OrderedDict
+from typing import Tuple
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -29,37 +30,16 @@ class EarlyStopping(Callback):
         super().__init__()
         store_attr()
 
-    def _reset(self) -> None: self.epochs,self.min_loss = 0,math.inf
-
     def on_train_begin(self) -> None:
         r'''
         Resets variables and prepares for new training
         '''
 
         super().on_train_begin()
-        self._reset()
+        self.epochs,self.min_val = 0,math.inf
         self.cyclic_cb = None if len(self.model.fit_params.cyclic_cbs) == 0 else self.model.fit_params.cyclic_cbs[-1]
+        self.metric_log = self.model.fit_params.metric_log
         self.improve_in_cycle = False
-
-    def on_epoch_begin(self) -> None:
-        r'''
-        Prepares to track validation losses
-        '''
-
-        if self.model.fit_params.state != 'valid': return
-        self.cnt = 0
-        self.loss = [0] + [0 for _ in self.model.fit_params.loss_cbs]  # Consider all losses e.g. SWA loss
-
-    def on_forwards_end(self) -> None:
-        r'''
-        Records losses for batch
-        '''
-
-        if self.model.fit_params.state != 'valid': return
-        sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
-        self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
-        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss()*sz
-        self.cnt += sz
 
     def on_epoch_end(self) -> None:
         r'''
@@ -67,9 +47,10 @@ class EarlyStopping(Callback):
         '''
 
         if self.model.fit_params.state != 'valid': return
-        loss = np.min(self.loss)/self.cnt
-        if loss <= self.min_loss:
-            self.min_loss = loss
+        losses, metric = self.metric_log.val_epoch_results
+        val = losses.min() if metric is None or len(losses) > 1 else metric
+        if val <= self.min_val:
+            self.min_val = val
             self.epochs = 0
             self.improve_in_cycle = True
             if self.cyclic_cb is not None and self.cyclic_cb.cycle_end: self.improve_in_cycle = False
@@ -103,35 +84,13 @@ class SaveBest(Callback):
         super().__init__()
         store_attr()
 
-    def _reset(self) -> None: self.min_loss = math.inf
-
     def on_train_begin(self) -> None:
         r'''
         Resets variables and prepares for new training
         '''
 
         super().on_train_begin()
-        self._reset()
-
-    def on_epoch_begin(self) -> None:
-        r'''
-        Prepares to track validation losses
-        '''
-
-        if self.model.fit_params.state != 'valid': return
-        self.cnt = 0
-        self.loss = [0] + [0 for _ in self.model.fit_params.loss_cbs]  # Consider all losses e.g. SWA loss
-
-    def on_forwards_end(self) -> None:
-        r'''
-        Records losses for batch
-        '''
-
-        if self.model.fit_params.state != 'valid': return
-        sz = len(self.model.fit_params.x) if self.loss_is_meaned else 1
-        self.loss[0] += self.model.fit_params.loss_val.data.item()*sz
-        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss[i+1] += c.get_loss()*sz
-        self.cnt += sz
+        self.min_val = math.inf
 
     def on_epoch_end(self) -> None:
         r'''
@@ -139,13 +98,15 @@ class SaveBest(Callback):
         '''
 
         if self.model.fit_params.state != 'valid': return
-        loss = np.array(self.loss)/self.cnt
-        lm = np.min(loss)
-        if lm < self.min_loss:
-            self.min_loss = lm
-            lam  = np.argmin(loss)
+        losses, metric = self.metric_log.val_epoch_results
+        if metric is None or len(losses) > 1:
+            val,mi = losses.min(),losses.argmin()
+        else:
+            val = metric
+        if val < self.min_val:
+            self.min_val = val
             m = self.model
-            if lam > 0: m = self.model.fit_params.loss_cbs[lam-1].test_model
+            if mi > 0: m = self.model.fit_params.loss_cbs[mi-1].test_model
             m.save(self.model.fit_params.cb_savepath/'best.h5')
 
     def on_train_end(self) -> None:
@@ -154,7 +115,7 @@ class SaveBest(Callback):
         '''
 
         if self.auto_reload:
-            print(f'Loading best model with loss {self.min_loss:.3E}')
+            print(f'Loading best model with metric value {self.min_val:.3E}')
             self.model.load(self.model.fit_params.cb_savepath/'best.h5')
 
 
@@ -169,8 +130,6 @@ class MetricLogger(Callback):
             By convention the first name will be used as the training loss when computing the ratio of training to validation losses
         n_folds: Number of folds present in the training data.
             The logger assumes that one of these folds is for validation, and so 1 training epoch = (n_fold-1) folds.
-        autolog_scale: Whether to automatically change the scale of the y-axis for loss to logarithmic when the current loss drops below one 50th of its
-            starting value
         extra_detail: Whether to include extra detail plots (loss velocity and training validation ratio), slight slower but potentially useful.
     '''
 
@@ -217,7 +176,7 @@ class MetricLogger(Callback):
         if self.model.fit_params.state != 'valid': return
         self.epochs.append(self.epochs[-1]+1)
         self.loss_vals[1].append(self.loss/self.cnt)
-        for i,c in enumerate(self.model.fit_params.loss_cbs):  self.loss_vals[i+2].append(c.get_loss())
+        for i,c in enumerate(self.model.fit_params.loss_cbs): self.loss_vals[i+2].append(c.get_loss())
         if self.show_plots:
             for i, v in enumerate(self.loss_vals[1:]):
                 if len(self.loss_vals[1]) > 1 and self.extra_detail:
@@ -227,6 +186,13 @@ class MetricLogger(Callback):
             self.update_plot()
         else:
             self.print_losses()
+
+        ls = np.array(self.loss_vals[1:])[:,-1]
+        m = None
+        if self.main_metric_idx is not None:
+            m = self.metric_vals[self.main_metric_idx][-1]
+            if not self.metric_cbs[self.main_metric_idx].lower_metric_better: m *= -1
+        self.val_epoch_results = ls,m
 
     def on_forwards_end(self) -> None:
         r'''
@@ -310,6 +276,18 @@ class MetricLogger(Callback):
         self.n_trn_flds = len(self.model.fit_params.trn_idxs)
         self.log = 'regress' in self.model.objective.lower()
         self.best_loss,self.epochs = math.inf,[0]
+
+        self.metric_cbs,self.metric_names = []
+        for c in self.model.fit_params.cbs:
+            if hasattr(c, 'metric'):
+                self.metric_cbs.append(c)
+                self.metric_names.append(type(c).__name__)
+        self.metric_vals = [[] for _ in self.metric_names]
+        self.main_metric_idx = None
+        for i,c in enumerate(self.metric_cbs):
+            if c.main_metric or self.main_metric_idx is None:
+                self.main_metric_idx = i
+                break
 
         if self.show_plots:
             with sns.axes_style(**self.plot_settings.style):

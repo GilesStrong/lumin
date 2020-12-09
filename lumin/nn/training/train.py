@@ -54,8 +54,10 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         patience: if not `None`, sets the number of epochs or cycles to train without decrease in validation loss before ending training (early stopping)
         loss_is_meaned: if the batch loss value has been averaged over the number of elements in the batch, this should be true
         cb_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called
-        eval_metrics: list of instantiated :class:`~lumin.nn.metric.eval_metric.EvalMetric`.
-            At the end of training, validation data and model predictions will be passed to each, and the results printed and saved
+        eval_metrics: list of instantiated :class:`~lumin.nn.metric.eval_metric.EvalMetric`, used to compute additional metrics on validation data.
+            :class:`~lumin.nn.callbacks.monitors.SaveBest` and :class:`~lumin.nn.callbacks.monitors.EarlyStopping` will also act on the (first) metric set to 
+            `main_metric` instead of loss, except when another callback produces an alternative loss and model
+            (like :class:`~lumin.nn.callbacks.model_callbacks.SWA`).
         pred_cb: pred_cb: :class:`~lumin.nn.callbacks.pred_handlers.PredHandler` callback to determin how predictions are computed.
             Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
         train_on_weights: If weights are present in training data, whether to pass them to the loss function during training
@@ -98,7 +100,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         cbs = []
         for c in cb_partials: cbs.append(c())
         save_best = SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)
-        metric_log = MetricLogger(show_plots=live_fdbk, extra_detail=live_fdbk_extra)
+        metric_log = MetricLogger(show_plots=live_fdbk, extra_detail=live_fdbk_extra, loss_is_meaned=loss_is_meaned)
         cbs += [save_best,metric_log]
         if patience is not None: cbs.append(EarlyStopping(patience=patience, loss_is_meaned=loss_is_meaned))
         for c in cbs: c.set_plot_settings(plot_settings)
