@@ -2,13 +2,17 @@ import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
 from typing import Optional
+from fastcore.all import store_attr
+
+import torch
 
 from ..data.fold_yielder import FoldYielder
+from ..callbacks.callback import Callback
 
 __all__ = ['EvalMetric']
 
 
-class EvalMetric(ABC):
+class OldEvalMetric(ABC):
     r'''
     Abstract class for evaluating performance of a model using some metric
 
@@ -61,3 +65,80 @@ class EvalMetric(ABC):
         '''
 
         pass
+
+
+class EvalMetric(Callback):
+    r'''
+    Abstract class for evaluating performance of a model using some metric
+
+    Arguments:
+        lower_metric_better: whether a lower metric value should be treated as representing better perofrmance
+        main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
+            Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
+    '''
+
+    def __init__(self, lower_metric_better:bool, main_metric:bool=True): store_attr()
+
+    def on_train_begin(self) -> None:
+        r'''
+        Ensures that only one main metric is used
+        '''
+
+        super().on_train_begin()
+        if self.main_metric:
+            for c in self.model.fit_params.cbs:
+                if hasattr(c, 'main_metric'): c.main_metric = False
+            self.main_metric = True
+
+    def on_epoch_begin(self) -> None: self.preds,self.metric = [],None
+    
+    def on_forwards_end(self) -> None:
+        if self.model.fit_params.state == 'valid': self.preds.append(self.model.fit_params.y_pred.cpu().detach())
+    
+    def on_epoch_end(self) -> None:
+        self.preds = torch.cat(self.preds)
+        self.targets = self.model.fit_params.by.targets
+        self.weights = self.model.fit_params.by.weights if self.model.fit_params.by.use_weights else None
+        self.metric = self.evaluate()
+        del self.preds
+
+    @abstractmethod
+    def evaluate(self) -> float:
+        r'''
+        Evaluate the required metric for a given fold and set of predictions
+
+        Returns:
+            metric value
+        '''
+
+        pass
+
+    def get_df(self) -> pd.DataFrame:
+        r'''
+        Returns a DataFrame for the given fold containing targets, weights, and predictions
+
+        Returns:
+            DataFrame for the given fold containing targets, weights, and predictions
+        '''
+
+        df = pd.DataFrame()
+        if hasattr(self, 'wgt_name'):
+            df['gen_weight'] = self.model.fit_params.fy.get_column(column=self.wgt_name, n_folds=1, fold_idx=self.model.fit_params.val_idx)
+        else:
+            df['gen_weight'] = self.weights
+        
+        if hasattr(self, 'targ_name'):
+            targets = self.model.fit_params.fy.get_column(column=self.targ_name, n_folds=1, fold_idx=self.model.fit_params.val_idx)
+        else:
+            targets = self.targets
+        
+        if len(targets.shape) > 1:
+            for t in range(targets.shape[-1]): df[f'gen_target_{t}'] = targets[:,t]
+        else:
+            df['gen_target'] = targets
+
+        if len(self.preds.shape) > 1 and self.preds.shape[-1] > 1:
+            for p in range(self.preds.shape[-1]): df[f'pred_{p}'] = self.preds[:,p]
+        else:
+            df['pred'] = self.preds.squeeze()
+        return df

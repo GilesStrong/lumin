@@ -7,6 +7,7 @@
 ## Additions
 
 - `OneCycle` now has a `cycle_ends_training` which allows training to continue at the final LR and Momentum. keeping at default of `True` ends the training once the cycle is complete, as usual.
+- `to_np` now returns `None` when input tensor is `None`
 
 ## Removals
 

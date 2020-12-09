@@ -190,10 +190,10 @@ class Model(AbsModel):
         self.fit_params.trn_idxs,self.fit_params.val_idx = trn_idxs,val_idx
         if self.fit_params.val_idx is not None:
             if bulk_move:
-                val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=True,
+                val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=False,
                                                     bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
             else:
-                val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=True,
+                val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=False,
                                  bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
         trn_by = partial(self.fit_params.partial_by, drop_last=True, bs=self.fit_params.bs, shuffle=True)
 
@@ -274,12 +274,14 @@ class Model(AbsModel):
             (weighted) loss of model predictions on provided data
         '''
 
+        # TODO: make this work with non-meaned losses
+
         if hasattr(self, 'fit_params') and self.fit_params is not None:
             raise ValueError('Evaluate will overwrite exisiting fit_params for this model. Most likely it is being called during training.')
         if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, targets=targets, weights=weights, bs=len(inputs) if bs is None else bs,
                                                                        objective=self.objective, shuffle=False, bulk_move=bs is None,
                                                                        input_mask=self.input_mask, drop_last=False)
-        self.fit_params = FitParams(cbs=[], by=inputs, state='val', loss_func=self.loss)
+        self.fit_params = FitParams(cbs=[], by=inputs, state='valid', loss_func=self.loss)
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.model.eval()
         loss,cnt = 0,0
