@@ -75,7 +75,7 @@ class FoldYielder:
 
         return [k for k in self.foldfile["fold_0"].keys()]
 
-    def add_ignore(self, feats:List[str]) -> None:
+    def add_ignore(self, feats:Union[str,List[str]]) -> None:
         r'''
         Add features to ignored features.
 
@@ -83,6 +83,7 @@ class FoldYielder:
             feats: list of feature names to ignore
         '''
 
+        if not is_listy(feats): feats = [feats]
         self._ignore_feats += feats
         self.cont_feats = [f for f in self.cont_feats if f not in self._ignore_feats]
         self.cat_feats  = [f for f in self.cat_feats  if f not in self._ignore_feats]

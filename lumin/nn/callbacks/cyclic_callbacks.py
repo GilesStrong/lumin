@@ -3,7 +3,7 @@ from typing import Optional, Tuple, Union, List
 from fastcore.all import store_attr
 
 from .callback import Callback, OldCallback
-from ..models.abs_model import AbsModel, OldAbsModel
+from ..models.abs_model import OldAbsModel
 from ...plotting.plot_settings import PlotSettings
 
 import seaborn as sns

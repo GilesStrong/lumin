@@ -1,6 +1,5 @@
 from fastcore.all import store_attr
 import math
-from typing import Optional
 import numpy as np
 from fastprogress.fastprogress import IN_NOTEBOOK
 from IPython.display import display
@@ -10,8 +9,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from .callback import Callback
-from ..models.abs_model import AbsModel
-from ...plotting.plot_settings import PlotSettings
 
 __all__ = ['EarlyStopping', 'SaveBest', 'MetricLogger']
 

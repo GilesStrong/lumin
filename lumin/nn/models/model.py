@@ -173,7 +173,7 @@ class Model(AbsModel):
         elif not is_listy(cbs): cbs = [cbs]
         cyclic_cbs,loss_cbs = [],[]
         for c in cbs:
-            if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)  # CBs that might prrevent a model from stopping training due to a hyper-param cycle
+            if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)  # CBs that might prevent a model from stopping training due to a hyper-param cycle
             if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
