@@ -6,8 +6,10 @@ from fastcore.all import store_attr
 
 import torch
 
+from ..models.abs_model import AbsModel, FitParams
 from ..data.fold_yielder import FoldYielder
 from ..callbacks.callback import Callback
+from ...utils.misc import to_np
 
 __all__ = ['EvalMetric']
 
@@ -19,7 +21,13 @@ class OldEvalMetric(ABC):
     Arguments:
         targ_name: name of group in fold file containing regression targets
         wgt_name: name of group in fold file containing datapoint weights
+    
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.eval_metric.EvalMetric`.
+        It is a copy of the old `EvalMetric` class used in lumin<=0.7.0.
+        It will be removed in V0.8
     '''
+
+    # XXX remove in V0.8
 
     def __init__(self, targ_name:str='targets', wgt_name:Optional[str]=None): self.targ_name,self.wgt_name,self.lower_metric_better = targ_name,wgt_name,True
 
@@ -72,12 +80,15 @@ class EvalMetric(Callback):
     Abstract class for evaluating performance of a model using some metric
 
     Arguments:
+        name: optional name for metric, otherwise will be inferred from class
         lower_metric_better: whether a lower metric value should be treated as representing better perofrmance
         main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
             Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
     '''
 
-    def __init__(self, lower_metric_better:bool, main_metric:bool=True): store_attr()
+    def __init__(self, name:Optional[str], lower_metric_better:bool, main_metric:bool=True):
+        store_attr(but=['name'])
+        self.name = type(self).__name__ if name is None else name
 
     def on_train_begin(self) -> None:
         r'''
@@ -97,11 +108,16 @@ class EvalMetric(Callback):
         if self.model.fit_params.state == 'valid': self.preds.append(self.model.fit_params.y_pred.cpu().detach())
     
     def on_epoch_end(self) -> None:
-        self.preds = torch.cat(self.preds)
-        self.targets = self.model.fit_params.by.targets
+        if self.model.fit_params.state != 'valid': return
+        self.preds = to_np(torch.cat(self.preds)).squeeze()
+        if 'multiclass' in self.model.objective: self.preds = np.exp(self.preds)
+        self.targets = self.model.fit_params.by.targets.squeeze()
         self.weights = self.model.fit_params.by.weights if self.model.fit_params.by.use_weights else None
+        if self.weights is not None: self.weights = self.weights.squeeze()
         self.metric = self.evaluate()
         del self.preds
+
+    def get_metric(self) -> float: return self.metric
 
     @abstractmethod
     def evaluate(self) -> float:
@@ -114,6 +130,15 @@ class EvalMetric(Callback):
 
         pass
 
+    def evaluate_model(self, model:AbsModel, fy:FoldYielder, fold_idx:int, inputs:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None,
+                       bs:Optional[int]=None) -> float:
+        self.model = model
+        self.model.fit_params = FitParams(val_idx=fold_idx, fy=fy)
+        self.targets,self.weights = targets.squeeze(),weights.squeeze()
+        self.preds = self.model.predict(inputs, bs=bs)
+        self.model.fit_params = FitParams(val_idx=fold_idx, fy=fy)  # predict reset fit_params to None
+        return self.evaluate()
+
     def get_df(self) -> pd.DataFrame:
         r'''
         Returns a DataFrame for the given fold containing targets, weights, and predictions
@@ -125,10 +150,8 @@ class EvalMetric(Callback):
         df = pd.DataFrame()
         if hasattr(self, 'wgt_name'):
             df['gen_weight'] = self.model.fit_params.fy.get_column(column=self.wgt_name, n_folds=1, fold_idx=self.model.fit_params.val_idx)
-        else:
-            df['gen_weight'] = self.weights
         
-        if hasattr(self, 'targ_name'):
+        if hasattr(self, 'targ_name') and self.targ_name is not None:
             targets = self.model.fit_params.fy.get_column(column=self.targ_name, n_folds=1, fold_idx=self.model.fit_params.val_idx)
         else:
             targets = self.targets

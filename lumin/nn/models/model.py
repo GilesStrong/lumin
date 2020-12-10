@@ -14,7 +14,7 @@ import torch
 from torch.tensor import Tensor
 import torch.nn as nn
 
-from .abs_model import AbsModel
+from .abs_model import AbsModel,FitParams
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback, OldAbsCallback
@@ -29,12 +29,6 @@ from ...utils.statistics import uncert_round
 from ...utils.misc import to_np, to_device
 
 __all__ = ['Model']
-
-
-class FitParams():
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        self.epoch,self.sub_epoch = 0,0
 
 
 class Model(AbsModel):
@@ -172,17 +166,11 @@ class Model(AbsModel):
         
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
-        cyclic_cbs,loss_cbs,metric_logger = [],[],None
+        cyclic_cbs,loss_cbs,metric_log = [],[],None
         for c in cbs:
             if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)  # CBs that might prevent a model from stopping training due to a hyper-param cycle
             if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
             if isinstance(c, MetricLogger): metric_log = c  # CB that logs losses and eval_metrics
-        if metric_logger is None:
-            print('''A MetricLogger callback was not listed in cbs. This may be necessary for other callbacks to work, however the orrect order cannot be
-                  guessed. I'll add a MetricLogger as the first callback, however later callbacks may modify the losses leading to incorrect recording.
-                  Additionally, the loss may not be meaned, but this cannot be accurately inferred at this stage''')
-            metric_log = MetricLogger()
-            cbs = [metric_log] + cbs
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, metric_log=metric_log, stop=False, n_epochs=n_epochs, fy=fy,
                                     val_idx=val_idx, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath),

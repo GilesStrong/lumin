@@ -13,6 +13,12 @@ from ..callbacks.abs_callback import AbsCallback
 __all__ = []
 
 
+class FitParams():
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+        self.epoch,self.sub_epoch = 0,0
+
+
 class OldAbsModel(ABC):
     r'''
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.models.abs_model.AbsModel`.

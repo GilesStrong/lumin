@@ -2,12 +2,11 @@ import numpy as np
 from typing import List, Optional
 from sklearn.metrics import accuracy_score, roc_auc_score
 from fastcore.all import store_attr
-import pandas as pd
 
 from .eval_metric import EvalMetric, OldEvalMetric
 from ..data.fold_yielder import FoldYielder
 from ...evaluation.ams import ams_scan_quick, ams_scan_slow
-from ...utils.misc import to_binary_class, to_np
+from ...utils.misc import to_binary_class
 
 __all__ = ['AMS', 'MultiAMS', 'BinaryAccuracy', 'RocAucScore']
 
@@ -36,10 +35,10 @@ class OldAMS(OldEvalMetric):
 
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.class_eval.AMS`.
         It is a copy of the old `AMS` class used in lumin<=0.7.0.
-        It will be removed in V0.9
+        It will be removed in V0.8
     '''
 
-    # XXX remove in V0.9
+    # XXX remove in V0.8
 
     def __init__(self, n_total:int, wgt_name:str, targ_name:str='targets', br:float=0, syst_unc_b:float=0, use_quick_scan:bool=True):
         super().__init__(targ_name=targ_name, wgt_name=wgt_name)
@@ -81,6 +80,7 @@ class AMS(EvalMetric):
         syst_unc_b: fractional systematic uncertainty on background yield
         use_quick_scan: whether to optimise AMS by the :meth:`~lumin.evaluation.ams.ams_scan_quick` method (fast but suffers floating point precision)
             if False use :meth:`~lumin.evaluation.ams.ams_scan_slow` (slower but more accurate)
+        name: optional name for metric, otherwise will be 'AMS'
         main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
             Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
 
@@ -92,9 +92,9 @@ class AMS(EvalMetric):
 
     '''
 
-    def __init__(self, n_total:int, wgt_name:str, br:float=0, syst_unc_b:float=0, use_quick_scan:bool=True, main_metric:bool=True):
-        super().__init__(lower_metric_better=False, main_metric=main_metric)
-        store_attr(but=['main_metric'])
+    def __init__(self, n_total:int, wgt_name:str, br:float=0, syst_unc_b:float=0, use_quick_scan:bool=True, name:Optional[str]='AMS', main_metric:bool=True):
+        super().__init__(name=name, lower_metric_better=False, main_metric=main_metric)
+        store_attr(but=['name', 'main_metric'])
 
     def evaluate(self) -> float:
         r'''
@@ -143,10 +143,10 @@ class OldMultiAMS(OldAMS):
 
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.class_eval.MultiAMS`.
         It is a copy of the old `MultiAMS` class used in lumin<=0.7.0.
-        It will be removed in V0.9
+        It will be removed in V0.8
     '''
 
-    # XXX remove in V0.9
+    # XXX remove in V0.8
 
     def __init__(self, n_total:int, wgt_name:str, targ_name:str, zero_preds:List[str], one_preds:List[str], br:float=0, syst_unc_b:float=0,
                  use_quick_scan:bool=True):
@@ -195,6 +195,7 @@ class MultiAMS(EvalMetric):
         syst_unc_b: fractional systematic uncertainty on background yield
         use_quick_scan: whether to optimise AMS by the :meth:`~lumin.evaluation.ams.ams_scan_quick` method (fast but suffers floating point precision)
             if False use :meth:`~lumin.evaluation.ams.ams_scan_slow` (slower but more accurate)
+        name: optional name for metric, otherwise will be 'AMS'
         main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
             Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
 
@@ -213,11 +214,11 @@ class MultiAMS(EvalMetric):
     '''
 
     def __init__(self, n_total:int, wgt_name:str, targ_name:str, zero_preds:List[str], one_preds:List[str], br:float=0, syst_unc_b:float=0,
-                 use_quick_scan:bool=True, main_metric:bool=True):
-        super().__init__(lower_metric_better=False, main_metric=main_metric)
-        store_attr(but=['main_metric'])
+                 use_quick_scan:bool=True, name:Optional[str]='AMS', main_metric:bool=True):
+        super().__init__(name=name, lower_metric_better=False, main_metric=main_metric)
+        store_attr(but=['name', 'main_metric'])
 
-    def evaluate(self, fy:FoldYielder, idx:int, y_pred:np.ndarray) -> float:
+    def evaluate(self) -> float:
         r'''
         Compute maximum AMS on fold using provided predictions.
 
@@ -251,10 +252,10 @@ class OldBinaryAccuracy(OldEvalMetric):
 
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.class_eval.BinaryAccuracy`.
         It is a copy of the old `BinaryAccuracy` class used in lumin<=0.7.0.
-        It will be removed in V0.9
+        It will be removed in V0.8
     '''
 
-    # XXX remove in V0.9
+    # XXX remove in V0.8
     
     def __init__(self, threshold:float=0.5, targ_name:str='targets', wgt_name:Optional[str]=None):
         super().__init__(targ_name=targ_name, wgt_name=wgt_name)
@@ -288,6 +289,7 @@ class BinaryAccuracy(EvalMetric):
     Arguments:
         threshold: minimum value of model prediction that will be considered a prediction of class 1. Values below this threshold will be considered predictions
             of class 0. Default = 0.5.
+        name: optional name for metric, otherwise will be 'Acc'
         main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
             Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
 
@@ -297,9 +299,9 @@ class BinaryAccuracy(EvalMetric):
         >>> acc_metric = BinaryAccuracy(threshold=0.8)
     '''
     
-    def __init__(self, threshold:float=0.5, main_metric:bool=True):
-        super().__init__(lower_metric_better=False, main_metric=main_metric)
-        store_attr(but=['main_metric'])
+    def __init__(self, threshold:float=0.5, name:Optional[str]='Acc', main_metric:bool=True):
+        super().__init__(name=name, lower_metric_better=False, main_metric=main_metric)
+        store_attr(but=['name', 'main_metric'])
 
     def evaluate(self) -> float:
         r'''
@@ -309,8 +311,8 @@ class BinaryAccuracy(EvalMetric):
             The (weighted) accuracy for the specified threshold
         '''
 
-        self.pred = to_np(self.pred >= self.threshold).astype(int)
-        return accuracy_score(to_np(self.targets), y_prede=self.preds, sample_weight=to_np(self.weights))
+        self.preds = (self.preds >= self.threshold).astype(int)
+        return accuracy_score(self.targets, y_pred=self.preds, sample_weight=self.weights)
     
 
 class OldRocAucScore(OldEvalMetric):
@@ -376,10 +378,10 @@ class OldRocAucScore(OldEvalMetric):
 
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.class_eval.RocAucScore`.
         It is a copy of the old `RocAucScore` class used in lumin<=0.7.0.
-        It will be removed in V0.9
+        It will be removed in V0.8
     '''
 
-    # XXX remove in V0.9
+    # XXX remove in V0.8
     
     def __init__(self, average:Optional[str]='macro', max_fpr:Optional[float]=None, multi_class:str='raise', targ_name:str='targets',
                  wgt_name:Optional[str]=None):
@@ -455,6 +457,7 @@ class RocAucScore(EvalMetric):
                 Computes the average AUC of all possible pairwise combinations of
                 classes. Insensitive to class imbalance when
                 ``average == 'macro'``.
+        name: optional name for metric, otherwise will be 'Acc'
         main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
             Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
 
@@ -466,9 +469,10 @@ class RocAucScore(EvalMetric):
         >>> auc_metric = RocAucScore(multi_class='ovo')
     '''
     
-    def __init__(self, average:Optional[str]='macro', max_fpr:Optional[float]=None, multi_class:str='raise', main_metric:bool=True):
-        super().__init__(lower_metric_better=False, main_metric=main_metric)
-        store_attr(but=['main_metric'])
+    def __init__(self, average:Optional[str]='macro', max_fpr:Optional[float]=None, multi_class:str='raise', name:Optional[str]='ROC AUC',
+                 main_metric:bool=True):
+        super().__init__(name=name, lower_metric_better=False, main_metric=main_metric)
+        store_attr(but=['name', 'main_metric'])
 
     def evaluate(self) -> float:
         r'''
@@ -478,5 +482,5 @@ class RocAucScore(EvalMetric):
             The (weighted) (averaged) ROC AUC for the specified threshold
         '''
 
-        return roc_auc_score(y_true=to_np(self.targets), y_score=to_np(self.preds), sample_weight=to_np(self.weights),
+        return roc_auc_score(y_true=self.targets, y_score=self.preds, sample_weight=self.weights,
                              average=self.average, max_fpr=self.max_fpr, multi_class=self.multi_class)

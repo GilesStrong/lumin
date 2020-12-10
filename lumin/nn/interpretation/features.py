@@ -54,7 +54,8 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, bs:Optional[int]=None
         targs = val_fold['targets']
         weights = val_fold['weights']
         if eval_metric is None: nom = model.evaluate(val_fold['inputs'], targs, weights=weights, bs=bs)
-        else:                   nom = eval_metric.evaluate(fy, fold_idx, model.predict(val_fold['inputs']))
+        else:                   nom = eval_metric.evaluate_model(model=model, fy=fy, fold_idx=fold_idx,
+                                                                 inputs=val_fold['inputs'], targets=targs, weights=weights, bs=bs)
         tmp = []
         for i in range(len(feats)):
             if isinstance(val_fold['inputs'], tuple):
@@ -64,7 +65,8 @@ def get_nn_feat_importance(model:AbsModel, fy:FoldYielder, bs:Optional[int]=None
                 x = val_fold['inputs'].copy()
                 x[:,i] = sklearn.utils.shuffle(x[:,i])
             if eval_metric is None: tmp.append(model.evaluate(x, targs, weights=weights, bs=bs))
-            else:                   tmp.append(eval_metric.evaluate(fy, fold_idx, model.predict(x)))
+            else:                   tmp.append(eval_metric.evaluate_model(model=model, fy=fy, fold_idx=fold_idx,
+                                                                          inputs=x, targets=targs, weights=weights, bs=bs))
 
         if eval_metric is None: tmp = (np.array(tmp)-nom)/nom
         else:                   tmp = (np.array(tmp)-nom)/nom if eval_metric.lower_metric_better else (nom-np.array(tmp))/nom

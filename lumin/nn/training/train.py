@@ -6,12 +6,12 @@ import pickle
 import timeit
 import numpy as np
 import os
-from functools import partial
 from fastcore.all import is_listy
 
 from ..data.fold_yielder import FoldYielder
 from ..models.model_builder import ModelBuilder
 from ..models.model import Model
+from ..callbacks.callback import Callback
 from ..callbacks.pred_handlers import PredHandler
 from ..callbacks.monitors import EarlyStopping, SaveBest, MetricLogger
 from ...utils.statistics import uncert_round
@@ -25,8 +25,8 @@ __all__ = ['train_models']
 
 
 def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
-                 cb_partials:Optional[List[partial]]=None, eval_metrics:Optional[Dict[str,EvalMetric]]=None, pred_cb:Callable[[],PredHandler]=PredHandler,
-                 train_on_weights:bool=True, bulk_move:bool=True, start_mode_id:int=0,
+                 cb_partials:Optional[List[Callable[[],Callback]]]=None, metric_partials:Optional[List[Callable[[],EvalMetric]]]=None,
+                 pred_cb:Callable[[],PredHandler]=PredHandler, train_on_weights:bool=True, bulk_move:bool=True, start_mode_id:int=0,
                  live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), plot_settings:PlotSettings=PlotSettings()) \
         -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
@@ -53,8 +53,9 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         n_epochs: maximum number of epochs for which to train
         patience: if not `None`, sets the number of epochs or cycles to train without decrease in validation loss before ending training (early stopping)
         loss_is_meaned: if the batch loss value has been averaged over the number of elements in the batch, this should be true
-        cb_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called
-        eval_metrics: list of instantiated :class:`~lumin.nn.metric.eval_metric.EvalMetric`, used to compute additional metrics on validation data.
+        cb_partials: optional list of functools.partial, each of which will instantiate a :class:`~lumin.nn.callbacks.callback.Callback` when called
+        metric_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.metric.eval_metric.EvalMetric`,
+            used to compute additional metrics on validation data after each epoch.
             :class:`~lumin.nn.callbacks.monitors.SaveBest` and :class:`~lumin.nn.callbacks.monitors.EarlyStopping` will also act on the (first) metric set to 
             `main_metric` instead of loss, except when another callback produces an alternative loss and model
             (like :class:`~lumin.nn.callbacks.model_callbacks.SWA`).
@@ -99,9 +100,9 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
 
         cbs = []
         for c in cb_partials: cbs.append(c())
-        save_best = SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)
+        for c in metric_partials: cbs.append(c())
         metric_log = MetricLogger(show_plots=live_fdbk, extra_detail=live_fdbk_extra, loss_is_meaned=loss_is_meaned)
-        cbs += [save_best,metric_log]
+        cbs += [metric_log, SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)]
         if patience is not None: cbs.append(EarlyStopping(patience=patience, loss_is_meaned=loss_is_meaned))
         for c in cbs: c.set_plot_settings(plot_settings)
 
@@ -114,11 +115,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         cycle_losses.append([])
         for c in cbs:
             if hasattr(c, 'cycle_save') and c.cycle_save: cycle_losses[-1] = c.cycle_losses
-        results.append({})
-        results[-1]['loss'] = save_best.min_loss
-        if eval_metrics is not None and len(eval_metrics) > 0:
-            y_pred = model.predict(fy[val_idx]['inputs'], bs=bs if not bulk_move else None)
-            for m in eval_metrics: results[-1][m] = eval_metrics[m].evaluate(fy, val_idx, y_pred)
+        results.append(metric_log.get_results())
         print(f"Scores are: {results[-1]}")
         results[-1]['path'] = model_dir
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)

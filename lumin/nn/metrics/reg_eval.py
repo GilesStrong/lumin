@@ -5,7 +5,6 @@ from statsmodels.stats.weightstats import DescrStatsW
 from fastcore.all import store_attr
 
 from ...utils.statistics import bootstrap_stats
-from ...utils.misc import to_np
 from .eval_metric import EvalMetric, OldEvalMetric
 from ..data.fold_yielder import FoldYielder
 
@@ -37,10 +36,10 @@ class OldRegPull(OldEvalMetric):
     
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.reg_eval.RegPull.
         It is a copy of the old `RegPull` class used in lumin<=0.7.0.
-        It will be removed in V0.9
+        It will be removed in V0.8
     '''
 
-    # XXX remove in V0.9
+    # XXX remove in V0.8
 
     # TODO: Check how this handels multi-target regression, may need to adjust averaging axis & DescrStatsW may not handle multi-dimensional data well.
     # TODO: Remove use_weights and rely on whether wgt_name is None
@@ -97,6 +96,7 @@ class RegPull(EvalMetric):
         return_mean: whether to return the mean or the standard deviation
         use_bootstrap: whether to bootstrap resamples validation fold when computing statisitic
         use_pull: whether to return the pull (differences / targets) or delta (differences)
+        name: optional name for metric, otherwise will be inferred from `use_pull`
         main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
             Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
     Examples::
@@ -112,16 +112,18 @@ class RegPull(EvalMetric):
 
     # TODO: Check how this handels multi-target regression, may need to adjust averaging axis & DescrStatsW may not handle multi-dimensional data well.
 
-    def __init__(self, return_mean:bool, use_bootstrap:bool=False, use_pull:bool=True, main_metric:bool=True):
-        super().__init__(lower_metric_better=True, main_metric=main_metric)
-        store_attr(but=['main_metric'])
+    def __init__(self, return_mean:bool, use_bootstrap:bool=False, use_pull:bool=True, name:Optional[str]=None, main_metric:bool=True):
+        if name is None:
+            name = 'pull' if use_pull else 'delta'
+        super().__init__(name=name, lower_metric_better=True, main_metric=main_metric)
+        store_attr(but=['name', 'main_metric'])
 
     def _compute(self, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> float:
         delta = preds-targets
         if self.use_pull: delta /= targets
 
         if weights is not None:
-            weights = weights.values.astype('float64')
+            weights = weights.astype('float64')
             weights = weights/weights.sum()
         
         if self.use_bootstrap:
@@ -134,14 +136,14 @@ class RegPull(EvalMetric):
                 return DescrStatsW(delta, ddof=1, weights=weights*len(weights) if weights is not None else None).std
             
     def evaluate(self) -> float:
-        r'''s
+        r'''
         Compute mean or width of regression error.
 
         Returns:
             Mean or width of regression error
         '''
 
-        return self._compute(to_np(self.preds), to_np(self.targets), to_np(self.weights))
+        return self._compute(self.preds, self.targets, self.weights)
 
 
 class OldRegAsProxyPull(OldRegPull):
@@ -172,10 +174,10 @@ class OldRegAsProxyPull(OldRegPull):
     
     .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.metrics.reg_eval.RegAsProxyPull.
         It is a copy of the old `RegAsProxyPull` class used in lumin<=0.7.0.
-        It will be removed in V0.9
+        It will be removed in V0.8
     '''
 
-    # XXX remove in V0.9
+    # XXX remove in V0.8
 
     def __init__(self, proxy_func:Callable[[pd.DataFrame],None], return_mean:bool, use_bootstrap:bool=False, use_weights:bool=True, 
                  use_pull:bool=True, targ_name:str='targets', wgt_name:Optional[str]=None):
@@ -216,8 +218,11 @@ class RegAsProxyPull(RegPull):
         use_bootstrap: whether to bootstrap resamples validation fold when computing statisitic
         use_weights: whether to actually use weights if wgt_name is set
         use_pull: whether to return the pull (differences / targets) or delta (differences)
-        targ_name: name of group in fold file containing regression targets
-
+        targ_name: optional name of group in fold file containing regression targets
+        name: optional name for metric, otherwise will be inferred from `use_pull`
+        main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
+            Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
+    
     Examples::
         >>> def reg_proxy_func(df):
         >>>     df['pred'] = calc_pair_mass(df, (1.77682, 1.77682),
@@ -230,12 +235,14 @@ class RegAsProxyPull(RegPull):
         ...                            return_mean=False, use_pull=False)
     '''
 
-    def __init__(self, proxy_func:Callable[[pd.DataFrame],None], targ_name:str, return_mean:bool, use_bootstrap:bool=False, 
-                 use_pull:bool=True, main_metric:bool=True):
-        super().__init__(use_bootstrap=use_bootstrap, return_mean=return_mean, use_pull=use_pull,  main_metric=main_metric)
-        store_attr(['proxy_func', 'targ_name'])
+    def __init__(self, proxy_func:Callable[[pd.DataFrame],None], return_mean:bool, targ_name:Optional[str]=None, use_bootstrap:bool=False, 
+                 use_pull:bool=True, name:Optional[str]=None, main_metric:bool=True):
+        if name is None:
+            name = 'pull' if use_pull else 'delta'
+        super().__init__(use_bootstrap=use_bootstrap, return_mean=use_bootstrap, use_pull=use_pull,  main_metric=main_metric)
+        store_attr(but=['use_bootstrap', 'use_bootstrap', 'use_pull', 'main_metric'])
             
-    def evaluate(self, fy:FoldYielder, idx:int, y_pred:np.ndarray) -> float:
+    def evaluate(self) -> float:
         r'''
         Compute statisitic on fold using provided predictions.
 

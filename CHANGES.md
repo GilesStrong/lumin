@@ -1,8 +1,13 @@
 # Targeting v0.7.1
 
 ## Important changes
+
+- `EvalMetrics` revised to inherit from `Callback` and be called on validation data after every epoch. User-written `EvalMetrics` willneed to be adjusted to work with the new calling method: adjust `evaluate` method and constructor may need to be adjusted; see existing metrics to see how.
   
 ## Breaking
+
+- `eval_metrics` argument in `train_models` renamed to `metric_partials` and now takes a list of partial `EvalMetrics`
+- User-written `EvalMetrics` will need to be adjusted to work with the new calling method: adjust `evaluate` method and constructor may need to be adjusted; see existing metrics to see how.
 
 ## Additions
 
@@ -19,6 +24,16 @@
 ## Changes
 
 ## Depreciations
+
+- V0.8:
+    - All `EvalMetrics` depreciated with metric system. They have been copied and renamed to Old* for compatibility with the old model training system.
+    - `OldEvalMetric`: Replaced by `EvalMetric`
+    - `OldMultiAMS`: Replaced by `MultiAMS`
+    - `OldAMS`: Replaced by `AMS`
+    - `OldRegPull`: Replaced by `RegPull`
+    - `OldRegAsProxyPull`: Replaced by `RegAsProxyPull`
+    - `OldRocAucScore`: Replaced by `RocAucScore`
+    - `OldBinaryAccuracy`: Replaced by `BinaryAccuracy`
 
 ## Comments
 
