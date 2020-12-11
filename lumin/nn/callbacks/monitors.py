@@ -266,7 +266,7 @@ class MetricLogger(Callback):
                 self.gen_ax.legend(loc='upper left', fontsize=0.8*self.plot_settings.leg_sz)
                 self.gen_ax.set_xlabel('Epoch', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
                 self.gen_ax.set_ylabel('Validation / Train', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
-                if len(self.epochs) > 8:  # Fo some reason this needs to be 2+number epochs to display...
+                if len(self.epochs) > 8:  # For some reason this needs to be 2+number epochs to display...
                     self.epochs = self.epochs[1:]
                     for i in range(len(self.vel_vals)): self.vel_vals[i],self.gen_vals[i] = self.vel_vals[i][1:],self.gen_vals[i][1:]
 

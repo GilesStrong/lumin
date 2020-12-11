@@ -73,16 +73,16 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
         log_y: whether to plot the y-axis with a log scale
     '''
 
-    if not is_listy(histories): histories = [histories]
-    n_folds = len(histories[0]['Training'])//len(histories[0]['Validation'])
+    if not isinstance(histories, list): histories = [histories]
+    n_folds = len(histories[0][0]['Training'])//len(histories[0][0]['Validation'])
 
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
         for i, history in enumerate(histories):
             for j, l in enumerate(history[0]):
                 if j > 0 or not ignore_trn:
-                    x = range(1,len(history[l])+1)[xlow*n_folds:] if j == 0 else range(n_folds,(n_folds*len(history[l]))+1,n_folds)[xlow:]
-                    plt.plot(x, history[l][xlow:], color=palette[j], label=l if i == 0 else None)
+                    x = range(1,len(history[0][l])+1)[xlow*n_folds:] if j == 0 else range(n_folds,(n_folds*len(history[0][l]))+1,n_folds)[xlow:]
+                    plt.plot(x, history[0][l][xlow:], color=palette[j], label=l if i == 0 else None)
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
@@ -95,12 +95,11 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
         if savename is not None: plt.savefig(settings.savepath/f'{savename}_loss{settings.format}', bbox_inches='tight')
         if show: plt.show()
 
-    for metric in history[0][1].keys():
+    for metric in history[1].keys():
         with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
             plt.figure(figsize=(settings.w_mid, settings.h_mid))
             for i, history in enumerate(histories):
-                plt.plot(range(n_folds,(n_folds*len(history[metric]))+1,n_folds)[xlow:], history[metric][xlow:], color=palette[1])
-            plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+                plt.plot(range(n_folds,(n_folds*len(history[1][metric]))+1,n_folds)[xlow:], history[1][metric][xlow:], color=palette[1])
             plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
             plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
             plt.xlabel("Subepoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
