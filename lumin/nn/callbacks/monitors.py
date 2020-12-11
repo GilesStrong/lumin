@@ -346,20 +346,21 @@ class MetricLogger(Callback):
                     self.loss_ax.set_ylabel('Loss', fontsize=0.8*self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
                     self.display = display(self.loss_ax.figure, display_id=True)
 
-    def get_loss_history(self) -> OrderedDict:
+    def get_loss_history(self) -> Tuple[OrderedDict,OrderedDict]:
         r'''
-        Get the current history of losses
+        Get the current history of losses and metrics
 
         Returns:
-            history: ordered dictionary (training first, validations subsequent) mapping loss names to lists of loss values
+            history: tuple of ordered dictionaries: first with losses, second with validation metrics
         '''
 
-        history = OrderedDict()
-        for v,m in zip(self.loss_vals,self.loss_names): history[m] = v
+        history = (OrderedDict(),OrderedDict())
+        for v,m in zip(self.loss_vals,self.loss_names): history[0][m] = v
+        for v,c in zip(self.metric_vals,self.metric_cbs): history[1][c.name] = v
         return history
 
     def get_results(self) -> Dict[str,float]:
-        losses = np.array(self.loss_vals[1:])
+        losses = np.array(self.loss_vals)[1:]
         metrics = np.array(self.metric_vals)
         results = {}
 
