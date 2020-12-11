@@ -13,6 +13,7 @@
 
 - `OneCycle` now has a `cycle_ends_training` which allows training to continue at the final LR and Momentum. keeping at default of `True` ends the training once the cycle is complete, as usual.
 - `to_np` now returns `None` when input tensor is `None`
+- `plot_train_history` now plots metric evolution for validation data
 
 ## Removals
 
@@ -20,6 +21,7 @@
 
 - `Model` now creates `cb_savepath` is it didn't already exist
 - Bug in `PredHandler` where predictions were kept on device leading to increased memory usage
+- Version issue in matplotlib affecting plot positioning
 
 ## Changes
 
