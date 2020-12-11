@@ -99,8 +99,7 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
         with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
             plt.figure(figsize=(settings.w_mid, settings.h_mid))
             for i, history in enumerate(histories):
-                plt.plot(range(n_folds,(n_folds*len(history[metric]))+1,n_folds)[xlow:], history[metric][xlow:], color=palette[1]
-
+                plt.plot(range(n_folds,(n_folds*len(history[metric]))+1,n_folds)[xlow:], history[metric][xlow:], color=palette[1])
             plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
             plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
             plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
