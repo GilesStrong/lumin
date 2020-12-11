@@ -4,7 +4,7 @@ import numpy as np
 from fastprogress.fastprogress import IN_NOTEBOOK
 from IPython.display import display
 from collections import OrderedDict
-from typing import Dict
+from typing import Dict, Tuple
 
 import matplotlib.pyplot as plt
 import seaborn as sns
