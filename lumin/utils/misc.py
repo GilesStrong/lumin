@@ -26,7 +26,7 @@ def to_np(x:Tensor) -> np.ndarray:
         x as a Numpy array
     '''
     
-    return x.cpu().detach().numpy()
+    return x.cpu().detach().numpy() if x is not None else None
 
 
 def to_device(x:Union[Tensor,List[Tensor]], device:torch.device=device) -> Union[Tensor,List[Tensor]]:

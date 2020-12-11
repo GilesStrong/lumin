@@ -14,12 +14,13 @@ import torch
 from torch.tensor import Tensor
 import torch.nn as nn
 
-from .abs_model import AbsModel
+from .abs_model import AbsModel,FitParams
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
 from ..callbacks.abs_callback import AbsCallback, OldAbsCallback
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.pred_handlers import PredHandler
+from ..callbacks.monitors import MetricLogger
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
@@ -28,12 +29,6 @@ from ...utils.statistics import uncert_round
 from ...utils.misc import to_np, to_device
 
 __all__ = ['Model']
-
-
-class FitParams():
-    def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
-        self.epoch,self.sub_epoch = 0,0
 
 
 class Model(AbsModel):
@@ -161,7 +156,7 @@ class Model(AbsModel):
             train_on_weights: whether to actually use data weights, if present
             trn_idxs: Fold indexes in `fy` to use for training. If not set, will use all folds except val_idx
             val_idx: Fold index in `fy` to use for validation. If not set, will not compute validation losses
-            cbs: list of instantiated callbacks to adjust training
+            cbs: list of instantiated callbacks to adjust training. Will be called in order listed.
             cb_savepath: General save directory for any callbacks which require saving models and other information (accessible from `fit_params`),
             model_bar: Optional `master_bar` for aligning progress bars, i.e. if training multiple models
 
@@ -171,14 +166,15 @@ class Model(AbsModel):
         
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
-        cyclic_cbs,loss_cbs = [],[]
+        cyclic_cbs,loss_cbs,metric_log = [],[],None
         for c in cbs:
             if isinstance(c, AbsCyclicCallback): cyclic_cbs.append(c)  # CBs that might prevent a model from stopping training due to a hyper-param cycle
             if hasattr(c, "get_loss"): loss_cbs.append(c)  # CBs that produce alternative losses that should be considered
+            if isinstance(c, MetricLogger): metric_log = c  # CB that logs losses and eval_metrics
 
-        self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, stop=False, n_epochs=n_epochs, fy=fy, val_idx=val_idx, bs=bs,
-                                    bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath), loss_func=self.loss,
-                                    opt=self.opt)
+        self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, metric_log=metric_log, stop=False, n_epochs=n_epochs, fy=fy,
+                                    val_idx=val_idx, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath),
+                                    loss_func=self.loss, opt=self.opt)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
@@ -190,10 +186,10 @@ class Model(AbsModel):
         self.fit_params.trn_idxs,self.fit_params.val_idx = trn_idxs,val_idx
         if self.fit_params.val_idx is not None:
             if bulk_move:
-                val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=True,
+                val_by = self.fit_params.partial_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx), drop_last=False, shuffle=False,
                                                     bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
             else:
-                val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=True,
+                val_by = partial(self.fit_params.partial_by, drop_last=False, shuffle=False,
                                  bs=self.fit_params.fy.get_data_count(self.fit_params.val_idx) if bulk_move else self.fit_params.bs)
         trn_by = partial(self.fit_params.partial_by, drop_last=True, bs=self.fit_params.bs, shuffle=True)
 
@@ -274,12 +270,14 @@ class Model(AbsModel):
             (weighted) loss of model predictions on provided data
         '''
 
+        # TODO: make this work with non-meaned losses
+
         if hasattr(self, 'fit_params') and self.fit_params is not None:
             raise ValueError('Evaluate will overwrite exisiting fit_params for this model. Most likely it is being called during training.')
         if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, targets=targets, weights=weights, bs=len(inputs) if bs is None else bs,
                                                                        objective=self.objective, shuffle=False, bulk_move=bs is None,
                                                                        input_mask=self.input_mask, drop_last=False)
-        self.fit_params = FitParams(cbs=[], by=inputs, state='val', loss_func=self.loss)
+        self.fit_params = FitParams(cbs=[], by=inputs, state='valid', loss_func=self.loss)
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.model.eval()
         loss,cnt = 0,0

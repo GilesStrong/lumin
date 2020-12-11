@@ -259,12 +259,13 @@ class SWA(Callback):
         
         super().on_train_begin()
         self.cyclic_callback = None if len(self.model.fit_params.cyclic_cbs) == 0 else self.model.fit_params.cyclic_cbs[-1]
-        if self.weights is None:
-            self.weights = copy.deepcopy(self.model.get_weights())
-            self.weights_new = copy.deepcopy(self.model.get_weights())
-            self.test_model = Model(self.model.model_builder)  # Cant deep copy model since fit_params contains SWA callback
-            self.test_model.loss = copy.deepcopy(self.model.loss)  # In case user has manually changed the loss function
-            self.epoch,self.swa_n,self.n_since_renewal,self.first_completed,self.cycle_since_replacement,self.active = 0,0,0,False,1,False
+        self.epoch,self.swa_n,self.n_since_renewal,self.first_completed,self.cycle_since_replacement,self.active = 0,0,0,False,1,False
+        
+    def _create_weights(self) -> None:
+        self.weights = copy.deepcopy(self.model.get_weights())
+        self.weights_new = copy.deepcopy(self.model.get_weights())
+        self.test_model = Model(self.model.model_builder)  # Can't deep copy model since fit_params contains SWA callback
+        self.test_model.loss = copy.deepcopy(self.model.loss)  # In case user has manually changed the loss function
             
     def on_epoch_begin(self) -> None:
         r'''
@@ -283,6 +284,7 @@ class SWA(Callback):
             if self.swa_n == 0 and not self.active:
                 if self.verbose: print("SWA beginning")
                 self.active = True
+                self._create_weights()
             elif self.update_on_cycle_end and self.cyclic_callback.cycle_mult > 1:
                 if self.verbose: print("Updating average")
                 self.active = True
