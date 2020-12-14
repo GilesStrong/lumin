@@ -132,10 +132,17 @@ class EvalMetric(Callback):
 
     def evaluate_model(self, model:AbsModel, fy:FoldYielder, fold_idx:int, inputs:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None,
                        bs:Optional[int]=None) -> float:
-        self.model = model
+        preds = self.model.predict(inputs, bs=bs)
+        return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights, bs=bs)
+
+    def evaluate_preds(self, fy:FoldYielder, fold_idx:int, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None,
+                       bs:Optional[int]=None) -> float:
+        class MockModel():
+            def __init__(self): pass
+
+        if not hasattr(self, 'model') or self.model is None: self.model = MockModel()
         self.model.fit_params = FitParams(val_idx=fold_idx, fy=fy)
-        self.targets,self.weights = targets.squeeze(),weights.squeeze()
-        self.preds = self.model.predict(inputs, bs=bs)
+        self.preds,self.targets,self.weights = preds.squeeze(),targets.squeeze(),weights.squeeze()
         self.model.fit_params = FitParams(val_idx=fold_idx, fy=fy)  # predict reset fit_params to None
         return self.evaluate()
 
