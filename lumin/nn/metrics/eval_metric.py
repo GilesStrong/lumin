@@ -142,7 +142,8 @@ class EvalMetric(Callback):
 
         if not hasattr(self, 'model') or self.model is None: self.model = MockModel()
         self.model.fit_params = FitParams(val_idx=fold_idx, fy=fy)
-        self.preds,self.targets,self.weights = preds.squeeze(),targets.squeeze(),weights.squeeze()
+        self.preds,self.targets,self.weights = preds.squeeze(),targets.squeeze(),weights
+        if self.weights is not None: self.weights = weights.squeeze()
         self.model.fit_params = FitParams(val_idx=fold_idx, fy=fy)  # predict reset fit_params to None
         return self.evaluate()
 
