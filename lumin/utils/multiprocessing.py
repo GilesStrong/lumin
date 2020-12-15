@@ -16,7 +16,7 @@ def mp_run(args:List[Dict[Any,Any]], func:Callable[[Any],Any]) -> Dict[Any,Any]:
         func: function to which to pass dictionary arguments
 
     Returns:
-        DIctionary of results
+        Dictionary of results
     '''
 
     procs = []

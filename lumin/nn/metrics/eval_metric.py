@@ -102,12 +102,25 @@ class EvalMetric(Callback):
                 if hasattr(c, 'main_metric'): c.main_metric = False
             self.main_metric = True
 
-    def on_epoch_begin(self) -> None: self.preds,self.metric = [],None
+    def on_epoch_begin(self) -> None:
+        r'''
+        Resets prediction tracking
+        '''
+        
+        self.preds,self.metric = [],None
     
     def on_forwards_end(self) -> None:
+        r'''
+        Save predictions from batch
+        '''
+
         if self.model.fit_params.state == 'valid': self.preds.append(self.model.fit_params.y_pred.cpu().detach())
     
     def on_epoch_end(self) -> None:
+        r'''
+        Compute metric using saved predictions
+        '''
+
         if self.model.fit_params.state != 'valid': return
         self.preds = to_np(torch.cat(self.preds)).squeeze()
         if 'multiclass' in self.model.objective: self.preds = np.exp(self.preds)
@@ -117,7 +130,15 @@ class EvalMetric(Callback):
         self.metric = self.evaluate()
         del self.preds
 
-    def get_metric(self) -> float: return self.metric
+    def get_metric(self) -> float:
+        r'''
+        Returns metric value
+
+        Returns:
+            metric value
+        '''
+        
+        return self.metric
 
     @abstractmethod
     def evaluate(self) -> float:
@@ -132,11 +153,45 @@ class EvalMetric(Callback):
 
     def evaluate_model(self, model:AbsModel, fy:FoldYielder, fold_idx:int, inputs:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None,
                        bs:Optional[int]=None) -> float:
+        r'''
+        Gets model predicitons and computes metric value. fy and fold_idx arguments necessary in case the metric requires extra information beyond inputs, 
+        tragets, and weights.
+
+        Arguments:
+            model: model to evaluate
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` containing data
+            fold_idx: fold index of corresponding data
+            inputs: input data
+            targets: target data
+            weights: optional weights
+            bs: optional batch size
+
+        Returns:
+            metric value
+        '''
+
+        self.model = model
         preds = self.model.predict(inputs, bs=bs)
         return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights, bs=bs)
 
     def evaluate_preds(self, fy:FoldYielder, fold_idx:int, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None,
                        bs:Optional[int]=None) -> float:
+        r'''
+        Computes metric value from predictions. fy and fold_idx arguments necessary in case the metric requires extra information beyond inputs, 
+        tragets, and weights.
+
+        Arguments:
+            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` containing data
+            fold_idx: fold index of corresponding data
+            inputs: input data
+            targets: target data
+            weights: optional weights
+            bs: optional batch size
+
+        Returns:
+            metric value
+        '''
+
         class MockModel():
             def __init__(self): pass
 

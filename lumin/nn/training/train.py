@@ -115,7 +115,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         cycle_losses.append([])
         for c in cbs:
             if hasattr(c, 'cycle_save') and c.cycle_save: cycle_losses[-1] = c.cycle_losses
-        results.append(metric_log.get_results())
+        results.append(metric_log.get_results(save_best=True))
         print(f"Scores are: {results[-1]}")
         results[-1]['path'] = model_dir
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)

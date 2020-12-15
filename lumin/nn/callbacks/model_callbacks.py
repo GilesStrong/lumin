@@ -345,7 +345,7 @@ class SWA(Callback):
         Evaluates SWA model and returns loss
         '''
 
-        if self.epoch <= self.start_epoch: return self.model.fit_params.loss_val
+        if self.epoch <= self.start_epoch: return self.model.fit_params.loss_val.data.item()
         if self.loss is None:
             self.test_model.set_weights(self.weights)
             self.loss = self.test_model.evaluate(self.model.fit_params.by)

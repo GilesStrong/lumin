@@ -209,9 +209,9 @@ class MetricLogger(Callback):
 
     def _add_loss_name(self, name:str) -> None:
         self.loss_names.append(name)
-        self.loss_vals.append(list(np.zeros_like(self.loss_vals[1])))
-        self.vel_vals.append(list(np.zeros_like(self.vel_vals[0])))
-        self.gen_vals.append(list(np.zeros_like(self.gen_vals[0])))
+        self.loss_vals.append([0 for _ in self.loss_vals[1]])
+        self.vel_vals.append([0 for _ in self.vel_vals[0]])
+        self.gen_vals.append([0 for _ in self.gen_vals[0]])
 
     def print_losses(self) -> None:
         r'''
@@ -359,18 +359,33 @@ class MetricLogger(Callback):
         for v,c in zip(self.metric_vals,self.metric_cbs): history[1][c.name] = v
         return history
 
-    def get_results(self) -> Dict[str,float]:
-        losses = np.array(self.loss_vals)[1:]
+    def get_results(self, save_best:bool) -> Dict[str,float]:
+        r'''
+        Returns losses and metrics of the (loaded) model
+
+        #TODO: extend this to load at specified index
+
+        Arguments:
+            save_best: if the training used :class:`~lumin.nn.callbacks.monitors.SaveBest` return results at best point else return the latest values
+
+        Returns:
+            dictionary of validation loss and metrics
+        '''
+
+        losses = np.array(self.loss_vals[1:])
         metrics = np.array(self.metric_vals)
         results = {}
-
-        if self.main_metric_idx is None or not self.lock_to_metric or len(losses) > 1:  # Tracking SWA only supported for loss
-            idx = np.unravel_index(np.argmin(losses), losses.shape)[-1]
-            results['loss'] = np.min(losses)
+        
+        if save_best:
+            if self.main_metric_idx is None or not self.lock_to_metric or len(losses) > 1:  # Tracking SWA only supported for loss
+                idx = np.unravel_index(np.argmin(losses), losses.shape)[-1]
+                results['loss'] = np.min(losses)
+            else:
+                idx = np.argmin(self.metric_vals[self.main_metric_idx]) if self.metric_cbs[self.main_metric_idx].lower_metric_better else \
+                    np.argmax(self.metric_vals[self.main_metric_idx])
+                results['loss'] = losses[0][idx]
         else:
-            idx = np.argmin(self.metric_vals[self.main_metric_idx]) if self.metric_cbs[self.main_metric_idx].lower_metric_better else \
-                np.argmax(self.metric_vals[self.main_metric_idx])
-            results['loss'] = losses[0][idx]
-
+            results['loss'] = np.min(losses[:,-1:])
+            idx = -1
         for c,v in zip(self.metric_cbs,metrics[:,idx]): results[c.name] = v
         return results
