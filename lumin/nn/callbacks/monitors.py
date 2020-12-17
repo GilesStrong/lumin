@@ -106,7 +106,7 @@ class SaveBest(Callback):
             val,mi = losses.min(),losses.argmin()
         else:
             val,mi = metric,0
-        if val < self.min_val:
+        if val < self.min_val or self.min_val is np.NaN:
             self.min_val = val
             m = self.model
             if mi > 0: m = self.model.fit_params.loss_cbs[mi-1].test_model
@@ -270,13 +270,14 @@ class MetricLogger(Callback):
                     self.epochs = self.epochs[1:]
                     for i in range(len(self.vel_vals)): self.vel_vals[i],self.gen_vals[i] = self.vel_vals[i][1:],self.gen_vals[i][1:]
 
+            # Metrics
             if self.main_metric_idx is not None:
                 self.metric_ax.clear()
                 with sns.axes_style(**self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette) as palette:
                     x = range(self.n_trn_flds, self.n_trn_flds*len(self.loss_vals[1])+1, self.n_trn_flds)
                     y = self.metric_vals[self.main_metric_idx]
                     self.metric_ax.plot(x, y, color=palette[1])
-                    best = np.min(y) if self.metric_cbs[self.main_metric_idx].lower_metric_better else np.max(y)
+                    best = np.nanmin(y) if self.metric_cbs[self.main_metric_idx].lower_metric_better else np.nanmax(y)
                     self.metric_ax.plot([1,x[-1]], [best,best], label=f'Best = {best:.3E}', linestyle='--', color=palette[2])
                     self.metric_ax.legend(loc='upper left', fontsize=0.8*self.plot_settings.leg_sz)
                     self.metric_ax.grid(True, which="both")

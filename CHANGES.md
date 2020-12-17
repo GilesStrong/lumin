@@ -10,6 +10,8 @@
 
 ## Fixes
 
+- fixed cases in which a NaN in the metric during training could spoil plotting and `SaveBest`
+
 ## Changes
 
 ## Depreciations

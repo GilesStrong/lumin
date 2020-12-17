@@ -407,7 +407,7 @@ class OneCycle(AbsCyclicCallback):
 
     def on_batch_begin(self) -> None:
         r'''
-        Computes the new lr and momentum and assignes them to the optimiser
+        Computes the new lr and momentum and assigns them to the optimiser
         '''
 
         if self.model.fit_params.state != 'train' or self.cycle_count == 1: return
