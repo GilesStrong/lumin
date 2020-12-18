@@ -106,7 +106,7 @@ class SaveBest(Callback):
             val,mi = losses.min(),losses.argmin()
         else:
             val,mi = metric,0
-        if val < self.min_val or self.min_val is np.NaN:
+        if val < self.min_val or self.min_val is np.NaN or self.min_val is math.inf:
             self.min_val = val
             m = self.model
             if mi > 0: m = self.model.fit_params.loss_cbs[mi-1].test_model
