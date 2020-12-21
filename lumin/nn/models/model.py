@@ -386,7 +386,7 @@ class Model(AbsModel):
             mom: momentum/beta_1 of optimiser
         '''
 
-        if   'betas'    in self.opt.param_groups[0]: (mom, self.opt.param_groups[0]['betas'][1])
+        if   'betas'    in self.opt.param_groups[0]: self.opt.param_groups[0]['betas'] = (mom, self.opt.param_groups[0]['betas'][1])
         elif 'momentum' in self.opt.param_groups[0]: self.opt.param_groups[0]['momentum'] = mom
     
     def save(self, name:str) -> None:
