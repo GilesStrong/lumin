@@ -10,7 +10,8 @@
 
 ## Fixes
 
-- fixed cases in which a NaN in the metric during training could spoil plotting and `SaveBest`
+- Fixed cases in which a NaN in the metric during training could spoil plotting and `SaveBest`
+- Fixed bug in `Model.set_mom`  which resulted in momentum never being set
 
 ## Changes
 

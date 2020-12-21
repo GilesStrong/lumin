@@ -375,8 +375,8 @@ class Model(AbsModel):
             momentum/beta_1 of optimiser
         '''
         
-        if   'betas'    in self.opt.param_groups: return self.opt.param_groups[0]['betas'][0]
-        elif 'momentum' in self.opt.param_groups: return self.opt.param_groups[0]['momentum']
+        if   'betas'    in self.opt.param_groups[0]: return self.opt.param_groups[0]['betas'][0]
+        elif 'momentum' in self.opt.param_groups[0]: return self.opt.param_groups[0]['momentum']
 
     def set_mom(self, mom:float) -> None:
         r'''
@@ -386,8 +386,8 @@ class Model(AbsModel):
             mom: momentum/beta_1 of optimiser
         '''
 
-        if   'betas'    in self.opt.param_groups: self.opt.param_groups[0]['betas'][0] = mom
-        elif 'momentum' in self.opt.param_groups: self.opt.param_groups[0]['momentum'] = mom
+        if   'betas'    in self.opt.param_groups[0]: self.opt.param_groups[0]['betas'][0] = mom
+        elif 'momentum' in self.opt.param_groups[0]: self.opt.param_groups[0]['momentum'] = mom
     
     def save(self, name:str) -> None:
         r'''
