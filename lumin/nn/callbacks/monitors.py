@@ -379,14 +379,14 @@ class MetricLogger(Callback):
         
         if save_best:
             if self.main_metric_idx is None or not self.lock_to_metric or len(losses) > 1:  # Tracking SWA only supported for loss
-                idx = np.unravel_index(np.argmin(losses), losses.shape)[-1]
-                results['loss'] = np.min(losses)
+                idx = np.unravel_index(np.nanargmin(losses), losses.shape)[-1]
+                results['loss'] = np.nanmin(losses)
             else:
-                idx = np.argmin(self.metric_vals[self.main_metric_idx]) if self.metric_cbs[self.main_metric_idx].lower_metric_better else \
-                    np.argmax(self.metric_vals[self.main_metric_idx])
+                idx = np.nanargmin(self.metric_vals[self.main_metric_idx]) if self.metric_cbs[self.main_metric_idx].lower_metric_better else \
+                    np.nanargmax(self.metric_vals[self.main_metric_idx])
                 results['loss'] = losses[0][idx]
         else:
-            results['loss'] = np.min(losses[:,-1:])
+            results['loss'] = np.nanmin(losses[:,-1:])
             idx = -1
         for c,v in zip(self.metric_cbs,metrics[:,idx]): results[c.name] = v
         return results
