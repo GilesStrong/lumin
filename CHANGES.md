@@ -1,7 +1,10 @@
 # Targeting v0.7.2
 
 ## Important changes
-  
+
+- Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
+- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in trsining loss which was occaisionally apparent.
+
 ## Breaking
 
 ## Additions
@@ -11,9 +14,11 @@
 ## Fixes
 
 - Fixed cases in which a NaN in the metric during training could spoil plotting and `SaveBest`
-- Fixed bug in `Model.set_mom`  which resulted in momentum never being set
+- Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
 
 ## Changes
+
+- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in trsining loss which was occaisionally apparent.
 
 ## Depreciations
 

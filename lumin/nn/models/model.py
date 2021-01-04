@@ -182,7 +182,6 @@ class Model(AbsModel):
 
         if trn_idxs is None: trn_idxs = list(range(fy.n_folds))
         if val_idx is not None and val_idx in trn_idxs: trn_idxs.remove(val_idx)
-        shuffle(trn_idxs)
         self.fit_params.trn_idxs,self.fit_params.val_idx = trn_idxs,val_idx
         if self.fit_params.val_idx is not None:
             if bulk_move:
@@ -197,6 +196,8 @@ class Model(AbsModel):
             self.model.train()
             self.fit_params.state = 'train'
             self.fit_params.epoch += 1
+            shuffle(trn_idxs)
+            self.fit_params.trn_idxs = trn_idxs
             for c in self.fit_params.cbs: c.on_epoch_begin()
             for self.fit_params.trn_idx in self.fit_params.trn_idxs:
                 self.fit_params.sub_epoch += 1
