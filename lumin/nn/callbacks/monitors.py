@@ -103,7 +103,7 @@ class SaveBest(Callback):
         if self.model.fit_params.state != 'valid': return
         losses, metric = self.metric_log.val_epoch_results
         if metric is None or len(losses) > 1:  # Tracking SWA only supported for loss
-            val,mi = losses.nanmin(),losses.nanargmin()
+            val,mi = np.nanmin(losses),np.nanargmin(losses)
         else:
             val,mi = metric,0
         if val < self.min_val or np.isnan(self.min_val) or self.min_val is math.inf:
