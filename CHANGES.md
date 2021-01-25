@@ -13,9 +13,11 @@
 
 ## Fixes
 
-- Fixed cases in which a NaN in the metric during training could spoil plotting and `SaveBest`
-- Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
-- Fixed bug in `MetricLogger.get_results` where tracking metrics could be spoilt by NaN values
+- Cases in which a NaN in the metric during training could spoil plotting and `SaveBest`
+- Bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
+- Bug in `MetricLogger.get_results` where tracking metrics could be spoilt by NaN values
+- Bug in `train` when not passing any metrics
+- Bug in FoldYielder when loading output pipe from Path
 
 ## Changes
 

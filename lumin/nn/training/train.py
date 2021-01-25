@@ -81,6 +81,8 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     results,histories,cycle_losses,savepath = [],[],[],Path(savepath)
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
+    if metric_partials is None: metric_partials = []
+    if not is_listy(metric_partials): metric_partials = [metric_partials]
 
     model_rng = range(start_mode_id, n_models)
     for i in model_rng: os.system(f"rm -r {savepath}/model_id_{i}")

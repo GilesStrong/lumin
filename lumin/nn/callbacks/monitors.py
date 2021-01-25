@@ -388,5 +388,6 @@ class MetricLogger(Callback):
         else:
             results['loss'] = np.nanmin(losses[:,-1:])
             idx = -1
-        for c,v in zip(self.metric_cbs,metrics[:,idx]): results[c.name] = v
+        if len(self.metric_cbs) > 0:
+            for c,v in zip(self.metric_cbs,metrics[:,idx]): results[c.name] = v
         return results

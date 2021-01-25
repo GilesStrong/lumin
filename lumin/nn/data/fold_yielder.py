@@ -52,7 +52,7 @@ class FoldYielder:
         self.input_feats = self.cont_feats + self.cat_feats
         self.orig_cont_feats,self.orig_cat_feat,self._ignore_feats = self.cont_feats,self.cat_feats,[]
         if isinstance(self.input_pipe, str) or isinstance(self.input_pipe, Path): self.add_input_pipe_from_file(self.input_pipe)
-        if isinstance(self.output_pipe, str) or isinstance(self.input_pipe, Path): self.add_output_pipe_from_file(self.output_pipe)
+        if isinstance(self.output_pipe, str) or isinstance(self.output_pipe, Path): self.add_output_pipe_from_file(self.output_pipe)
         if isinstance(self.matrix_pipe, str) or isinstance(self.matrix_pipe, Path): self.add_matrix_pipe_from_file(self.matrix_pipe)
         if ignore_feats is not None: self.add_ignore(ignore_feats)
 
@@ -208,7 +208,7 @@ class FoldYielder:
         if isinstance(output_pipe, str) or isinstance(output_pipe, Path): self.add_output_pipe_from_file(output_pipe)
         else:                                                             self.output_pipe = output_pipe
 
-    def add_input_pipe_from_file(self, name:str) -> None:
+    def add_input_pipe_from_file(self, name:Union[str,Path]) -> None:
         r'''
         Adds an input pipe from a pkl file to the FoldYielder for use when deprocessing data
 
@@ -228,7 +228,7 @@ class FoldYielder:
 
         with open(name, 'rb') as fin: self.matrix_pipe = pickle.load(fin)
 
-    def add_output_pipe_from_file(self, name:str) -> None:
+    def add_output_pipe_from_file(self, name:Union[str,Path]) -> None:
         r'''
         Adds an output pipe from a pkl file to the FoldYielder for use when deprocessing data
 
