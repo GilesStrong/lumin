@@ -305,7 +305,7 @@ class ModelBuilder(object):
         print('Loading pretrained model')
         return model.load_state_dict(state['model'])
 
-    def get_model(self) -> Tuple[nn.Module, optim.Optimizer, Any]:
+    def get_model(self) -> Tuple[nn.Module, optim.Optimizer, Callable[[],nn.Module], Optional[np.ndarray]]:
         r'''
         Construct model, loss, and optimiser, optionally loading pretrained weights
 
