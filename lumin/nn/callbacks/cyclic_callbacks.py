@@ -432,7 +432,7 @@ class OneCycle(AbsCyclicCallback):
             self.cycle_count += 0.5
             self.cycle_end = self.cycle_count % 1 == 0
             self.lr_range[0] = self.lr_range[2]
-        if self.cycle_count == 1 and self.cycle_ends_training: self.model.stop_train = True
+        if self.cycle_count == 1 and self.cycle_ends_training: self.model.fit_params.stop = True
 
     def plot(self):
         r'''
