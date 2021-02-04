@@ -174,7 +174,7 @@ class Model(AbsModel):
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, metric_log=metric_log, stop=False, n_epochs=n_epochs, fy=fy,
                                     val_idx=val_idx, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath),
-                                    loss_func=self.loss, opt=self.opt)
+                                    loss_func=self.loss, opt=self.opt, val_requires_grad=False)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
@@ -210,14 +210,14 @@ class Model(AbsModel):
 
             if self.fit_params.val_idx is not None:
                 self.model.eval()
-                self.fit_params.state = 'valid'
-                for c in self.fit_params.cbs: c.on_epoch_begin()
-                self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
-                for c in self.fit_params.cbs: c.on_fold_begin()
-                for b in self.fit_params.by: self._fit_batch(*b)
-                for c in self.fit_params.cbs: c.on_fold_end()
-                for c in self.fit_params.cbs: c.on_epoch_end()
-            del self.fit_params.by
+                with torch.no_grad():
+                    self.fit_params.state = 'valid'
+                    for c in self.fit_params.cbs: c.on_epoch_begin()
+                    self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
+                    for c in self.fit_params.cbs: c.on_fold_begin()
+                    for b in self.fit_params.by: self._fit_batch(*b)
+                    for c in self.fit_params.cbs: c.on_fold_end()
+                    for c in self.fit_params.cbs: c.on_epoch_end()
 
         try:
             for c in self.fit_params.cbs: c.set_model(self)
@@ -229,6 +229,7 @@ class Model(AbsModel):
             for c in self.fit_params.cbs: c.on_train_end()
         finally:
             self.fit_params = None
+            torch.cuda.empty_cache()
         return cbs
 
     def _predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
@@ -239,9 +240,10 @@ class Model(AbsModel):
         try:
             for c in self.fit_params.cbs: c.set_model(self)
             self.model.eval()
-            for c in self.fit_params.cbs: c.on_pred_begin()
-            for b in self.fit_params.by: self._fit_batch(*b)
-            for c in self.fit_params.cbs: c.on_pred_end()
+            with torch.set_grad_enabled(not self.fit_params.val_requires_grad):
+                for c in self.fit_params.cbs: c.on_pred_begin()
+                for b in self.fit_params.by: self._fit_batch(*b)
+                for c in self.fit_params.cbs: c.on_pred_end()
         finally:
             self.fit_params = None
         return pred_cb.get_preds()

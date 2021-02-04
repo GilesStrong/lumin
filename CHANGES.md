@@ -10,6 +10,7 @@
 ## Additions
 
 - Mish activation function
+- `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, buit some losses might require it in the future
 
 ## Removals
 
@@ -24,7 +25,8 @@
 
 ## Changes
 
-- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in trsining loss which was occaisionally apparent.
+- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in training loss which was occaisionally apparent.
+- Validation and prediction forwards passes now performed without gradient trackign to save memory and time
 
 ## Depreciations
 
