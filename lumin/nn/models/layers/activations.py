@@ -4,6 +4,8 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+from .mish import Mish
+
 __all__ = ['lookup_act', 'Swish']
 
 
@@ -26,6 +28,7 @@ def lookup_act(act:str) -> Any:
     if act == 'softmax':    return nn.Softmax(1)
     if act == 'linear':     return lambda x: x
     if 'swish' in act:      return Swish()
+    if act == 'mish':       return Mish()
     raise ValueError("Activation not implemented")
 
         

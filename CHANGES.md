@@ -9,6 +9,8 @@
 
 ## Additions
 
+- Mish activation function
+
 ## Removals
 
 ## Fixes
@@ -18,6 +20,7 @@
 - Bug in `MetricLogger.get_results` where tracking metrics could be spoilt by NaN values
 - Bug in `train` when not passing any metrics
 - Bug in FoldYielder when loading output pipe from Path
+- Bug in `OneCycle` that prevented the model from stopping training at end of cycle
 
 ## Changes
 
