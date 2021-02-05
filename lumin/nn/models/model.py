@@ -210,7 +210,7 @@ class Model(AbsModel):
 
             if self.fit_params.val_idx is not None:
                 self.model.eval()
-                with torch.no_grad():
+                with torch.set_grad_enabled(not self.fit_params.val_requires_grad):
                     self.fit_params.state = 'valid'
                     for c in self.fit_params.cbs: c.on_epoch_begin()
                     self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
@@ -236,7 +236,7 @@ class Model(AbsModel):
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
         cbs.append(pred_cb)
-        self.fit_params = FitParams(cbs=cbs, by=by, state='test')
+        self.fit_params = FitParams(cbs=cbs, by=by, state='test', val_requires_grad=False)
         try:
             for c in self.fit_params.cbs: c.set_model(self)
             self.model.eval()
