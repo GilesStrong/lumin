@@ -246,6 +246,7 @@ class Model(AbsModel):
                 for c in self.fit_params.cbs: c.on_pred_end()
         finally:
             self.fit_params = None
+            torch.cuda.empty_cache()
         return pred_cb.get_preds()
 
     def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, pred_cb:PredHandler=PredHandler(),
