@@ -3,13 +3,14 @@
 ## Important changes
 
 - Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
-- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in trsining loss which was occaisionally apparent.
+- `Model.fit` now shuffles the fold indices for training folds prior to each epoch rather than once per training; removes the periodicity in training loss which was occasionally apparent.
 
 ## Breaking
 
 ## Additions
 
 - Mish activation function
+- `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, built some losses might require it in the future
 
 ## Removals
 
@@ -21,10 +22,14 @@
 - Bug in `train` when not passing any metrics
 - Bug in FoldYielder when loading output pipe from Path
 - Bug in `OneCycle` that prevented the model from stopping training at end of cycle
+- `start_mode_id` renamed to `start_model_id`
+- Bug in `ParametrisedPrediction`
+- Bug in `Model` predictions when running over a `FoldYielder` and passing a list of callbacks (even if empty)
 
 ## Changes
 
-- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in trsining loss which was occaisionally apparent.
+- `Model.fit` now shuffles the fold indices for training folds prior to each epoch rather than once per training; removes the periodicity in training loss which was occasionally apparent.
+- Validation and prediction forwards passes now performed without gradient tracking to save memory and time
 
 ## Depreciations
 
@@ -34,7 +39,7 @@
 
 ## Important changes
 
-- `EvalMetrics` revised to inherit from `Callback` and be called on validation data after every epoch. User-written `EvalMetrics` willneed to be adjusted to work with the new calling method: adjust `evaluate` method and constructor may need to be adjusted; see existing metrics to see how.
+- `EvalMetrics` revised to inherit from `Callback` and be called on validation data after every epoch. User-written `EvalMetrics` will need to be adjusted to work with the new calling method: adjust `evaluate` method and constructor may need to be adjusted; see existing metrics to see how.
   
 ## Breaking
 

@@ -174,7 +174,7 @@ class Model(AbsModel):
 
         self.fit_params = FitParams(cbs=cbs, cyclic_cbs=cyclic_cbs, loss_cbs=loss_cbs, metric_log=metric_log, stop=False, n_epochs=n_epochs, fy=fy,
                                     val_idx=val_idx, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath),
-                                    loss_func=self.loss, opt=self.opt)
+                                    loss_func=self.loss, opt=self.opt, val_requires_grad=False)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
         if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
@@ -210,14 +210,14 @@ class Model(AbsModel):
 
             if self.fit_params.val_idx is not None:
                 self.model.eval()
-                self.fit_params.state = 'valid'
-                for c in self.fit_params.cbs: c.on_epoch_begin()
-                self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
-                for c in self.fit_params.cbs: c.on_fold_begin()
-                for b in self.fit_params.by: self._fit_batch(*b)
-                for c in self.fit_params.cbs: c.on_fold_end()
-                for c in self.fit_params.cbs: c.on_epoch_end()
-            del self.fit_params.by
+                with torch.set_grad_enabled(self.fit_params.val_requires_grad):
+                    self.fit_params.state = 'valid'
+                    for c in self.fit_params.cbs: c.on_epoch_begin()
+                    self.fit_params.by = val_by if bulk_move else val_by(**self.fit_params.fy.get_fold(self.fit_params.val_idx))
+                    for c in self.fit_params.cbs: c.on_fold_begin()
+                    for b in self.fit_params.by: self._fit_batch(*b)
+                    for c in self.fit_params.cbs: c.on_fold_end()
+                    for c in self.fit_params.cbs: c.on_epoch_end()
 
         try:
             for c in self.fit_params.cbs: c.set_model(self)
@@ -229,21 +229,25 @@ class Model(AbsModel):
             for c in self.fit_params.cbs: c.on_train_end()
         finally:
             self.fit_params = None
+            torch.cuda.empty_cache()
         return cbs
 
     def _predict_by(self, by:BatchYielder, pred_cb:PredHandler=PredHandler(), cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None) -> np.ndarray:
         if cbs is None: cbs = []
         elif not is_listy(cbs): cbs = [cbs]
         cbs.append(pred_cb)
-        self.fit_params = FitParams(cbs=cbs, by=by, state='test')
+        self.fit_params = FitParams(cbs=cbs, by=by, state='test', val_requires_grad=False)
         try:
             for c in self.fit_params.cbs: c.set_model(self)
             self.model.eval()
-            for c in self.fit_params.cbs: c.on_pred_begin()
-            for b in self.fit_params.by: self._fit_batch(*b)
-            for c in self.fit_params.cbs: c.on_pred_end()
+            with torch.set_grad_enabled(self.fit_params.val_requires_grad):
+                for c in self.fit_params.cbs: c.on_pred_begin()
+                for b in self.fit_params.by: self._fit_batch(*b)
+                for c in self.fit_params.cbs: c.on_pred_end()
         finally:
             self.fit_params = None
+            cbs.pop()  # Remove pred_cb to avoid mutating cbs
+            torch.cuda.empty_cache()
         return pred_cb.get_preds()
 
     def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, pred_cb:PredHandler=PredHandler(),
@@ -294,13 +298,12 @@ class Model(AbsModel):
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred', pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None,
                        bs:Optional[int]=None) -> None:
-        pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs)
         for fold_idx in progress_bar(range(len(fy))):
             if not fy.test_time_aug:
-                pred = pred_call(fy.get_fold(fold_idx)['inputs'])
+                pred = self._predict_array(fy.get_fold(fold_idx)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs)
             else:
                 tmpPred = []
-                for aug in range(fy.aug_mult): tmpPred.append(pred_call(fy.get_test_fold(fold_idx, aug)['inputs']))
+                for aug in range(fy.aug_mult): tmpPred.append(self._predict_array(fy.get_test_fold(fold_idx, aug)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs))
                 pred = np.mean(tmpPred, axis=0)
 
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)

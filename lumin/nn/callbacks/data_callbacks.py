@@ -348,4 +348,4 @@ class ParametrisedPrediction(Callback):
         Adjusts the data to be passed to the model by setting in place the parameterisation feature to the preset value
         '''
 
-        for f, v in zip(self.param_idx, self.param_val):  self.fit_params.by.inputs[:, f] = v
+        for f, v in zip(self.param_idx, self.param_val):  self.model.fit_params.by.inputs[:, f] = v
