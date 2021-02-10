@@ -246,6 +246,7 @@ class Model(AbsModel):
                 for c in self.fit_params.cbs: c.on_pred_end()
         finally:
             self.fit_params = None
+            cbs.pop()  # Remove pred_cb to avoid mutating cbs
             torch.cuda.empty_cache()
         return pred_cb.get_preds()
 
@@ -297,13 +298,12 @@ class Model(AbsModel):
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred', pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None,
                        bs:Optional[int]=None) -> None:
-        pred_call = partialler(self._predict_array, pred_cb=pred_cb, cbs=cbs, bs=bs)
         for fold_idx in progress_bar(range(len(fy))):
             if not fy.test_time_aug:
-                pred = pred_call(fy.get_fold(fold_idx)['inputs'])
+                pred = self._predict_array(fy.get_fold(fold_idx)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs)
             else:
                 tmpPred = []
-                for aug in range(fy.aug_mult): tmpPred.append(pred_call(fy.get_test_fold(fold_idx, aug)['inputs']))
+                for aug in range(fy.aug_mult): tmpPred.append(self._predict_array(fy.get_test_fold(fold_idx, aug)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs))
                 pred = np.mean(tmpPred, axis=0)
 
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
