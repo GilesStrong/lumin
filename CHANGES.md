@@ -22,6 +22,8 @@
 - Bug in `train` when not passing any metrics
 - Bug in FoldYielder when loading output pipe from Path
 - Bug in `OneCycle` that prevented the model from stopping training at end of cycle
+- `start_mode_id` renamed to `start_model_id`
+- Bug in `ParametrisedPrediction`
 
 ## Changes
 

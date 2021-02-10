@@ -26,7 +26,7 @@ __all__ = ['train_models']
 
 def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
                  cb_partials:Optional[List[Callable[[],Callback]]]=None, metric_partials:Optional[List[Callable[[],EvalMetric]]]=None,
-                 pred_cb:Callable[[],PredHandler]=PredHandler, train_on_weights:bool=True, bulk_move:bool=True, start_mode_id:int=0,
+                 pred_cb:Callable[[],PredHandler]=PredHandler, train_on_weights:bool=True, bulk_move:bool=True, start_model_id:int=0,
                  live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), plot_settings:PlotSettings=PlotSettings()) \
         -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
@@ -63,7 +63,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
             Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
         train_on_weights: If weights are present in training data, whether to pass them to the loss function during training
         bulk_move: if true, will optimise for speed by using more RAM and VRAM
-        start_mode_id: model ID at whcih to start training,
+        start_model_id: model ID at whcih to start training,
             i.e. if training was interupted, this can be set to resume training form the last model which was trained
         live_fdbk: whether or not to show any live feedback at all during training (slightly slows down training, but helps spot problems)
         live_fdbk_first_only: whether to only show live feedback for the first model trained (trade off between time and problem spotting)
@@ -84,7 +84,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     if metric_partials is None: metric_partials = []
     if not is_listy(metric_partials): metric_partials = [metric_partials]
 
-    model_rng = range(start_mode_id, n_models)
+    model_rng = range(start_model_id, n_models)
     for i in model_rng: os.system(f"rm -r {savepath}/model_id_{i}")
     model_bar = master_bar(model_rng) if IN_NOTEBOOK else progress_bar(model_rng)
     train_tmr = timeit.default_timer()
