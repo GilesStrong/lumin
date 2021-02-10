@@ -3,14 +3,14 @@
 ## Important changes
 
 - Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
-- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in trsining loss which was occaisionally apparent.
+- `Model.fit` now shuffles the fold indices for training folds prior to each epoch rather than once per training; removes the periodicity in training loss which was occasionally apparent.
 
 ## Breaking
 
 ## Additions
 
 - Mish activation function
-- `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, buit some losses might require it in the future
+- `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, built some losses might require it in the future
 
 ## Removals
 
@@ -28,8 +28,8 @@
 
 ## Changes
 
-- `Model.fit` now shuffles the fold indeces for training folds prio to each epoch rather than once per training; removes the periodicity in training loss which was occaisionally apparent.
-- Validation and prediction forwards passes now performed without gradient trackign to save memory and time
+- `Model.fit` now shuffles the fold indices for training folds prior to each epoch rather than once per training; removes the periodicity in training loss which was occasionally apparent.
+- Validation and prediction forwards passes now performed without gradient tracking to save memory and time
 
 ## Depreciations
 
@@ -39,7 +39,7 @@
 
 ## Important changes
 
-- `EvalMetrics` revised to inherit from `Callback` and be called on validation data after every epoch. User-written `EvalMetrics` willneed to be adjusted to work with the new calling method: adjust `evaluate` method and constructor may need to be adjusted; see existing metrics to see how.
+- `EvalMetrics` revised to inherit from `Callback` and be called on validation data after every epoch. User-written `EvalMetrics` will need to be adjusted to work with the new calling method: adjust `evaluate` method and constructor may need to be adjusted; see existing metrics to see how.
   
 ## Breaking
 
