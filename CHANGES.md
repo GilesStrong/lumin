@@ -24,6 +24,7 @@
 - Bug in `OneCycle` that prevented the model from stopping training at end of cycle
 - `start_mode_id` renamed to `start_model_id`
 - Bug in `ParametrisedPrediction`
+- Bug in `Model` predictions when running over a `FoldYielder` and passing a list of callbacks (even if empty)
 
 ## Changes
 
