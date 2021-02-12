@@ -355,6 +355,7 @@ class Ensemble(AbsEnsemble):
             >>> ensemble.save('weights/ensemble', ['pt','eta','phi'])
         '''
 
+        name = str(name)
         if (len(glob.glob(f"{name}*.json")) or len(glob.glob(f"{name}*.h5")) or len(glob.glob(f"{name}*.pkl"))) and not overwrite:
             raise FileExistsError("Ensemble already exists with that name, call with overwrite=True to force save")
         else:
