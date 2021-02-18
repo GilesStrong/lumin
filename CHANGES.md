@@ -4,6 +4,10 @@
 
 - Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
 - `Model.fit` now shuffles the fold indices for training folds prior to each epoch rather than once per training; removes the periodicity in training loss which was occasionally apparent.
+- Bugs found in `OneCycle`:
+    - When training multiple models, the initial LR for subsequent models was the end LR of the previous model (list in partial was being mutated)
+    - The model did not stop training at end of cycle
+    - Momentum was never altered in the optimiser
 
 ## Breaking
 
@@ -21,10 +25,10 @@
 - Bug in `MetricLogger.get_results` where tracking metrics could be spoilt by NaN values
 - Bug in `train` when not passing any metrics
 - Bug in FoldYielder when loading output pipe from Path
-- Bug in `OneCycle` that prevented the model from stopping training at end of cycle
-- `start_mode_id` renamed to `start_model_id`
-- Bug in `ParametrisedPrediction`
-- Bug in `Model` predictions when running over a `FoldYielder` and passing a list of callbacks (even if empty)
+- Bugs found in `OneCycle`:
+    - When training multiple models, the initial LR for subsequent models was the end LR of the previous model (list in partial was being mutated)
+    - The model did not stop training at end of cycle
+    - Momentum was never altered in the optimiser
 
 ## Changes
 

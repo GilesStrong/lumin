@@ -397,10 +397,11 @@ class OneCycle(AbsCyclicCallback):
         ...                     mom_range=(0.85, 0.95), interp='cosine', nb=100)
     '''
 
-    def __init__(self, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95), interp:str='cosine',
-                 cycle_ends_training:bool=True):
+    def __init__(self, lengths:Tuple[int,int], lr_range:Union[Tuple[float,float],Tuple[float,float,float]], mom_range:Tuple[float,float]=(0.85, 0.95),
+                 interp:str='cosine', cycle_ends_training:bool=True):
         super().__init__(interp=interp, param_range=None, cycle_mult=1, scale=lengths[0])
-        self.lengths,self.lr_range,self.mom_range,self.cycle_ends_training,self.hist = lengths,lr_range,mom_range,cycle_ends_training,{'lr': [], 'mom': []}
+        self.lengths,self.lr_range,self.mom_range,self.cycle_ends_training,self.hist = \
+            lengths,list(lr_range),mom_range,cycle_ends_training,{'lr': [], 'mom': []}
         if len(self.lr_range) == 2: self.lr_range.append(0)
 
     def _reset(self) -> None: self.cycle_iter,self.cycle_count,self.cycle_end,self.hist,self.cycle_losses,self.nb = 0,0,False,{'lr': [], 'mom': []},[],None
