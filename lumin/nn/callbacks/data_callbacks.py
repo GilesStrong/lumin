@@ -340,7 +340,7 @@ class ParametrisedPrediction(Callback):
         super().__init__()
         if not is_listy(param_feat): param_feat = [param_feat]
         if not is_listy(param_val):  param_val  = [param_val]
-        self.feats,self.param_feat,self.param_val = feats,param_feat,param_val
+        self.feats,self.param_feat,self.param_val = list(feats),list(param_feat),list(param_val)
         self.param_idx = [self.feats.index(f) for f in self.param_feat]
         
     def on_pred_begin(self) -> None:

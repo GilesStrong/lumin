@@ -15,6 +15,7 @@
 
 - Mish activation function
 - `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, built some losses might require it in the future
+- `ParameterisedPrediction` now stores copies of values for parameterised features in case they change, or need to be changed locally during prediction.
 
 ## Removals
 
