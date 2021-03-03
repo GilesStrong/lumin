@@ -1,8 +1,9 @@
 import numpy as np
-from typing import Union, List, Tuple, Optional
+from typing import Union, List, Tuple, Optional, Any
 import pandas as pd
 import sympy
 from functools import partial
+from fastcore.all import partialler
 
 from sklearn.utils import resample
 
@@ -10,7 +11,7 @@ from torch.tensor import Tensor
 import torch
 import torch.nn as nn
 
-__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'FowardHook', 'subsample_df']
+__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'FowardHook', 'subsample_df', 'is_partially']
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')  # TODO: make device choosable by user
 
@@ -180,3 +181,17 @@ def subsample_df(df:pd.DataFrame, objective:str, targ_name:str, n_samples:Option
         else:
             tmp_df[wgt_name] *= df[wgt_name].sum() / tmp_df[wgt_name].sum()
     return tmp_df
+
+
+def is_partially(var:Any) -> bool:
+    r'''
+    Retuns true if var is partial or partialler, else false.
+
+    Arguments:
+        var: variable to inspect
+
+    Return:
+        true if var is partial or partialler, else false
+    '''
+
+    return isinstance(var, partial) or isinstance(var, partialler)

@@ -40,6 +40,7 @@
         - HEP-specific architectures, e.g. LorentzBoostNetworks [Erdmann, Geiser, Rath, Rieger, 2018](https://arxiv.org/abs/1812.09722)
 - Configurable initialisations, including LSUV [Mishkin, Matas, 2016](https://arxiv.org/abs/1511.06422)
 - HEP-specific losses, e.g. Asimov loss [Elwood & Krücker, 2018](https://arxiv.org/abs/1806.00322)
+- Exotic training schemes, e.g. Learning to Pivot with Adversarial Networks [Louppe, Kagan, & Kranmer, 2016](https://papers.nips.cc/paper/2017/hash/48ab2f9b45957ab574cf005eb8a76760-Abstract.html)
 - Easy training and inference of ensembles of models:
     - Default training method `fold_train_ensemble`, trains a specified number of models as well as just a single model
     - `Ensemble` class handles the (metric-weighted) construction of an ensemble, its inference, saving and loading, and interpretation

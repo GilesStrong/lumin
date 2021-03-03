@@ -198,7 +198,7 @@ class MetricLogger(Callback):
             if not self.metric_cbs[self.main_metric_idx].lower_metric_better: m *= -1
         self.val_epoch_results = ls,m
 
-    def on_forwards_end(self) -> None:
+    def on_batch_end(self) -> None:
         r'''
         Record batch loss
         '''

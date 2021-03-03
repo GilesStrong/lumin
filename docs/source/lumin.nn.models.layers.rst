@@ -12,6 +12,14 @@ lumin.nn.models.layers.activations module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.models.layers.mish module
+----------------------------------
+
+.. automodule:: lumin.nn.models.layers.mish
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------

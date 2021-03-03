@@ -4,6 +4,14 @@ lumin.nn.callbacks package
 Submodules
 ----------
 
+lumin.nn.callbacks.adversarial\_callbacks module
+------------------------------------------------
+
+.. automodule:: lumin.nn.callbacks.adversarial_callbacks
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.callbacks.callback module
 ----------------------------------
 

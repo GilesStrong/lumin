@@ -25,7 +25,7 @@ __all__ = ['train_models']
 
 
 def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
-                 cb_partials:Optional[List[Callable[[],Callback]]]=None, metric_partials:Optional[List[Callable[[],EvalMetric]]]=None,
+                 cb_partials:Optional[List[Callable[[],Callback]]]=None, metric_partials:Optional[List[Callable[[],EvalMetric]]]=None, save_best:bool=True,
                  pred_cb:Callable[[],PredHandler]=PredHandler, train_on_weights:bool=True, bulk_move:bool=True, start_model_id:int=0,
                  live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), plot_settings:PlotSettings=PlotSettings()) \
@@ -59,6 +59,8 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
             :class:`~lumin.nn.callbacks.monitors.SaveBest` and :class:`~lumin.nn.callbacks.monitors.EarlyStopping` will also act on the (first) metric set to 
             `main_metric` instead of loss, except when another callback produces an alternative loss and model
             (like :class:`~lumin.nn.callbacks.model_callbacks.SWA`).
+        save_best: if true, will save the best performing model as the final model, otherwise will save the model state as per the end of training.
+            A copy of the best model will still be saved anyway.
         pred_cb: pred_cb: :class:`~lumin.nn.callbacks.pred_handlers.PredHandler` callback to determin how predictions are computed.
             Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
         train_on_weights: If weights are present in training data, whether to pass them to the loss function during training
@@ -104,7 +106,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         for c in cb_partials: cbs.append(c())
         for c in metric_partials: cbs.append(c())
         metric_log = MetricLogger(show_plots=live_fdbk, extra_detail=live_fdbk_extra, loss_is_meaned=loss_is_meaned)
-        cbs += [metric_log, SaveBest(auto_reload=True, loss_is_meaned=loss_is_meaned)]
+        cbs += [metric_log, SaveBest(auto_reload=save_best, loss_is_meaned=loss_is_meaned)]
         if patience is not None: cbs.append(EarlyStopping(patience=patience, loss_is_meaned=loss_is_meaned))
         for c in cbs: c.set_plot_settings(plot_settings)
 
@@ -117,7 +119,7 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         cycle_losses.append([])
         for c in cbs:
             if hasattr(c, 'cycle_save') and c.cycle_save: cycle_losses[-1] = c.cycle_losses
-        results.append(metric_log.get_results(save_best=True))
+        results.append(metric_log.get_results(save_best=save_best))
         print(f"Scores are: {results[-1]}")
         results[-1]['path'] = model_dir
         with open(savepath/'results_file.pkl', 'wb') as fout: pickle.dump(results, fout)

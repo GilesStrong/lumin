@@ -1,7 +1,7 @@
 from typing import Union, Tuple, Callable, Optional, List
 import numpy as np
 import pandas as pd
-from fastcore.all import is_listy
+from fastcore.all import is_listy, store_attr
 
 import torch
 from torch import Tensor
@@ -12,7 +12,7 @@ from ..data.fold_yielder import FoldYielder
 from ...utils.misc import to_np, to_device
 from ..models.abs_model import AbsModel, OldAbsModel
 
-__all__ = ['BinaryLabelSmooth', 'BootstrapResample', 'ParametrisedPrediction']
+__all__ = ['BinaryLabelSmooth', 'BootstrapResample', 'ParametrisedPrediction', 'TargReplace']
 
 
 class OldBinaryLabelSmooth(OldCallback):
@@ -138,10 +138,7 @@ class SequentialReweightClasses(SequentialReweight):
         reweight_func: callable function returning a tensor of same shape as targets, ideally quantifying model-prediction performance
         scale: multiplicative factor for rescaling returned tensor of reweight_func
         model: :class:`~lumin.nn.models.model.Model` to provide predictions, alternatively call :meth:`~lumin.nn.models.Model.set_model`
-
-    Examples::
-        >>> seq_reweight = SequentialReweight(
-        ...     reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
+TargReplace    reweight_func=nn.BCELoss(reduction='none'), scale=0.1)
     '''
 
     # XXX remove in V0.8
@@ -340,8 +337,8 @@ class ParametrisedPrediction(Callback):
         super().__init__()
         if not is_listy(param_feat): param_feat = [param_feat]
         if not is_listy(param_val):  param_val  = [param_val]
-        self.feats,self.param_feat,self.param_val = list(feats),list(param_feat),list(param_val)
-        self.param_idx = [self.feats.index(f) for f in self.param_feat]
+        self.param_val = list(param_val)
+        self.param_idx = [feats.index(f) for f in param_feat]
         
     def on_pred_begin(self) -> None:
         r'''
@@ -349,3 +346,42 @@ class ParametrisedPrediction(Callback):
         '''
 
         for f, v in zip(self.param_idx, self.param_val):  self.model.fit_params.by.inputs[:, f] = v
+
+
+class TargReplace(Callback):
+    r'''
+    Callback to replace target data with requested data from foldfile, allowing one to e.g. train two models simultaneously with the same inputs but different targets for e.g. adversarial training.
+    At the end of validation epochs, the target data is swapped back to the original target data, to allow for the correct computation of any metrics
+    
+    Arguments:
+        targ_feats: list of column names in foldfile to get and horizontally stack to replace target data in current :class:`~lumin.nn.data.batch_yielder.BatchYielder`
+        
+    Examples::
+        >>> targ_replace = TargReplace(['is_fake'])
+        >>> targ_replace = TargReplace(['class', 'is_fake'])
+        
+    '''
+    
+    def __init__(self, targ_feats:List[str]):
+        store_attr()
+        super().__init__()
+        if not is_listy(self.targ_feats): self.targ_feats = list(self.targ_feats)
+
+    def on_fold_begin(self) -> None:
+        r'''
+        Stack new target datasets and replace in target data in current :class:`~lumin.nn.data.batch_yielder.BatchYielder`
+        '''
+        
+        targs = []
+        idx = self.model.fit_params.trn_idx if self.model.fit_params.state == 'train' else self.model.fit_params.val_idx
+        for t in self.targ_feats:
+            targs.append(self.model.fit_params.fy.get_column(t, n_folds=1, fold_idx=idx, add_newaxis=True))
+        self.model.fit_params.by.targets = np.hstack(targs)
+        
+    def on_epoch_end(self) -> None:
+        r'''
+        Swap target data back at the end of validation epochs
+        '''
+        
+        if self.model.fit_params.state != 'valid': return
+        self.model.fit_params.by.targets = self.model.fit_params.fy.get_column('targets', n_folds=1, fold_idx=self.model.fit_params.val_idx, add_newaxis=True)

@@ -26,7 +26,7 @@ from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.plot_settings import PlotSettings
 from ...utils.statistics import uncert_round
-from ...utils.misc import to_np, to_device
+from ...utils.misc import to_np, to_device, is_partially
 
 __all__ = ['Model']
 
@@ -128,18 +128,17 @@ class Model(AbsModel):
             else:                                             self.fit_params.loss_func.weight  = self.fit_params.w
             self.fit_params.loss_val = self.fit_params.loss_func(self.fit_params.y_pred, self.fit_params.y)
         for c in self.fit_params.cbs: c.on_forwards_end()
-        if self.fit_params.state != 'train': return
-
-        self.fit_params.opt.zero_grad()
-        for c in self.fit_params.cbs: c.on_backwards_begin()
-        self.fit_params.loss_val.backward()
-        for c in self.fit_params.cbs: c.on_backwards_end()
-        self.fit_params.opt.step()
+        if self.fit_params.state == 'train':
+            self.fit_params.opt.zero_grad()
+            for c in self.fit_params.cbs: c.on_backwards_begin()
+            self.fit_params.loss_val.backward()
+            for c in self.fit_params.cbs: c.on_backwards_end()
+            self.fit_params.opt.step()
         for c in self.fit_params.cbs: c.on_batch_end()
 
     def fit(self, n_epochs:int, fy:FoldYielder, bs:int, bulk_move:bool=True, train_on_weights:bool=True, trn_idxs:Optional[List[int]]=None,
             val_idx:Optional[int]=None,  cbs:Optional[Union[AbsCallback,List[AbsCallback]]]=None, cb_savepath:Path=Path('train_weights'),
-            model_bar:Optional[master_bar]=None) -> List[AbsCallback]:
+            model_bar:Optional[master_bar]=None, visible_bar:bool=True) -> List[AbsCallback]:
         r'''
         Fit network to training data according to the model's loss and optimiser.
         
@@ -176,7 +175,7 @@ class Model(AbsModel):
                                     val_idx=val_idx, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath),
                                     loss_func=self.loss, opt=self.opt, val_requires_grad=False)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
-        if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
+        if inspect.isclass(self.fit_params.loss_func) or is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
                                                 bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
 
@@ -221,8 +220,9 @@ class Model(AbsModel):
 
         try:
             for c in self.fit_params.cbs: c.set_model(self)
-            for c in self.fit_params.cbs: c.on_train_begin()
-            for e in progress_bar(range(self.fit_params.n_epochs), parent=model_bar):
+            for c in self.fit_params.cbs:
+                c.on_train_begin()
+            for e in progress_bar(range(self.fit_params.n_epochs), parent=model_bar, display=visible_bar):
                 fit_epoch()
                 if self.fit_params.stop: break
             if self.fit_params.val_idx is not None: del val_by
@@ -283,7 +283,7 @@ class Model(AbsModel):
                                                                        objective=self.objective, shuffle=False, bulk_move=bs is None,
                                                                        input_mask=self.input_mask, drop_last=False)
         self.fit_params = FitParams(cbs=[], by=inputs, state='valid', loss_func=self.loss)
-        if inspect.isclass(self.fit_params.loss_func) or isinstance(self.fit_params.loss_func, partial): self.fit_params.loss_func = self.fit_params.loss_func()
+        if inspect.isclass(self.fit_params.loss_func) or is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.model.eval()
         loss,cnt = 0,0
         try:
@@ -483,6 +483,20 @@ class Model(AbsModel):
         '''
 
         return self.tail.get_out_size()
+
+    def freeze_layers(self) -> None:
+        r'''
+        Make parameters untrainable
+        '''
+
+        for p in self.model.parameters(): p.requires_grad = False
+    
+    def unfreeze_layers(self) -> None:
+        r'''
+        Make parameters trainable
+        '''
+
+        for p in self.model.parameters(): p.requires_grad = True
 
 
 class OldModel(Model):

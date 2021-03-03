@@ -6,6 +6,7 @@ dev/
 
 
 #Examples
+examples/*/*
 **/train_weights
 **/data
 **/weights
