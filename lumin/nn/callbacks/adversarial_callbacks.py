@@ -23,7 +23,7 @@ class PivotTraining(Callback):
     
     Once training begins, both the main model and the adversary will be pretrained in isolation.
     Further training of the main model then starts, with the frozen adversary providing a bonus to the loss value if the adversary cannot predict well its
-    targets based ont he prediction of the main model.
+    targets based on the prediction of the main model.
     At a set interval (multiples of per batch/fold/epoch), the adversary is refined for 1 epoch with the main model frozen (if per batch, this can take a long
     time with no progression indicated to the user).
     States of the model and the adversary are saved to the savepath after both pretraining and further training.
@@ -132,7 +132,7 @@ class PivotTraining(Callback):
         
     def on_batch_begin(self) -> None:
         r'''
-        Slices off adversaial and main-model targets. Increments tick if required.
+        Slices off adversarial and main-model targets. Increments tick if required.
         '''
         
         self.adv_y = self.model.fit_params.y[:,-len(self.adv_targets):]
@@ -155,7 +155,7 @@ class PivotTraining(Callback):
         
     def _compute_adv_loss(self) -> Tensor:
         r'''
-        Computes (weighted) adversial loss value
+        Computes (weighted) adversarial loss value
         '''
         
         adv_p = self.adv.model(self.model.fit_params.x)
