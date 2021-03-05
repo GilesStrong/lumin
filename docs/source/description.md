@@ -51,9 +51,9 @@
 
 ### Feature selection methods
 
-- Dendrograms of feature-pair monotonacity
+- Dendrograms of feature-pair monotonicity
 - Feature importance via auto-optimised SK-Learn random forests
-- Mutual dependance (via RFPImp)
+- Mutual dependence (via RFPImp)
 - Automatic filtering and selection of features
 
 ### Interpretation
@@ -92,33 +92,6 @@
 - LUMIN aims to feel fast to use - liberal use of progress bars mean you're able to always know when tasks will finish, and get live updates of training
 - Guaranteed to spark joy (in its current beta state, LUMIN may instead ignite rage, despair, and frustration - *dev.*)
 
-## Installation
-
-Due to some strict version requirements on packages, it is recommended to install LUMIN in its own Python environment, e.g `conda create -n lumin python=3.6`
-
-### From PyPI
-
-The main package can be installed via:
-`pip install lumin`
-
-Full functionality requires two additional packages as described below.
-
-### From source
-
-```
-git clone git@github.com:GilesStrong/lumin.git
-cd lumin
-pip install .
-```
-
-Optionally, run pip install with `-e` flag for development installation. Full functionality requires an additional package as described below.
-
-### Additional modules
-
-Full use of LUMIN requires the latest version of PDPbox, but this is not released yet on PyPI, so you'll need to install it from source, too:
-
-- `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install -e .` note the `-e` flag to make sure the version number gets set properly.
-
 ## Notes
 
 ### Why use LUMIN
@@ -135,7 +108,7 @@ With just one main developer, I'm simply focussing on the data types and applica
 
 ### Future
 
-The current priority is to imporve the documentation, add unit tests, and expand the examples.
+The current priority is to improve the documentation, add unit tests, and expand the examples.
 
 The next step will be to try to increase the user base and number of contributors. I'm aiming to achieve this through presentations, tutorials, blog posts, and papers.
 
@@ -147,7 +120,7 @@ Contributions, suggestions, and feedback are most welcome! The issue tracker on 
 
 ### Code style
 
-Nope, the majority of the codebase does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. As a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead, I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises, in particular, reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations). A full list of the abbreviations used may be found in [abbr.md](https://github.com/GilesStrong/lumin/blob/master/abbr.md)
+Nope, the majority of the code-base does not conform to PEP8. PEP8 has its uses, but my understanding is that it primarily written for developers and maintainers of software whose users never need to read the source code. As a maths-heavy research framework which users are expected to interact with, PEP8 isn't the best style. Instead, I'm aiming to follow more [the style of fastai](https://docs.fast.ai/dev/style.html), which emphasises, in particular, reducing vertical space (useful for reading source code in a notebook) naming and abbreviating variables according to their importance and lifetime (easier to recognise which variables have a larger scope and permits easier writing of mathematical operations). A full list of the abbreviations used may be found in [abbr.md](https://github.com/GilesStrong/lumin/blob/master/abbr.md)
 
 ### Why is LUMIN called LUMIN?
 

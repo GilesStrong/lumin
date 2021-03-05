@@ -16,8 +16,10 @@ methods to meet their own demands.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Package Reference
+   :caption: Package Documentation
 
+   installation
+   user_guide
    lumin.data_processing
    lumin.evaluation
    lumin.inference
@@ -25,6 +27,8 @@ methods to meet their own demands.
    lumin.optimisation
    lumin.plotting
    lumin.utils
+
+   
 
 Package Description
 ===================================================

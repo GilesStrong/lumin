@@ -19,9 +19,10 @@
     },
     "restructuredtext.confPath": "${workspaceFolder}/docs",
     "spellright.language": [
-        "en"
+        "en_GB"
     ],
     "spellright.documentTypes": [
+        "markdown",
         "latex",
         "plaintext"
     ],
