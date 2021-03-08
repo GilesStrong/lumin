@@ -27,6 +27,7 @@ __all__ = ['train_models']
 def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
                  cb_partials:Optional[List[Callable[[],Callback]]]=None, metric_partials:Optional[List[Callable[[],EvalMetric]]]=None, save_best:bool=True,
                  pred_cb:Callable[[],PredHandler]=PredHandler, train_on_weights:bool=True, bulk_move:bool=True, start_model_id:int=0,
+                 excl_idxs:Optional[List[int]]=None, unique_trn_idxs:bool=False,
                  live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), plot_settings:PlotSettings=PlotSettings()) \
         -> Tuple[List[Dict[str,float]],List[Dict[str,List[float]]],List[Dict[str,float]]]:
@@ -67,6 +68,13 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         bulk_move: if true, will optimise for speed by using more RAM and VRAM
         start_model_id: model ID at whcih to start training,
             i.e. if training was interupted, this can be set to resume training form the last model which was trained
+        excl_idxs: optional list of fold indeces to exclude from training and validation
+        unique_trn_idxs: if false, then fold indeces can be shared, 
+            e.g. if `fy` contains 10 folds and five models are requested, each model will be trained on 9 folds.
+            if true, each model will every model will be trained on different folds,
+            e.g. if `fy` contains 10 folds and five models are requested, each model will be trained on 2 folds and no same fold is used to train more than one model
+            This is useful when the amount of training data exceeds the amount required to train a single model:
+            it can be split into a large number of folds and a set of decorellated models trained.
         live_fdbk: whether or not to show any live feedback at all during training (slightly slows down training, but helps spot problems)
         live_fdbk_first_only: whether to only show live feedback for the first model trained (trade off between time and problem spotting)
         live_fdbk_extra: whether to show extra information live feedback (further slows training)
@@ -85,6 +93,16 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     if not is_listy(cb_partials): cb_partials = [cb_partials]
     if metric_partials is None: metric_partials = []
     if not is_listy(metric_partials): metric_partials = [metric_partials]
+    if excl_idxs is None: excl_idxs = []
+    if not is_listy(excl_idxs): excl_idxs = [excl_idxs]
+    idxs = [i for i in range(fy.n_folds) if i not in excl_idxs]
+    trn_idx_sets,val_idxs = [],[]
+    if unique_trn_idxs:
+        n = len(idxs)//n_models
+        if n == 0: raise ValueError(f"{len(idxs)} training folds are not enough to train {n_models} with unique data.")
+        for i in range(n_models):
+            val_idxs.append(idxs[i])
+            trn_idx_sets.append([j for j in idxs if j != idxs[i] and j not in np.array(trn_idx_sets).flatten()][:n])
 
     model_rng = range(start_model_id, n_models)
     for i in model_rng: os.system(f"rm -r {savepath}/model_id_{i}")
@@ -92,8 +110,9 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
     train_tmr = timeit.default_timer()
     for model_num in (model_bar):    
         if IN_NOTEBOOK: model_bar.show()
-        val_idx = model_num % fy.n_folds
-        print(f"Training model {model_num+1} / {n_models}, Val ID = {val_idx}")
+        val_idx  = val_idxs[model_num]     if unique_trn_idxs else idxs[model_num % len(idxs)]
+        trn_idxs = trn_idx_sets[model_num] if unique_trn_idxs else [j for j in idxs if j != val_idx]
+        print(f"Training model {model_num+1} / {n_models}, Valid Index = {val_idx}, Train indices= {trn_idxs}")
         if model_num == 1:
             if live_fdbk_first_only: live_fdbk = False  # Only show fdbk for first training
             elif live_fdbk_extra_first_only: live_fdbk_extra = False  # Only show full fdbk info for first training
@@ -111,7 +130,8 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         for c in cbs: c.set_plot_settings(plot_settings)
 
         model_tmr = timeit.default_timer()
-        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, val_idx=val_idx, cbs=cbs, cb_savepath=model_dir)
+        model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=trn_idxs, val_idx=val_idx,
+                  cbs=cbs, cb_savepath=model_dir)
         print(f"Model took {timeit.default_timer()-model_tmr:.3f}s\n")
         model.save(model_dir/f'train_{model_num}.h5')
 
