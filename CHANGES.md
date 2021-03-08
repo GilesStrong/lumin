@@ -21,6 +21,9 @@
     - New example reimplementing paper's jets example
 - `TargReplace` callback for replacing target data in `BatchYielder` during training
 - Support for loss functions being `fastcore` `partialler` objects
+- `train_models` now has arguments to:
+    - Exclude specific fold indices from training and validation
+    - Train models on unique folds, e.g. when training 5 models on a file with 10 folds, each model would be trained on their own unique pair of folds
 
 ## Removals
 
