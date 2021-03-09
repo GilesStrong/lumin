@@ -24,6 +24,7 @@
 - `train_models` now has arguments to:
     - Exclude specific fold indices from training and validation
     - Train models on unique folds, e.g. when training 5 models on a file with 10 folds, each model would be trained on their own unique pair of folds
+- Added discussion of core concept in LUMIN to the docs
 
 ## Removals
 
