@@ -19,7 +19,7 @@ methods to meet their own demands.
    :caption: Package Documentation
 
    installation
-   user_guide
+   core_concepts
    lumin.data_processing
    lumin.evaluation
    lumin.inference
