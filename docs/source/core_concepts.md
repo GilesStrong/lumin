@@ -1,3 +1,5 @@
+# Core concepts
+
 ## The fold file
 
 The fold file is the core data-structure used throughout LUMIN. It is stored on disc as an HDF5 file. In the top level are several groups. The `meta_data` group stores various datasets containing information about the data, such as the names of features. The other top-level groups are the *folds*. These store subsamples of the full dataset and are designed to be read into memory individually, and provide several advantages, such as:

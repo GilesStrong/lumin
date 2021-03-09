@@ -1,8 +1,4 @@
 User Guide
 =====================
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents
-
-   core_concepts
+.. mdinclude:: core_concepts.md
