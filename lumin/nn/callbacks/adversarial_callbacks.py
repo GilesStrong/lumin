@@ -16,7 +16,7 @@ __all__ = ['PivotTraining']
 
 class PivotTraining(Callback):
     r'''
-    Callback implementation of "Learning to Pivot with Adversarial Networks" (Louppe, Kagan, & Kranmer, 2016) 
+    Callback implementation of "Learning to Pivot with Adversarial Networks" (Louppe, Kagan, & Cranmer, 2016) 
     (https://papers.nips.cc/paper/2017/hash/48ab2f9b45957ab574cf005eb8a76760-Abstract.html).
     The default target data in the :class:`~lumin.nn.data.fold_yielder.FoldYielder` should be the target data for the main model,
     and it should contain additional columns for target data for the adversary (names should be passed to the `adv_targets` argument.)
