@@ -1,7 +1,6 @@
 from typing import List, Tuple, Optional, Union
 from pathlib import Path
 import numpy as np
-import warnings
 
 from ..data.fold_yielder import FoldYielder
 
@@ -86,8 +85,7 @@ class CatEmbedder():
         cat_szs = None
         # Get cardinalities
         for fld_id in range(len(fy)):
-            tmp_max = fy.get_df(pred_name=None, targ_name=None, wgt_name=None, n_folds=1, fold_idx=fld_id, inc_inputs=True,
-                                verbose=False, suppress_warn=True)[cat_names].max().values.astype(int)
+            tmp_max = fy.get_df(n_folds=1, fold_idx=fld_id, inc_inputs=True, verbose=False, suppress_warn=True)[cat_names].max().values.astype(int)
             if cat_szs is None: cat_szs = tmp_max
             else:               cat_szs = np.maximum(cat_szs, tmp_max)
         cat_szs = list(1+cat_szs)  # zero-ordered, therefore cardinality is 1+max

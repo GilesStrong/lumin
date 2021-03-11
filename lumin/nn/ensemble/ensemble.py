@@ -44,7 +44,7 @@ class Ensemble(AbsEnsemble):
 
     Arguments:
         input_pipe: Optional input pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_input_pipe`
-        output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_ouput_pipe`
+        output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_output_pipe`
         model_builder: Optional :class:`~lumin.nn.models.model_builder.ModelBuilder` for constructing models from saved weights.
 
     Examples::
@@ -131,7 +131,7 @@ class Ensemble(AbsEnsemble):
             weights: Optional list of weights, otherwise models will be weighted uniformly
             results: Optional results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
             input_pipe: Optional input pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_input_pipe`
-            output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_ouput_pipe`
+            output_pipe: Optional output pipeline, alternatively call :meth:`lumin.nn.ensemble.ensemble.Ensemble.add_output_pipe`
             model_builder: Optional :class:`~lumin.nn.models.model_builder.ModelBuilder` for constructing models from saved weights.
 
         Returns:
@@ -281,7 +281,8 @@ class Ensemble(AbsEnsemble):
         self.results = results
         
     def _predict_array(self, arr:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None,
-                       display:bool=True, pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> np.ndarray:
+                       display:bool=True, pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None,
+                       auto_deprocess:bool=False) -> np.ndarray:
         n_models = len(self.models) if n_models is None else n_models
         models = self.models[:n_models]
         weights = self.weights[:n_models]
@@ -296,31 +297,32 @@ class Ensemble(AbsEnsemble):
 
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
             tmp_pred = m.predict(arr, pred_cb=pred_cb, cbs=cbs, bs=bs)
-            if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
+            if self.output_pipe is not None and auto_deprocess: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
             pred += weights[i]*tmp_pred
         return pred
     
     def _predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred', pred_cb:PredHandler=PredHandler(),
-                       cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> None:
+                       cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None, auto_deprocess:bool=False) -> None:
         n_models = len(self.models) if n_models is None else n_models
         mb = master_bar(range(len(fy)))
         for fold_idx in mb:
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self._predict_array(fold, n_models, mb, display=True, pred_cb=pred_cb, cbs=cbs, bs=bs)
+                pred = self._predict_array(fold, n_models, mb, display=True, pred_cb=pred_cb, cbs=cbs, bs=bs, auto_deprocess=auto_deprocess)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self._predict_array(fold, n_models, display=False, pred_cb=pred_cb, cbs=cbs, bs=bs))
+                    tmpPred.append(self._predict_array(fold, n_models, display=False, pred_cb=pred_cb, cbs=cbs, bs=bs, auto_deprocess=auto_deprocess))
                 pred = np.mean(tmpPred, axis=0)
 
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
             else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
 
     def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred',
-                pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[None,np.ndarray]:
+                pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None, auto_deprocess:bool=False) \
+            -> Union[None,np.ndarray]:
         r'''
         Apply ensemble to inputed data and compute predictions.
         
@@ -332,13 +334,15 @@ class Ensemble(AbsEnsemble):
                 Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
             cbs: list of any instantiated callbacks to use during prediction
             bs: if not `None`, will run prediction in batches of specified size to save of memory
+            auto_deprocess: if true and ensemble has an putput_pipe, will inverse-transform predictions
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
         
-        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, n_models, display=True, pred_cb=pred_cb, cbs=cbs, bs=bs)
-        self._predict_folds(inputs, n_models, pred_name, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        if not isinstance(inputs, FoldYielder):
+            return self._predict_array(inputs, n_models, display=True, pred_cb=pred_cb, cbs=cbs, bs=bs, auto_deprocess=auto_deprocess)
+        self._predict_folds(inputs, n_models, pred_name, pred_cb=pred_cb, cbs=cbs, bs=bs, auto_deprocess=auto_deprocess)
     
     def save(self, name:str, feats:Optional[Any]=None, overwrite:bool=False) -> None:
         r'''
@@ -586,7 +590,7 @@ class OldEnsemble(Ensemble):
         self.results = results
 
     def predict_array(self, arr:Union[np.ndarray,Tuple[np.ndarray,np.ndarray]], n_models:Optional[int]=None, parent_bar:Optional[master_bar]=None,
-                      display:bool=True, callbacks:Optional[List[OldAbsCallback]]=None, bs:Optional[int]=None) -> np.ndarray:
+                      display:bool=True, callbacks:Optional[List[OldAbsCallback]]=None, bs:Optional[int]=None, auto_deprocess:bool=False) -> np.ndarray:
         r'''
         Apply ensemble to Numpy array and get predictions. If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
         Inputs are expected to be preprocessed; i.e. any input pipe added to the ensemble is not used.
@@ -599,6 +603,7 @@ class OldEnsemble(Ensemble):
             display: whether to display a progress bar for model evaluations
             callbacks: list of any callbacks to use during evaluation
             bs: if not `None`, will run prediction in batches of specified size to save of memory
+            auto_deprocess: if true and ensemble has an putput_pipe, will inverse-transform predictions
 
         Returns:
             Numpy array of predictions
@@ -621,12 +626,13 @@ class OldEnsemble(Ensemble):
 
         for i, m in enumerate(progress_bar(models, parent=parent_bar, display=display)):
             tmp_pred = m.predict(arr, callbacks=callbacks, bs=bs)
-            if self.output_pipe is not None: tmp_pred = self.output_pipe.inverse_transform(Xt=tmp_pred)
+            if self.output_pipe is not None and auto_deprocess: tmp_pred = self.output_pipe.inverse_transform(tmp_pred)
+            print(self.output_pipe is not None and auto_deprocess)
             pred += weights[i]*tmp_pred
         return pred
     
     def predict_folds(self, fy:FoldYielder, n_models:Optional[int]=None, pred_name:str='pred', callbacks:Optional[List[OldAbsCallback]]=None,
-                      verbose:bool=True, bs:Optional[int]=None) -> None:
+                      verbose:bool=True, bs:Optional[int]=None, auto_deprocess:bool=False) -> None:
         r'''
         Apply ensemble to data accessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as a new group per fold in the foldfile.
         If an output pipe has been added to the ensemble, then the predictions will be deprocessed.
@@ -641,6 +647,7 @@ class OldEnsemble(Ensemble):
             callbacks: list of any callbacks to use during evaluation
             verbose: whether to print average prediction timings
             bs: if not `None`, will run prediction in batches of specified size to save of memory
+            auto_deprocess: if true and ensemble has an putput_pipe, will inverse-transform predictions
 
         Examples::
             >>> ensemble.predict_array(test_fy, pred_name='pred_tta')
@@ -653,13 +660,13 @@ class OldEnsemble(Ensemble):
             fold_tmr = timeit.default_timer()
             if not fy.test_time_aug:
                 fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold, n_models, mb, display=True, callbacks=callbacks, bs=bs)
+                pred = self.predict_array(fold, n_models, mb, display=True, callbacks=callbacks, bs=bs, auto_deprocess=auto_deprocess)
             else:
                 tmpPred = []
                 pb = progress_bar(range(fy.aug_mult), parent=mb)
                 for aug in pb:
                     fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold, n_models, display=False, callbacks=callbacks, bs=bs))
+                    tmpPred.append(self.predict_array(fold, n_models, display=False, callbacks=callbacks, bs=bs, auto_deprocess=auto_deprocess))
                 pred = np.mean(tmpPred, axis=0)
 
             times.append((timeit.default_timer()-fold_tmr)/len(fold))
@@ -669,7 +676,7 @@ class OldEnsemble(Ensemble):
         if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
 
     def predict(self, inputs:Union[np.ndarray,FoldYielder,List[np.ndarray]], n_models:Optional[int]=None, pred_name:str='pred',
-                callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[None,np.ndarray]:
+                callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None, auto_deprocess:bool=False) -> Union[None,np.ndarray]:
         r'''
         Compatability method for predicting data contained in either a Numpy array or a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
         Will either pass inputs to :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_array` or :meth:`lumin.nn.ensemble.ensemble.Ensemble.predict_folds`.
@@ -683,6 +690,7 @@ class OldEnsemble(Ensemble):
             callbacks: list of any callbacks to use during evaluation
             verbose: whether to print average predicition timings
             bs: if not `None`, will run prediction in batches of specified size to save of memory
+            auto_deprocess: if true and ensemble has an putput_pipe, will inverse-transform predictions
 
         Returns:
             If passed a Numpy array will return predictions.
@@ -693,8 +701,9 @@ class OldEnsemble(Ensemble):
             >>> ensemble.predict(test_fy)
         '''
         
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, n_models, display=True, callbacks=callbacks, bs=bs)
-        self.predict_folds(inputs, n_models, pred_name, callbacks=callbacks, verbose=verbose, bs=bs)
+        if not isinstance(inputs, FoldYielder):
+            return self.predict_array(inputs, n_models, display=True, callbacks=callbacks, bs=bs, auto_deprocess=auto_deprocess)
+        self.predict_folds(inputs, n_models, pred_name, callbacks=callbacks, verbose=verbose, bs=bs, auto_deprocess=auto_deprocess)
 
     @staticmethod
     def load_trained_model(model_idx:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model:

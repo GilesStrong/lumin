@@ -2,7 +2,7 @@
 
 ## Important changes
 
-- Fixed bug in `Model.set_mom`  which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
+- Fixed bug in `Model.set_mom` which resulted in momentum never being set (affects e.g. OneCycle and CyclicalMom)
 - `Model.fit` now shuffles the fold indices for training folds prior to each epoch rather than once per training; removes the periodicity in training loss which was occasionally apparent.
 - Bugs found in `OneCycle`:
     - When training multiple models, the initial LR for subsequent models was the end LR of the previous model (list in partial was being mutated)
@@ -15,7 +15,7 @@
 
 - Mish activation function
 - `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, built some losses might require it in the future
-- `ParameterisedPrediction` now stores copies of values for parameterised features in case they change, or need to be changed locally during prediction.
+- `ParameterisedPrediction` now stores copies of values for parametrised features in case they change, or need to be changed locally during prediction.
 - `freeze_layers` and `unfreeze_layers` methods for `Model`
 - `PivotTraining` callback implementing Learning to Pivot [Louppe, Kagan, & Kranmer, 2016](https://papers.nips.cc/paper/2017/hash/48ab2f9b45957ab574cf005eb8a76760-Abstract.html)
     - New example reimplementing paper's jets example
@@ -24,7 +24,7 @@
 - `train_models` now has arguments to:
     - Exclude specific fold indices from training and validation
     - Train models on unique folds, e.g. when training 5 models on a file with 10 folds, each model would be trained on their own unique pair of folds
-- Added discussion of core concept in LUMIN to the docs
+- Added discussion of core concepts in LUMIN to the docs
 
 ## Removals
 
