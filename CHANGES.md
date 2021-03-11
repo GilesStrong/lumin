@@ -1,3 +1,21 @@
+# Targeting v0.8.0
+
+## Important changes
+
+## Breaking
+
+## Additions
+
+## Removals
+
+## Fixes
+
+## Changes
+
+## Depreciations
+
+## Comments
+
 # v0.7.2 - All your batch are belong to us - Micro Update
 
 ## Important changes
