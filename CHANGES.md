@@ -35,7 +35,7 @@
 - `Model.fit_params.val_requires_grad` to control whether to compute validation epoch with gradient, default zero, built some losses might require it in the future
 - `ParameterisedPrediction` now stores copies of values for parametrised features in case they change, or need to be changed locally during prediction.
 - `freeze_layers` and `unfreeze_layers` methods for `Model`
-- `PivotTraining` callback implementing Learning to Pivot [Louppe, Kagan, & Kranmer, 2016](https://papers.nips.cc/paper/2017/hash/48ab2f9b45957ab574cf005eb8a76760-Abstract.html)
+- `PivotTraining` callback implementing Learning to Pivot [Louppe, Kagan, & Cranmer, 2016](https://papers.nips.cc/paper/2017/hash/48ab2f9b45957ab574cf005eb8a76760-Abstract.html)
     - New example reimplementing paper's jets example
 - `TargReplace` callback for replacing target data in `BatchYielder` during training
 - Support for loss functions being `fastcore` `partialler` objects
