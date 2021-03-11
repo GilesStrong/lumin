@@ -1,6 +1,6 @@
 # Release Steps
 
-1. Check scheduled depreceiations
+1. Check scheduled depreciations
 1. Run examples and fix errors
 1. Check an example on Google Colab
 1. Update readme and copy relevant information to docs/source/description.md
