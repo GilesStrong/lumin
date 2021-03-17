@@ -8,6 +8,40 @@
 
 ## Removals
 
+- Scheduled removal of depreciated methods and functions from old model and callback system:
+    - `OldAbsCallback`
+    - `OldCallback`
+    - `OldAbsCyclicCallback`
+    - `OldCycleLR`
+    - `OldCycleMom`
+    - `OldOneCycle`
+    - `OldBinaryLabelSmooth`
+    - `OldBinaryLabelSmooth`
+    - `SequentialReweight`
+    - `SequentialReweightClasses`
+    - `OldBootstrapResample`
+    - `OldParametrisedPrediction`
+    - `OldGradClip`
+    - `OldLsuvInit`
+    - `OldAbsModelCallback`
+    - `OldSWA`
+    - `OldLRFinder`
+    - `OldEnsemble`
+    - `OldAMS`
+    - `OldMultiAMS`
+    - `OldBinaryAccuracy`
+    - `OldRocAucScore`
+    - `OldEvalMetric`
+    - `OldRegPull`
+    - `OldRegAsProxyPull`
+    - `OldAbsModel`
+    - `OldModel`
+    - `fold_train_ensemble`
+    - `OldMetricLogger`
+    - `fold_lr_find`
+    - `old_plot_train_history`
+    - `_get_folds`
+
 ## Fixes
 
 ## Changes

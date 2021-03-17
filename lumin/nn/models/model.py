@@ -3,7 +3,6 @@ import pandas as pd
 from typing import List, Optional, Union, Tuple
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
-import timeit
 import warnings
 from fastcore.all import is_listy, partialler, Path
 from random import shuffle
@@ -17,7 +16,7 @@ import torch.nn as nn
 from .abs_model import AbsModel,FitParams
 from .model_builder import ModelBuilder
 from ..data.batch_yielder import BatchYielder
-from ..callbacks.abs_callback import AbsCallback, OldAbsCallback
+from ..callbacks.abs_callback import AbsCallback
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
 from ..callbacks.pred_handlers import PredHandler
 from ..callbacks.monitors import MetricLogger
@@ -25,7 +24,6 @@ from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
 from ...plotting.plot_settings import PlotSettings
-from ...utils.statistics import uncert_round
 from ...utils.misc import to_np, to_device, is_partially
 
 __all__ = ['Model']
@@ -497,228 +495,3 @@ class Model(AbsModel):
         '''
 
         for p in self.model.parameters(): p.requires_grad = True
-
-
-class OldModel(Model):
-    r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.models.model.Model`. It is a copy of the old `Model` class used in lumin<=0.6.
-        It will be removed in V0.8
-    '''
-
-    # XXX remove in V0.8
-
-    def fit(self, batch_yielder:BatchYielder, callbacks:Optional[List[OldAbsCallback]]=None, mask_inputs:bool=True) -> float:
-        r'''
-        Fit network for one complete iteration of a :class:`~lumin.nn.data.batch_yielder.BatchYielder`, i.e. one (sub-)epoch
-
-        Arguments:
-            batch_yielder: :class:`~lumin.nn.data.batch_yielder.BatchYielder` providing training data in form of tuple of inputs, targtes, and weights as
-                tensors on device
-            callbacks: list of :class:`~lumin.nn.callbacks.abs_callback.AbsCallback` to be used during training
-            mask_inputs: whether to apply input mask if one has been set
-
-        Returns:
-            Loss on training data averaged across all minibatches
-        '''
-
-        self.model.train()
-        self.stop_train = False
-        losses = []
-        if callbacks is None: callbacks = []
-        for c in callbacks: c.on_epoch_begin(by=batch_yielder)
-        if self.input_mask is not None and mask_inputs: batch_yielder.inputs = batch_yielder.inputs[:,self.input_mask]
-        if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
-
-        for x, y, w in batch_yielder:
-            for c in callbacks: c.on_batch_begin()
-            y_pred = self.model(x)
-            if hasattr(self.loss, 'weights'): self.loss.weights = w  # Proper weighting required
-            else:                             self.loss.weight  = w
-            loss = self.loss(y_pred, y)
-            losses.append(loss.data.item())
-            self.opt.zero_grad()
-            for c in callbacks: c.on_backwards_begin(loss=loss)
-            loss.backward()
-            for c in callbacks: c.on_backwards_end(loss=loss)
-            self.opt.step()
-            
-            for c in callbacks: c.on_batch_end(loss=losses[-1])
-            if self.stop_train: break
-        
-        for c in callbacks: c.on_epoch_end(losses=losses)
-        return np.mean(losses)
-              
-    def evaluate(self, inputs:Union[Tensor,np.ndarray,Tuple[Tensor,Tensor],Tuple[np.ndarray,np.ndarray]], targets:Union[Tensor,np.ndarray],
-                 weights:Optional[Union[Tensor,np.ndarray]]=None, bs=None, callbacks:Optional[List[OldAbsCallback]]=None,
-                 mask_inputs:bool=True) -> float:
-        r'''
-        Compute loss on provided data.
-
-        Arguments:
-            inputs: input data
-            targets: targets
-            weights: Optional weights
-            callbacks: list of any callbacks to use during evaluation
-            mask_inputs: whether to apply input mask if one has been set
-
-        Returns:
-            (weighted) loss of model predictions on provided data
-        '''
-
-        if callbacks is None: callbacks = []
-        self.model.eval()
-        if not isinstance(inputs, Tensor):
-            if isinstance(inputs, tuple):
-                if not isinstance(inputs[0], Tensor): inputs = (to_device(Tensor(inputs[0]).float()),to_device(Tensor(inputs[1]).float()))
-            else:
-                inputs = to_device(Tensor(inputs).float())
-        for c in callbacks: c.on_eval_begin(inputs=inputs, targets=targets, weights=weights)
-        if self.input_mask is not None and mask_inputs:
-            if isinstance(inputs, tuple):
-                inputs[0] = inputs[0][:,self.input_mask]
-            else:
-                inputs = inputs[:,self.input_mask]
-        y_pred = self.model(inputs)
-
-        if not isinstance(targets, Tensor): targets = to_device(Tensor(targets))
-        if weights is not None and not isinstance(weights, Tensor): weights = to_device(Tensor(weights))
-
-        if   'multiclass'     in self.objective and not isinstance(targets, torch.LongTensor):  targets = targets.long().squeeze()
-        elif 'multiclass' not in self.objective and not isinstance(targets, torch.FloatTensor): targets = targets.float()
-        if inspect.isclass(self.loss) or isinstance(self.loss, partial): self.loss = self.loss()
-        if hasattr(self.loss, 'weights'): self.loss.weights = weights  # Proper weighting required
-        else:                             self.loss.weight  = weights
-        loss = self.loss(y_pred, targets)
-        for c in callbacks: c.on_eval_end(loss=loss)        
-        return loss.data.item()
-
-    def evaluate_from_by(self, by:BatchYielder, callbacks:Optional[List[OldAbsCallback]]=None) -> float:
-        r'''
-        Compute loss on provided data in batches provided by a `:class:~lumin.nn.data.batch_yielder.BatchYielder`.
-
-        Arguments:
-            by: `:class:~lumin.nn.data.batch_yielder.BatchYielder` with data
-            callbacks: list of any callbacks to use during evaluation
-
-        Returns:
-            (weighted) loss of model predictions on provided data
-        '''
-
-        # TODO: Fix this to work for incomplete batch
-
-        loss = 0
-        for x, y, w in by: loss += self.evaluate(x, y, w, callbacks)*by.bs
-        return loss/(len(by)*by.bs)
-
-    def predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, mask_inputs:bool=True,
-                      callbacks:Optional[List[OldAbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
-        r'''
-        Pass inputs through network and obtain predictions.
-
-        Arguments:
-            inputs: input data as Numpy array, Pandas DataFrame, or tensor on device
-            as_np: whether to return predictions as Numpy array (otherwise tensor)
-            mask_inputs: whether to apply input mask if one has been set
-            callbacks: list of any callbacks to use during evaluation
-            bs: if not `None`, will run prediction in batches of specified size to save of memory
-
-        Returns:
-            Model prediction(s) per datapoint
-        '''
-
-        def _get_preds(inputs, callbacks):
-            for c in callbacks: c.on_pred_begin(inputs=inputs)
-            if isinstance(inputs, pd.DataFrame): inputs = to_device(Tensor(inputs.values).float())
-            if self.input_mask is not None and mask_inputs:
-                if isinstance(inputs, tuple):
-                    inputs[0] = inputs[0][:,self.input_mask]
-                else:
-                    inputs = inputs[:,self.input_mask]
-            if not isinstance(inputs, Tensor):
-                if isinstance(inputs, tuple):
-                    if not isinstance(inputs[0], Tensor): inputs = (to_device(Tensor(inputs[0]).float()),to_device(Tensor(inputs[1]).float()))
-                else:
-                    inputs = to_device(Tensor(inputs).float())
-            pred = self.model(inputs)
-            for c in callbacks: c.on_pred_end(pred=pred)
-            return to_np(pred)
-        
-        self.model.eval()
-        if callbacks is None: callbacks = []
-        if bs is None:
-            pred = _get_preds(inputs, callbacks)
-        else:
-            pred = []
-            if isinstance(inputs, tuple):
-                if len(inputs[1]) > bs:
-                    for i in range(0, len(inputs[1])-bs+1, bs): pred.append(_get_preds((inputs[0][i:i+bs], inputs[1][i:i+bs]), callbacks))
-                    pred.append(_get_preds((inputs[0][i+bs:], inputs[1][i+bs:]), callbacks))
-                else:
-                    pred.append(_get_preds((inputs[0], inputs[1]), callbacks))
-            else:
-                if len(inputs) > bs:
-                    for i in range(0, len(inputs)-bs+1, bs): pred.append(_get_preds(inputs[i:i+bs], callbacks))
-                    pred.append(_get_preds(inputs[i+bs:], callbacks))
-                else:
-                    pred.append(_get_preds(inputs, callbacks))
-            pred = np.vstack(pred)
-        if as_np:
-            if 'multiclass' in self.objective: return np.exp(pred)
-            else:                              return pred
-        else:
-            return to_device(Tensor(pred))
-
-    def predict_folds(self, fy:FoldYielder, pred_name:str='pred', callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True,
-                      bs:Optional[int]=None) -> None:
-        r'''
-        Apply model to all dataaccessed by a :class:`~lumin.nn.data.fold_yielder.FoldYielder` and save predictions as new group in fold file
-
-        Arguments:
-            fy: :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
-            pred_name: name of group to which to save predictions
-            callbacks: list of any callbacks to use during evaluation
-            verbose: whether to print average prediction timings
-            bs: if not `None`, will run prediction in batches of specified size to save of memory
-        '''
-
-        times = []
-        mb = master_bar(range(len(fy)))
-        for fold_idx in mb:
-            fold_tmr = timeit.default_timer()
-            if not fy.test_time_aug:
-                fold = fy.get_fold(fold_idx)['inputs']
-                pred = self.predict_array(fold, callbacks=callbacks, bs=bs)
-            else:
-                tmpPred = []
-                pb = progress_bar(range(fy.aug_mult), parent=mb)
-                for aug in pb:
-                    fold = fy.get_test_fold(fold_idx, aug)['inputs']
-                    tmpPred.append(self.predict_array(fold, callbacks=callbacks, bs=bs))
-                pred = np.mean(tmpPred, axis=0)
-
-            times.append((timeit.default_timer()-fold_tmr)/len(fold))
-            if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
-            else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
-        times = uncert_round(np.mean(times), np.std(times, ddof=1)/np.sqrt(len(times)))
-        if verbose: print(f'Mean time per event = {times[0]}±{times[1]}')
-
-    def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred',
-                callbacks:Optional[List[OldAbsCallback]]=None, verbose:bool=True, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
-        r'''
-        Apply model to inputed data and compute predictions.
-        A compatability method to call :meth:`~lumin.nn.models.model.Model.predict_array` or meth:`~lumin.nn.models.model.Model.predict_folds`,
-            depending on input type.
-
-        Arguments:
-            inputs: input data as Numpy array, Pandas DataFrame, or tensor on device, or :class:`~lumin.nn.data.fold_yielder.FoldYielder` interfacing to data
-            as_np: whether to return predictions as Numpy array (otherwise tensor) if inputs are a Numpy array, Pandas DataFrame, or tensor
-            pred_name: name of group to which to save predictions if inputs are a :class:`~lumin.nn.data.fold_yielder.FoldYielder`
-            callbacks: list of any callbacks to use during evaluation
-            verbose: whether to print average prediction timings
-            bs: if not `None`, will run prediction in batches of specified size to save of memory
-
-        Returns:
-            if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
-        '''
-        if not isinstance(inputs, FoldYielder): return self.predict_array(inputs, as_np=as_np, callbacks=callbacks, bs=bs)
-        self.predict_folds(inputs, pred_name, callbacks=callbacks, verbose=verbose, bs=bs)
