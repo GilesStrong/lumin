@@ -2,32 +2,6 @@ from abc import ABC
 
 
 __all__ = []
-
-
-class OldAbsCallback(ABC):
-    r'''
-    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.callbacks.abs_callback.AbsCallback`.
-        It is a copy of the old `AbsCallback` class used in lumin<=0.6.
-        It will be removed in V0.8
-    '''
-
-    # XXX remove in V0.8
-
-    def __init__(self):                    pass
-    def set_model(self, **kargs):          pass
-    def set_plot_settings(self, **kargs):  pass
-    def on_train_begin(self, **kargs):     pass  
-    def on_train_end(self,   **kargs):     pass  
-    def on_epoch_begin(self, **kargs):     pass
-    def on_epoch_end(self,   **kargs):     pass
-    def on_batch_begin(self, **kargs):     pass
-    def on_batch_end(self,   **kargs):     pass
-    def on_eval_begin(self, **kargs):      pass
-    def on_eval_end(self,   **kargs):      pass
-    def on_backwards_begin(self, **kargs): pass
-    def on_backwards_end(self,   **kargs): pass
-    def on_pred_begin(self, **kargs):      pass
-    def on_pred_end(self,   **kargs):      pass
     
 
 class AbsCallback(ABC):
