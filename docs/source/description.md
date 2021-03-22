@@ -128,7 +128,7 @@ Aside from being a recursive acronym (and therefore the best kind of acronym) lu
 
 ### Who develops LUMIN
 
-LUMIN is primarily developed by Giles Strong; a British-born PhD student in particle physics at IST (Portugal), and researcher at The University of Padova (Italy), and a member of the CMS collaboration at CERN.
+LUMIN is primarily developed by Giles Strong; a British-born doctor in particle physics, researcher at The University of Padova (Italy), and a member of the CMS collaboration at CERN.
 
 As LUMIN has grown, it has welcomed contributions from members of the scientific and software development community. Check out the [contributors page](https://github.com/GilesStrong/lumin/graphs/contributors) for a complete list.
 
