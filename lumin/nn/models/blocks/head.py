@@ -7,6 +7,7 @@ import os
 from abc import abstractmethod
 from functools import partial
 from distutils.version import LooseVersion
+from fastcore.all import is_listy, store_attr
 
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -15,13 +16,15 @@ import torch
 from ..helpers import CatEmbedder
 from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act
+from ..layers.batchnorms import LCBatchNorm1d
+from .gnn_block import GravNetLayer
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
 from ....utils.misc import to_device
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
-__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
+__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet', 'GravNet']
 
 
 class AbsHead(AbsBlock):
@@ -826,8 +829,8 @@ class LorentzBoostNet(AbsMatrixHead):
 
     Arguments:
         cont_feats: list of all the matrix features which are present in the input data
-        vecs: list of objects, i.e. column headers, feature prefixes
-        feats_per_vec: list of features per object, i.e. row headers, feature suffixes
+        vecs: list of objects, i.e. row headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. column headers, feature suffixes
         n_particles: the number of particles and reference frames to learn
         feat_extractor: if not None, will use the argument as the function to extract features from the 4-momenta of the boosted particles.
         bn: whether batch normalisation should be applied to the extracted features
@@ -1055,3 +1058,152 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         if len(out) == 1: out = out[0]
         else:             out = torch.cat(out, -1)
         return out
+
+
+class GravNet(AbsMatrixHead):
+    r'''
+    GravNet GNN head (Qasim, Kieseler, Iiyama, & Pierini, 2019 https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9).
+    Passes features per vertex (batch x vertices x features) through several :class:`~lumin.nn.models.blocks.head.GravNetLayer` layers.
+    Like the paper model, this has the option of caching and concatenating the outputs of each GravNet layer prior to the final layer.
+    The features per vertex are then flattened/aggregated across the vertices to flat data (batch x features).
+    
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly in row-wise matrix form.
+    Matrices should/will be row-wise: each row is a seperate object (e.g. particle and jet) and each column is a feature (e.g. energy and mometum component).
+    Matrix elements are expected to be named according to `{object}_{feature}`, e.g. `photon_energy`.
+    `vecs` (vectors) should then be a list of objects, i.e. row headers, feature prefixes.
+    `feats_per_vec` should be a list of features, i.e. column headers, feature suffixes.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+    
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. row headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. column headers, feature suffixes
+        use_in_bn: whether to add an initial batchnorm layer on the incoming inputs
+        cat_means: if True, will extend the incoming features per vertex by including the means of all features across all vertices
+        
+        n_s: number of latent-spatial dimensions to compute
+        n_lr: number of features to compute per vertex for latent representation
+        k: number of neighbours (including self) each vertex should consider when aggregating latent-representation features
+        agg_methods: list of functions to use to aggregate distance-weighted latent-representation features
+        n_out: number of output features to compute per vertex
+        f_slr_depth: number of layers to use for the latent rep. NN
+        f_out_depth: number of layers to use for the output NN
+        potential: function to control distance weighting (default is the exp(-d^2) potential used in the paper)
+        do: dropout rate to be applied to hidden layers in the NNs
+        bn: whether batch normalisation should be applied to hidden layers in the NNs
+        act: activation function to apply to hidden layers in the NNs
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+        freeze: whether to start with module parameters set to untrainable
+        bn_class: class to use for BatchNorm, default is :class:`~lumin.nn.models.layers.batchnorms.LCBatchNorm1d`
+    '''
+
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 use_in_bn:bool, cat_means:bool,
+                 f_slr_depth:int, n_s:int, n_lr:int,
+                 k:int, f_out_depth:int, n_out:Union[List[int],int],
+                 f_final_depth:int, n_final_out:int,
+                 agg_methods:Union[List[str],str]=['mean','max'], concat_outs:bool=True, flatten:bool=False,
+                 do:float=0, bn:bool=False, act:str='relu',
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=LCBatchNorm1d, **kargs):
+        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=True,
+                         lookup_act=lookup_act, lookup_init=lookup_init, freeze=freeze)
+        store_attr(but=[cont_feats, vecs, feats_per_vec, lookup_act, lookup_init, freeze, agg_methods])
+        self._check_agg_method(agg_methods)
+        if not is_listy(self.n_out): self.n_out = [self.n_out]
+        
+        if self.use_in_bn: self.in_bn = self.bn_class(self.n_fpv)
+        self.grav_layers = self._get_grav_layers()
+        self.f_final = self._get_final_layers()
+        self._map_outputs()
+        if self.freeze: self.freeze_layers()
+            
+    def _get_grav_layers(self) -> nn.ModuleList:
+        ls = []
+        gl = partial(GravNetLayer, f_slr_depth=self.f_slr_depth, n_s=self.n_s, n_lr=self.n_lr,k=self.k, agg_methods=self.agg_methods,
+                     f_out_depth=self.f_out_depth, cat_means=self.cat_means, do=self.do, bn=self.bn, act=self.act, lookup_init=self.lookup_init,
+                     lookup_act=self.lookup_act, bn_class=self.bn_class)
+        n_fpv = self.n_fpv
+        for n in self.n_out:
+            ls.append(gl(n_fpv=n_fpv, n_out=n))
+            n_fpv = n
+        return nn.ModuleList(ls)
+    
+    def _get_final_layers(self) -> nn.Sequential:
+        n_in = np.array(self.n_out).sum() if self.concat_outs else self.n_out[-1]
+        return self._get_nn(fan_in=n_in, width=2*n_in, fan_out=self.n_final_out, depth=self.f_final_depth)
+    
+    def _get_nn(self, fan_in:int, width:int, fan_out:int, depth:int) -> nn.Module:
+        return nn.Sequential(*[self._get_layer(fan_in if i == 0 else width, width if i+1 < depth else fan_out) for i in range(depth)])
+    
+    def _get_layer(self, fan_in:int, fan_out:int) -> nn.Module:   
+        layers = []
+        layers.append(nn.Linear(fan_in, fan_out))
+        self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
+        nn.init.zeros_(layers[-1].bias)
+        if self.act != 'linear': layers.append(self.lookup_act(self.act))
+        if self.bn:              layers.append(self.bn_class(fan_out))
+        if self.do: 
+            if self.act == 'selu': layers.append(nn.AlphaDropout(self.do))
+            else:                  layers.append(nn.Dropout(self.do))
+        return nn.Sequential(*layers)
+    
+    def _map_outputs(self) -> None:
+        self.feat_map = {}
+        for i, f in enumerate(self.cont_feats): self.feat_map[f] = list(range(self.get_out_size()))
+            
+    def _check_agg_method(self, agg_methods:Union[List[str],str]) -> None:
+        self.agg_methods,self.final_aggs = [],[]
+        if not is_listy(agg_methods): agg_methods = [agg_methods]
+        for m in agg_methods:
+            m = m.lower()
+            if   m == 'mean':
+                self.agg_methods.append(lambda x: torch.mean(x,dim=2))
+                self.final_aggs.append(lambda x: torch.mean(x,dim=1))
+            elif m == 'max':
+                self.agg_methods.append(lambda x: torch.max(x,dim=2)[0])
+                self.final_aggs.append(lambda x: torch.max(x,dim=1)[0])
+            else: raise ValueError(f'{m} not in [mean, max]')
+                
+    def _agg(self, x:Tensor) -> Tensor:
+        if self.flatten:
+            return x.reshape((len(x),-1))
+        else:
+            return torch.cat([agg(x) for agg in self.final_aggs],-1)
+
+    def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Passes input through the GravNet head and returns a flat tensor.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will convert the data to a matrix
+        
+        Returns:
+            Resulting tensor
+        '''
+        
+        x = self._process_input(x)
+        if self.use_in_bn: x = self.in_bn(x)
+        if self.concat_outs:
+            outs = [x]
+            for l in self.grav_layers: outs.append(l(outs[-1]))
+            x = torch.cat(outs[1:], dim=-1)
+        else:
+            for l in self.grav_layers: x = l(x)
+        x = self.f_final(x)
+        x = self._agg(x)
+        return x
+    
+    def get_out_size(self) -> int:
+        r'''
+        Get size of output
+
+        Returns:
+            Width of output representation
+        '''
+        
+        return self.n_final_out*self.n_v if self.flatten else self.n_final_out*len(self.final_aggs)
