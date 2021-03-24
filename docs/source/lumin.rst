@@ -5,8 +5,7 @@ Subpackages
 -----------
 
 .. toctree::
-   :maxdepth: 1
-   
+
    lumin.data_processing
    lumin.evaluation
    lumin.inference

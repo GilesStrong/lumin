@@ -17,7 +17,7 @@ from ..helpers import CatEmbedder
 from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act
 from ..layers.batchnorms import LCBatchNorm1d
-from .gnn_block import GravNetLayer
+from .gnn_blocks import GravNetLayer
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
