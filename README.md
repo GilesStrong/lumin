@@ -45,7 +45,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
     - Easy loading and saving of pre-trained embedding weights
     - Modern architectures like:
         - Residual and dense(-like) networks ([He et al. 2015](https://arxiv.org/abs/1512.03385) & [Huang et al. 2016](https://arxiv.org/abs/1608.06993))
-        - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222) & [Moreno et al., 2019](https://arxiv.org/abs/1908.05318)
+        - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222), [Moreno et al., 2019](https://arxiv.org/abs/1908.05318), and [Qasim, Kieseler, Iiyama, & Pierini, 2019](https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9)
         - Recurrent layers for series of objects
         - 1D convolutional networks for series of objects
         - HEP-specific architectures, e.g. LorentzBoostNetworks [Erdmann, Geiser, Rath, Rieger, 2018](https://arxiv.org/abs/1812.09722)

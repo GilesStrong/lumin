@@ -6,6 +6,9 @@
 
 ## Additions
 
+- `GravNet` GNN head and `GravNetLayer` sub-block [Qasim, Kieseler, Iiyama, & Pierini, 2019](https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9)
+- `LCBatchNorm1d` to run batchnorm over length x channel data
+
 ## Removals
 
 - Scheduled removal of depreciated methods and functions from old model and callback system:

@@ -28,6 +28,14 @@ lumin.nn.models.blocks.endcap module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.models.blocks.gnn\_block module
+----------------------------------------
+
+.. automodule:: lumin.nn.models.blocks.gnn_block
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.models.blocks.head module
 ----------------------------------
 
