@@ -221,7 +221,7 @@ class MultiBlock(AbsBody):
         Get size width of output layer
 
         Returns:
-            Total number of outputs accross all blocks
+            Total number of outputs across all blocks
         '''
         
         return self.n_out

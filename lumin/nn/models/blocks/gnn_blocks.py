@@ -42,7 +42,7 @@ class GravNetLayer(nn.Module):
     '''
     
     def __init__(self, n_fpv:int, n_s:int, n_lr:int, k:int, agg_methods:List[Callable[[Tensor],Tensor]], n_out:int,
-                 cat_means:bool=True, f_slr_depth:int=1, f_out_depth:int=1, potential:Callable[[Tensor],Tensor]=lambda x: torch.exp(-(x**2)),
+                 cat_means:bool=True, f_slr_depth:int=1, f_out_depth:int=1, potential:Callable[[Tensor],Tensor]=lambda x: torch.exp(-10*(x**2)),
                  do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=LCBatchNorm1d):
@@ -67,12 +67,6 @@ class GravNetLayer(nn.Module):
             else:                  layers.append(nn.Dropout(self.do))
         return nn.Sequential(*layers)
     
-    def _norm_s(self, s:Tensor) -> Tensor:
-        v = s.reshape((-1,s.shape[-1]))
-        s = s-v.mean(0)
-        s = s/v.std(0)+1e-17
-        return s
-    
     def _knn(self, dists:Tensor) -> Tuple[Tensor,Tensor,Tensor]:
         idxs = dists.argsort()
         i = np.arange(dists.shape[0])[:,None,None]
@@ -96,7 +90,6 @@ class GravNetLayer(nn.Module):
         # Compute spatial and vertex features
         slr = self.f_slr(x)
         s,lr = slr[:,:,:self.n_s],slr[:,:,self.n_s:]
-        s = self._norm_s(s)
         
         # kNN
         d_jk = torch.norm(s[:,:,None]-s[:,None], dim=-1)

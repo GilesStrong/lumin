@@ -60,7 +60,7 @@ def calc_ams_torch(s:Tensor, b:Tensor, br:float=0, unc_b:float=0) -> Tensor:
 def ams_scan_quick(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:float=0,
                    pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight') -> Tuple[float,float]:
     r'''
-    Scan accross a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
+    Scan across a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
     Note that whilst this method is quicker than :meth:`~lumin.evaluation.ams.ams_scan_slow`, it sufferes from float precison.
     Not recommended for final evaluation.
     
@@ -95,7 +95,7 @@ def ams_scan_slow(df:pd.DataFrame, wgt_factor:float=1, br:float=0, syst_unc_b:fl
                   use_stat_unc:bool=False, start_cut:float=0.9, min_events:int=10,
                   pred_name:str='pred', targ_name:str='gen_target', wgt_name:str='gen_weight', show_prog:bool=True) -> Tuple[float,float]:
     r'''
-    Scan accross a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
+    Scan across a range of possible prediction thresholds in order to maximise the Approximate Median Significance (https://arxiv.org/abs/1007.1727).
     Note that whilst this method is slower than :meth:`~lumin.evaluation.ams.ams_scan_quick`, it does not suffer as much from float precison.
     Additionally it allows one to account for statistical uncertainty in AMS calculation.
     
