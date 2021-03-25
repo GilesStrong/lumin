@@ -7,7 +7,9 @@
 ## Additions
 
 - `GravNet` GNN head and `GravNetLayer` sub-block [Qasim, Kieseler, Iiyama, & Pierini, 2019](https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9)
-- `LCBatchNorm1d` to run batchnorm over length x channel data
+- Batchnorm:
+    - `LCBatchNorm1d` to run batchnorm over length x channel data
+    - Additional `bn_class` arguments to blocks, allowing the user to choose different batchnorm implementations
 
 ## Removals
 
@@ -47,7 +49,11 @@
 
 ## Fixes
 
+- Bug when trying to use batchnorm in `InteractionNet`
+
 ## Changes
+
+- `padding` argument in conv 1D blocks renamed to pad
 
 ## Depreciations
 

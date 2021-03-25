@@ -45,7 +45,7 @@ class GravNetLayer(nn.Module):
                  cat_means:bool=True, f_slr_depth:int=1, f_out_depth:int=1, potential:Callable[[Tensor],Tensor]=lambda x: torch.exp(-10*(x**2)),
                  do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=LCBatchNorm1d):
+                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
         super().__init__()
         store_attr()
         if self.cat_means: self.n_fpv *= 2
@@ -61,7 +61,7 @@ class GravNetLayer(nn.Module):
         self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
         nn.init.zeros_(layers[-1].bias)
         if self.act != 'linear': layers.append(self.lookup_act(self.act))
-        if self.bn:              layers.append(self.bn_class(fan_out))
+        if self.bn:              layers.append(self.bn_class(LCBatchNorm1d(fan_out)))
         if self.do: 
             if self.act == 'selu': layers.append(nn.AlphaDropout(self.do))
             else:                  layers.append(nn.Dropout(self.do))

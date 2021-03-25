@@ -1,4 +1,5 @@
 from typing import Callable, Union, Optional, Any
+from fastcore.all import store_attr, delegates
 
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -26,6 +27,7 @@ class Conv1DBlock(nn.Module):
         bn: whether to use batch normalisation (default order weights->activation->batchnorm)
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         lookup_act: function taking choice of activation function and returning an activation function layer
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
 
     Examples::
         >>> conv = Conv1DBlock(in_c=3, out_c=16, kernel_sz=3)
@@ -37,10 +39,10 @@ class Conv1DBlock(nn.Module):
 
     def __init__(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1, act:str='relu', bn:bool=False,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act):
+                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
         super().__init__()
-        self.in_c,self.out_c,self.ks,self.pad,self.stride,self.act,self.bn = in_c,out_c,kernel_sz,padding,stride,act,bn
-        self.lookup_init,self.lookup_act = lookup_init,lookup_act
+        store_attr(but=[padding, kernel_sz])
+        self.pad,self.ks = self.padding,self.kernel_sz
         if self.pad == 'auto': self.pad = self.get_padding(self.ks)
         self.set_layers()
     
@@ -86,7 +88,7 @@ class Conv1DBlock(nn.Module):
         if padding == 'auto': padding = self.get_padding(kernel_sz)
         layers = []
         if pre_act:
-            if self.bn: layers.append(nn.BatchNorm1d(in_c))
+            if self.bn: layers.append(self.bn_class(in_c))
             if self.act != 'linear': layers.append(self.lookup_act(self.act))
                     
         layers.append(nn.Conv1d(in_channels=in_c, out_channels=out_c, kernel_size=kernel_sz, padding=padding, stride=stride, groups=groups))
@@ -95,7 +97,7 @@ class Conv1DBlock(nn.Module):
         
         if not pre_act:
             if self.act != 'linear': layers.append(self.lookup_act(self.act))
-            if self.bn: layers.append(nn.BatchNorm1d(out_c))
+            if self.bn: layers.append(self.bn_class(out_c))
         return nn.Sequential(*layers)
 
     def forward(self, x:Tensor) -> Tensor:
@@ -139,12 +141,6 @@ class Res1DBlock(Conv1DBlock):
         >>> 
         >>> conv = Res1DBlock(in_c=16, out_c=16, kernel_sz=3, act='swish', bn=True)
     '''
-
-    def __init__(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1, act:str='relu', bn:bool=False,
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act):
-        super().__init__(in_c=in_c, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act, bn=bn,
-                         lookup_init=lookup_init, lookup_act=lookup_act)
         
     def set_layers(self):
         r'''
@@ -196,6 +192,7 @@ class ResNeXt1DBlock(Conv1DBlock):
         bn: whether to use batch normalisation (order is pre-activation: batchnorm->activation->weights)
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         lookup_act: function taking choice of activation function and returning an activation function layer
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
 
     Examples::
         >>> conv = ResNeXt1DBlock(in_c=32, inter_c=4, cardinality=4, out_c=32, kernel_sz=3)
@@ -208,10 +205,10 @@ class ResNeXt1DBlock(Conv1DBlock):
     def __init__(self, in_c:int, inter_c:int, cardinality:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1, act:str='relu',
                  bn:bool=False,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act):
+                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
         self.inter_c,self.cardinality = inter_c,cardinality
         super().__init__(in_c=in_c, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act, bn=bn,
-                         lookup_init=lookup_init, lookup_act=lookup_act)
+                         lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
         
     def set_layers(self):
         r'''
