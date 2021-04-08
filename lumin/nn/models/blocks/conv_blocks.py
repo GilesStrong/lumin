@@ -1,5 +1,5 @@
 from typing import Callable, Union, Optional, Any
-from fastcore.all import store_attr, delegates
+from fastcore.all import store_attr
 
 import torch.nn as nn
 from torch.tensor import Tensor
@@ -41,7 +41,7 @@ class Conv1DBlock(nn.Module):
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
         super().__init__()
-        store_attr(but=[padding, kernel_sz])
+        store_attr(but=['padding', 'kernel_sz'])
         self.pad,self.ks = self.padding,self.kernel_sz
         if self.pad == 'auto': self.pad = self.get_padding(self.ks)
         self.set_layers()

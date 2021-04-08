@@ -402,9 +402,10 @@ class FoldYielder:
             pred_name: name of column to save predictions under
         '''
 
-        try: self.foldfile.create_dataset(f'fold_{fold_idx}/{pred_name}', shape=pred.shape, dtype='float32')
-        except RuntimeError: pass
-        self.foldfile[f'fold_{fold_idx}/{pred_name}'][...] = pred
+        n = f'fold_{fold_idx}/{pred_name}'
+        if n in self.foldfile: del self.foldfile[n]
+        self.foldfile.create_dataset(n, shape=pred.shape, dtype='float32')
+        self.foldfile[n][...] = pred
 
 
 class HEPAugFoldYielder(FoldYielder):
