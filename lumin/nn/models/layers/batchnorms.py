@@ -59,13 +59,19 @@ class RunningBatchNorm1d(nn.Module):
         self.batch += bs
 
     def forward(self, x:Tensor) -> Tensor:
+        squeeze = False
+        if len(x.shape) == 2:
+            squeeze = True
+            x = x.unsqueeze(-1)
         if self.training: self.update_stats(x)
         means = self.sums/self.count
         varns = (self.sqrs/self.count).sub_(means*means)
         if bool(self.batch < self.n_warmup): varns.clamp_min_(0.01)
         factor = self.weight/(varns+self.eps).sqrt()
         offset = self.bias-means*factor
-        return x*factor+offset
+        x = x*factor+offset
+        if squeeze: x = x.squeeze(-1)
+        return x
 
 
 class RunningBatchNorm2d(RunningBatchNorm1d):
@@ -91,8 +97,17 @@ class RunningBatchNorm2d(RunningBatchNorm1d):
         self.register_buffer('step', tensor(0.))
         self.dims = (0,2,3)
 
+    def forward(self, x:Tensor) -> Tensor:
+        if self.training: self.update_stats(x)
+        means = self.sums/self.count
+        varns = (self.sqrs/self.count).sub_(means*means)
+        if bool(self.batch < self.n_warmup): varns.clamp_min_(0.01)
+        factor = self.weight/(varns+self.eps).sqrt()
+        offset = self.bias-means*factor
+        return x*factor+offset
 
-class RunningBatchNorm3d(RunningBatchNorm1d):
+
+class RunningBatchNorm3d(RunningBatchNorm2d):
     r'''
     3D Running batchnorm implementation from fastai (https://github.com/fastai/course-v3) distributed under apache2 licence.
     Modifcations: Adaptation to 3D, add eps in mom1 calculation, type hinting, docs
