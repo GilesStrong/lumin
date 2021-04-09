@@ -403,13 +403,13 @@ class GravNetLayer(AbsGraphBlock):
         
         # kNN
         d_jk = torch.norm(s[:,:,None]-s[:,None], dim=-1)
-        f_ijk = torch.repeat_interleave(lr[:,None], repeats=lr.shape[1], dim=1)
         idxs = self._knn(d_jk)
-        d_jk,f_ijk = d_jk[idxs],f_ijk[idxs]
+        d_jk = d_jk[idxs]
+        lr = lr[:,None].expand(lr.shape[0],lr.shape[1],lr.shape[1],lr.shape[2])[idxs]
         
         # Aggregate feats
         v_jk = self.potential(d_jk)
-        ft_ijk = f_ijk*v_jk.unsqueeze(-1)
+        ft_ijk = lr*v_jk.unsqueeze(-1)
         if self.use_sa: ft_ijk = self.sa_agg(ft_ijk)
         fp = [x]
         for agg in self.agg_methods: fp.append(agg(ft_ijk))
