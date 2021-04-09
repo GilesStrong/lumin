@@ -12,6 +12,7 @@
 - Batchnorm:
     - `LCBatchNorm1d` to run batchnorm over length x channel data
     - Additional `bn_class` arguments to blocks, allowing the user to choose different batchnorm implementations
+    - 1, 2, & 3D Running batchnorm layers from fastai (https://github.com/fastai/course-v3)
 - `GNNHead` encapsulating head for feature extraction, using `AbsGraphFeatExtractor` classes, and graph collapsing, using `GraphCollapser` classes
 
 ## Removals
