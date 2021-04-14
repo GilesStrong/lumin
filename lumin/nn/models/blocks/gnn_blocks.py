@@ -345,6 +345,8 @@ class GravNetLayer(AbsGraphBlock):
         # Output
         return self.f_out(fp)
 
+    def get_out_size(self) -> int: return self.n_out
+
 
 class GravNet(AbsGraphFeatExtractor):
     r'''
@@ -389,6 +391,7 @@ class GravNet(AbsGraphFeatExtractor):
         if not is_listy(self.n_out): self.n_out = [self.n_out]
         self.agg_methods = [lambda x: torch.mean(x,dim=2), lambda x: torch.max(x,dim=2)[0]]
         self.grav_layers = self._get_grav_layers()
+        self.out_sz = (self.n_v, np.sum([l.get_out_sz() for l in self.grav_layers]))
             
     def _get_grav_layers(self) -> nn.ModuleList:
         ls = []
@@ -416,4 +419,4 @@ class GravNet(AbsGraphFeatExtractor):
         for l in self.grav_layers: outs.append(l(outs[-1]))
         return torch.cat(outs[1:], dim=-1)
     
-    def get_out_size(self) -> Tuple[int,int]: return self.n_v, np.array(self.n_out).sum()
+    def get_out_size(self) -> Tuple[int,int]: return self.out_sz
