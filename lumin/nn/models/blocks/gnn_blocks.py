@@ -1,4 +1,4 @@
-from typing import List, Callable, Any, Optional, Tuple, Union
+from typing import List, Callable, Any, Optional, Tuple, Union, Dict
 from fastcore.all import store_attr, is_listy
 from abc import abstractmethod
 import numpy as np
@@ -254,79 +254,6 @@ class InteractionNet(AbsGraphFeatExtractor):
     def get_out_size(self) -> Tuple[int,int]: return self.n_v, self.outfunc_outs[-1]
 
 
-class GravNet(AbsGraphFeatExtractor):
-    r'''
-    GravNet GNN head (Qasim, Kieseler, Iiyama, & Pierini, 2019 https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9).
-    Passes features per vertex (batch x vertices x features) through several :class:`~lumin.nn.models.blocks.head.GravNetLayer` layers.
-    Like the paper model, this has the option of caching and concatenating the outputs of each GravNet layer prior to the final layer.
-    The features per vertex are then flattened/aggregated across the vertices to flat data (batch x features).
-    
-    Arguments:
-        n_v: Number of vertices to expect per datapoint
-        n_fpv: number features per vertex
-        cat_means: if True, will extend the incoming features per vertex by including the means of all features across all vertices
-        n_s: number of latent-spatial dimensions to compute
-        n_lr: number of features to compute per vertex for latent representation
-        k: number of neighbours (including self) each vertex should consider when aggregating latent-representation features
-        n_out: number of output features to compute per vertex
-        f_slr_depth: number of layers to use for the latent rep. NN
-        f_out_depth: number of layers to use for the output NN
-        potential: function to control distance weighting (default is the exp(-d^2) potential used in the paper)
-        use_sa: if true, will apply self-attention layer to the neighbourhhood features per vertex prior to aggregation
-        do: dropout rate to be applied to hidden layers in the NNs
-        bn: whether batch normalisation should be applied to hidden layers in the NNs
-        act: activation function to apply to hidden layers in the NNs
-        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
-        lookup_act: function taking choice of activation function and returning an activation function layer
-        freeze: whether to start with module parameters set to untrainable
-        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
-        sa_class: class to use for self-attention layers, default is :class:`~lumin.nn.models.layers.self_attention.SelfAttention`
-    '''
-
-    row_wise:Optional[bool] = True
-            
-    def __init__(self, n_v:int, n_fpv:int, cat_means:bool,
-                 f_slr_depth:int, n_s:int, n_lr:int,
-                 k:int, f_out_depth:int, n_out:Union[List[int],int],
-                 use_sa:bool=False, do:float=0, bn:bool=False, act:str='relu',
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
-                 sa_class:Callable[[int],nn.Module]=SelfAttention, **kargs):
-        super().__init__(n_v=n_v, n_fpv=n_fpv, do=do, bn=bn, act=act, lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
-        store_attr(but=['n_v', 'n_fpv', 'do', 'bn', 'act', 'lookup_init', 'lookup_act', 'bn_class'])
-        if not is_listy(self.n_out): self.n_out = [self.n_out]
-        self.agg_methods = [lambda x: torch.mean(x,dim=2), lambda x: torch.max(x,dim=2)[0]]
-        self.grav_layers = self._get_grav_layers()
-            
-    def _get_grav_layers(self) -> nn.ModuleList:
-        ls = []
-        gl = partial(GravNetLayer, f_slr_depth=self.f_slr_depth, n_s=self.n_s, n_lr=self.n_lr,k=self.k, agg_methods=self.agg_methods,
-                     f_out_depth=self.f_out_depth, cat_means=self.cat_means, use_sa=self.use_sa, do=self.do, bn=self.bn, act=self.act,
-                     lookup_init=self.lookup_init, lookup_act=self.lookup_act, bn_class=self.bn_class, sa_class=self.sa_class)
-        n_fpv = self.n_fpv
-        for n in self.n_out:
-            ls.append(gl(n_fpv=n_fpv, n_out=n))
-            n_fpv = n
-        return nn.ModuleList(ls)
-
-    def forward(self, x:Tensor) -> Tensor:
-        r'''
-        Passes input through the GravNet head.
-
-        Arguments:
-            x: row-wise tensor (batch x vertices x features)
-        
-        Returns:
-            Resulting tensor row-wise tensor (batch x vertices x new features)
-        '''
-        
-        outs = [x]
-        for l in self.grav_layers: outs.append(l(outs[-1]))
-        return torch.cat(outs[1:], dim=-1)
-    
-    def get_out_size(self) -> Tuple[int,int]: return self.n_v, np.array(self.n_out).sum()
-
-
 class GravNetLayer(AbsGraphBlock):
     r'''
     Single GravNet GNN layer (Qasim, Kieseler, Iiyama, & Pierini, 2019 https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9).
@@ -417,3 +344,76 @@ class GravNetLayer(AbsGraphBlock):
         
         # Output
         return self.f_out(fp)
+
+
+class GravNet(AbsGraphFeatExtractor):
+    r'''
+    GravNet GNN head (Qasim, Kieseler, Iiyama, & Pierini, 2019 https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9).
+    Passes features per vertex (batch x vertices x features) through several :class:`~lumin.nn.models.blocks.head.GravNetLayer` layers.
+    Like the paper model, this has the option of caching and concatenating the outputs of each GravNet layer prior to the final layer.
+    The features per vertex are then flattened/aggregated across the vertices to flat data (batch x features).
+    
+    Arguments:
+        n_v: Number of vertices to expect per datapoint
+        n_fpv: number features per vertex
+        cat_means: if True, will extend the incoming features per vertex by including the means of all features across all vertices
+        f_slr_depth: number of layers to use for the latent rep. NN
+        n_s: number of latent-spatial dimensions to compute
+        n_lr: number of features to compute per vertex for latent representation
+        k: number of neighbours (including self) each vertex should consider when aggregating latent-representation features
+        f_out_depth: number of layers to use for the output NN
+        n_out: number of output features to compute per vertex
+        gn_class: class to use for GravNet layers, default is :class:`~lumin.nn.models.blocks.gnn_blocks.GravNetLayer`
+        use_sa: if true, will apply self-attention layer to the neighbourhhood features per vertex prior to aggregation
+        do: dropout rate to be applied to hidden layers in the NNs
+        bn: whether batch normalisation should be applied to hidden layers in the NNs
+        act: activation function to apply to hidden layers in the NNs
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+        freeze: whether to start with module parameters set to untrainable
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
+        sa_class: class to use for self-attention layers, default is :class:`~lumin.nn.models.layers.self_attention.SelfAttention`
+    '''
+
+    row_wise:Optional[bool] = True
+            
+    def __init__(self, n_v:int, n_fpv:int, cat_means:bool,
+                 f_slr_depth:int, n_s:int, n_lr:int,
+                 k:int, f_out_depth:int, n_out:Union[List[int],int],
+                 gn_class:Callable[[Dict[str,Any],GravNetLayer]]=GravNetLayer, use_sa:bool=False, do:float=0, bn:bool=False, act:str='relu',
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
+                 sa_class:Callable[[int],nn.Module]=SelfAttention, **kargs):
+        super().__init__(n_v=n_v, n_fpv=n_fpv, do=do, bn=bn, act=act, lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
+        store_attr(but=['n_v', 'n_fpv', 'do', 'bn', 'act', 'lookup_init', 'lookup_act', 'bn_class'])
+        if not is_listy(self.n_out): self.n_out = [self.n_out]
+        self.agg_methods = [lambda x: torch.mean(x,dim=2), lambda x: torch.max(x,dim=2)[0]]
+        self.grav_layers = self._get_grav_layers()
+            
+    def _get_grav_layers(self) -> nn.ModuleList:
+        ls = []
+        gl = partial(self.gn_class, f_slr_depth=self.f_slr_depth, n_s=self.n_s, n_lr=self.n_lr,k=self.k, agg_methods=self.agg_methods,
+                     f_out_depth=self.f_out_depth, cat_means=self.cat_means, use_sa=self.use_sa, do=self.do, bn=self.bn, act=self.act,
+                     lookup_init=self.lookup_init, lookup_act=self.lookup_act, bn_class=self.bn_class, sa_class=self.sa_class)
+        n_fpv = self.n_fpv
+        for n in self.n_out:
+            ls.append(gl(n_fpv=n_fpv, n_out=n))
+            n_fpv = n
+        return nn.ModuleList(ls)
+
+    def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Passes input through the GravNet head.
+
+        Arguments:
+            x: row-wise tensor (batch x vertices x features)
+        
+        Returns:
+            Resulting tensor row-wise tensor (batch x vertices x new features)
+        '''
+        
+        outs = [x]
+        for l in self.grav_layers: outs.append(l(outs[-1]))
+        return torch.cat(outs[1:], dim=-1)
+    
+    def get_out_size(self) -> Tuple[int,int]: return self.n_v, np.array(self.n_out).sum()
