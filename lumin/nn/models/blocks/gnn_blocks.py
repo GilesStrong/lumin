@@ -382,7 +382,7 @@ class GravNet(AbsGraphFeatExtractor):
     def __init__(self, n_v:int, n_fpv:int, cat_means:bool,
                  f_slr_depth:int, n_s:int, n_lr:int,
                  k:int, f_out_depth:int, n_out:Union[List[int],int],
-                 gn_class:Callable[[Dict[str,Any],GravNetLayer]]=GravNetLayer, use_sa:bool=False, do:float=0, bn:bool=False, act:str='relu',
+                 gn_class:Callable[[Dict[str,Any]],GravNetLayer]=GravNetLayer, use_sa:bool=False, do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
                  sa_class:Callable[[int],nn.Module]=SelfAttention, **kargs):
