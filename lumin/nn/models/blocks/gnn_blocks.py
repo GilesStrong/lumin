@@ -391,7 +391,7 @@ class GravNet(AbsGraphFeatExtractor):
         if not is_listy(self.n_out): self.n_out = [self.n_out]
         self.agg_methods = [lambda x: torch.mean(x,dim=2), lambda x: torch.max(x,dim=2)[0]]
         self.grav_layers = self._get_grav_layers()
-        self.out_sz = (self.n_v, np.sum([l.get_out_sz() for l in self.grav_layers]))
+        self.out_sz = (self.n_v, np.sum([l.get_out_size() for l in self.grav_layers]))
             
     def _get_grav_layers(self) -> nn.ModuleList:
         ls = []
