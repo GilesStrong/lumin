@@ -401,7 +401,7 @@ class GravNet(AbsGraphFeatExtractor):
         n_fpv = self.n_fpv
         for n in self.n_out:
             ls.append(gl(n_fpv=n_fpv, n_out=n))
-            n_fpv = n
+            n_fpv = ls[-1].get_out_size()
         return nn.ModuleList(ls)
 
     def forward(self, x:Tensor) -> Tensor:
