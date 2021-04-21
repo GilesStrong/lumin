@@ -36,6 +36,9 @@ class RunningBatchNorm1d(nn.Module):
     def __init__(self, nf:int, mom:float=0.1, n_warmup:int=20, eps:float=1e-5):
         super().__init__()
         store_attr()
+        self._set_params()
+
+    def _set_parameters(self) -> None:
         self.weight = nn.Parameter(torch.ones(self.nf,1))
         self.bias = nn.Parameter(torch.zeros(self.nf,1))
         self.register_buffer('sums', torch.zeros(1,self.nf,1))
@@ -85,9 +88,7 @@ class RunningBatchNorm2d(RunningBatchNorm1d):
         eps: epsilon to prevent division by zero
     '''
 
-    def __init__(self, nf:int, mom:float=0.1, n_warmup:int=20, eps:float=1e-5):
-        super().__init__()
-        store_attr()
+    def _set_parameters(self) -> None:
         self.weight = nn.Parameter(torch.ones(self.nf,1,1))
         self.bias = nn.Parameter(torch.zeros(self.nf,1,1))
         self.register_buffer('sums', torch.zeros(1,self.nf,1,1))
@@ -118,9 +119,7 @@ class RunningBatchNorm3d(RunningBatchNorm2d):
         eps: epsilon to prevent division by zero
     '''
 
-    def __init__(self, nf:int, mom:float=0.1, n_warmup:int=20, eps:float=1e-5):
-        super().__init__()
-        store_attr()
+    def _set_parameters(self) -> None:
         self.weight = nn.Parameter(torch.ones(self.nf,1,1,1))
         self.bias = nn.Parameter(torch.zeros(self.nf,1,1,1))
         self.register_buffer('sums', torch.zeros(1,self.nf,1,1,1))
