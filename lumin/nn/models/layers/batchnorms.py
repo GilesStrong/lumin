@@ -38,7 +38,7 @@ class RunningBatchNorm1d(nn.Module):
         store_attr()
         self._set_params()
 
-    def _set_parameters(self) -> None:
+    def _set_params(self) -> None:
         self.weight = nn.Parameter(torch.ones(self.nf,1))
         self.bias = nn.Parameter(torch.zeros(self.nf,1))
         self.register_buffer('sums', torch.zeros(1,self.nf,1))
