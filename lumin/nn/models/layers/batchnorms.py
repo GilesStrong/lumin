@@ -88,7 +88,7 @@ class RunningBatchNorm2d(RunningBatchNorm1d):
         eps: epsilon to prevent division by zero
     '''
 
-    def _set_parameters(self) -> None:
+    def _set_params(self) -> None:
         self.weight = nn.Parameter(torch.ones(self.nf,1,1))
         self.bias = nn.Parameter(torch.zeros(self.nf,1,1))
         self.register_buffer('sums', torch.zeros(1,self.nf,1,1))
@@ -119,7 +119,7 @@ class RunningBatchNorm3d(RunningBatchNorm2d):
         eps: epsilon to prevent division by zero
     '''
 
-    def _set_parameters(self) -> None:
+    def _set_params(self) -> None:
         self.weight = nn.Parameter(torch.ones(self.nf,1,1,1))
         self.bias = nn.Parameter(torch.zeros(self.nf,1,1,1))
         self.register_buffer('sums', torch.zeros(1,self.nf,1,1,1))
