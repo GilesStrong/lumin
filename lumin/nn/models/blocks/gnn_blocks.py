@@ -127,7 +127,8 @@ class GraphCollapser(AbsGraphBlock):
             self.f_initial_outs = [self.n_fpv]
         else:
             if not is_listy(self.f_initial_outs): self.f_initial_outs = [self.f_initial_outs]
-            self.f_inital = self._get_nn(self.n_fpv, self.f_initial_outs)
+            fpv = self.n_fpv if self.global_feat_vec and self.f_final_outs is None else 2*self.n_fpv
+            self.f_inital = self._get_nn(fpv, self.f_initial_outs)
         
         if self.n_sa_layers > 0:
             if self.sa_width is None: raise ValueError("Please set a value for sa_width, the width of the self-attention layers.")
@@ -139,6 +140,8 @@ class GraphCollapser(AbsGraphBlock):
             self.f_final_outs = [self.f_initial_outs[-1]*(1+self.n_sa_layers)]
         else:
             if not is_listy(self.f_final_outs): self.f_final_outs = [self.f_final_outs]
+            fpv = self.f_initial_outs[-1]*(1+self.n_sa_layers)
+            if self.global_feat_vec: fpv *= 2
             self.f_final = self._get_nn(self.f_initial_outs[-1]*(1+self.n_sa_layers), self.f_final_outs)
         
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
@@ -165,11 +168,15 @@ class GraphCollapser(AbsGraphBlock):
             Flattened data (batch x flat features)
         '''
         
+        if self.global_feat_vec and self.f_initial_outs is not None and self.f_final_outs is None:
+            x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2) 
         x = self.f_inital(x)
         if self.n_sa_layers > 0:
             outs = [x]
             for sa in self.sa_layers: outs.append(sa(outs[-1]))
             x = torch.cat(outs, dim=-1)
+        if self.global_feat_vec and self.f_final_outs is not None:
+            x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2)
         x = self.f_final(x)
         return self._agg(x)
     
