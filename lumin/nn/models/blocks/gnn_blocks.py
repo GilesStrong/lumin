@@ -97,6 +97,8 @@ class GraphCollapser(AbsGraphBlock):
         n_sa_layers: number of self-attention layers (outputs will be fed into subsequent layers)
         sa_width: width of self attention representation (paper recommends n_fpv//4)
         f_final_outs: list of widths for the NN layers in an NN after self-attention (None = no NN)
+        global_feat_vec: if true and f_initial_outs or f_final_outs are not None,
+            will concatenate the mean of each feature as new features to each vertex prior to the last network.
         agg_methods: list of text representations of aggregation methods. Default is mean and max.
         do: dropout rate to be applied to hidden layers in the NNs
         bn: whether batch normalisation should be applied to hidden layers in the NNs
@@ -111,7 +113,7 @@ class GraphCollapser(AbsGraphBlock):
                  f_initial_outs:Optional[List[int]]=None,
                  n_sa_layers:int=0, sa_width:Optional[int]=None,
                  f_final_outs:Optional[List[int]]=None,
-                 agg_methods:Union[List[str],str]=['mean','max'],
+                 global_feat_vec:bool=False, agg_methods:Union[List[str],str]=['mean','max'],
                  do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
