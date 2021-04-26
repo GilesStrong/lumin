@@ -397,8 +397,8 @@ class GNNHead(AbsMatrixHead):
         x = self._process_input(x)  # features per vtx per datapoint
         if self.use_in_bn: x = self.bn(x)
         if self.cat_means:
-            if self.row_wise: x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2)
-            else:             x = torch.cat([x,x.mean(2).unsqueeze(1).repeat_interleave(repeats=x.shape[2],dim=1).transpose(1,2)],dim=1)
+            if self.row_wise: x = torch.cat([x,x.mean(1, keep_dim=True).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2)
+            else:             x = torch.cat([x,x.mean(2, keep_dim=True).repeat_interleave(repeats=x.shape[2],dim=1).transpose(1,2)],dim=1)
         x = self.extractor(x)  # new features per vtx per datapoint
         if not self.row_wise: x = x.transpose(1,2)
         x = self.collapser(x)  # features per datapoint

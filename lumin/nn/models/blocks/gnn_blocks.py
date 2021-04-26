@@ -142,7 +142,7 @@ class GraphCollapser(AbsGraphBlock):
             if not is_listy(self.f_final_outs): self.f_final_outs = [self.f_final_outs]
             fpv = self.f_initial_outs[-1]*(1+self.n_sa_layers)
             if self.global_feat_vec: fpv *= 2
-            self.f_final = self._get_nn(self.f_initial_outs[-1]*(1+self.n_sa_layers), self.f_final_outs)
+            self.f_final = self._get_nn(fpv, self.f_final_outs)
         
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
         self.agg_methods = []
@@ -169,14 +169,14 @@ class GraphCollapser(AbsGraphBlock):
         '''
         
         if self.global_feat_vec and self.f_initial_outs is not None and self.f_final_outs is None:
-            x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2) 
+            x = torch.cat([x,x.mean(1, keep_dim=True).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2) 
         x = self.f_inital(x)
         if self.n_sa_layers > 0:
             outs = [x]
             for sa in self.sa_layers: outs.append(sa(outs[-1]))
             x = torch.cat(outs, dim=-1)
         if self.global_feat_vec and self.f_final_outs is not None:
-            x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2)
+            x = torch.cat([x,x.mean(1, keep_dim=True).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2)
         x = self.f_final(x)
         return self._agg(x)
     
@@ -331,7 +331,7 @@ class GravNetLayer(AbsGraphBlock):
         '''
         
         # Concat means
-        if self.cat_means: x = torch.cat([x,x.mean(1).unsqueeze(-1).repeat_interleave(repeats=x.shape[1],dim=-1).transpose(1,2)],dim=2)
+        if self.cat_means: x = torch.cat([x,x.mean(1, keep_dim=True).repeat_interleave(repeats=x.shape[1],dim=-1).transpose(1,2)],dim=2)
         
         # Compute spatial and vertex features
         slr = self.f_slr(x)
