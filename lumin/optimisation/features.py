@@ -9,6 +9,7 @@ import rfpimp
 from rfpimp import importances, feature_dependence_matrix, plot_dependence_heatmap
 import multiprocessing as mp
 from distutils.version import LooseVersion
+import pkg_resources
 
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
@@ -529,7 +530,7 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
     def _get_checks(remove:List[str], skip:List[str], plot:bool=False) -> List[str]:
         '''Compute dependencies and return list of features which can probably be safely tested simultaneously'''
         checks,predictors = [],[]
-        if LooseVersion(rfpimp.__version__) <= LooseVersion("1.3.5"):
+        if LooseVersion(pkg_resources.get_distribution('rfpimp').version) <= LooseVersion("1.3.5"):
             dep = feature_dependence_matrix(train_df[[f for f in check_feats if f not in remove]], sort_by_dependence=False,
                                             rfmodel=RandomForestRegressor(n_estimators=n_estimators, n_jobs=-1, oob_score=True))
         else:
