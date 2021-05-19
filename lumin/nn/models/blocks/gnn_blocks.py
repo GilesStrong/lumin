@@ -174,7 +174,7 @@ class GraphCollapser(AbsGraphBlock):
             x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2) 
         x = self.f_inital(x)
         if self.n_sa_layers > 0:
-            outs = [x]
+            outs = []
             for sa in self.sa_layers: outs.append(sa(outs[-1]))
             x = torch.cat(outs, dim=-1)
         if self.global_feat_vec and self.gfv_pos == 'pre-final':
