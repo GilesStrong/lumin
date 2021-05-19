@@ -6,7 +6,6 @@ from fastprogress import master_bar, progress_bar
 import warnings
 from fastcore.all import is_listy, partialler, Path
 from random import shuffle
-import inspect
 from functools import partial
 
 import torch
@@ -218,8 +217,7 @@ class Model(AbsModel):
 
         try:
             for c in self.fit_params.cbs: c.set_model(self)
-            for c in self.fit_params.cbs:
-                c.on_train_begin()
+            for c in self.fit_params.cbs: c.on_train_begin()
             for e in progress_bar(range(self.fit_params.n_epochs), parent=model_bar, display=visible_bar):
                 fit_epoch()
                 if self.fit_params.stop: break

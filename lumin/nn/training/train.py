@@ -12,7 +12,6 @@ from ..data.fold_yielder import FoldYielder
 from ..models.model_builder import ModelBuilder
 from ..models.model import Model
 from ..callbacks.callback import Callback
-from ..callbacks.pred_handlers import PredHandler
 from ..callbacks.monitors import EarlyStopping, SaveBest, MetricLogger
 from ...utils.statistics import uncert_round
 from ..metrics.eval_metric import EvalMetric
@@ -26,7 +25,7 @@ __all__ = ['train_models']
 
 def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilder, n_epochs:int, patience:Optional[int]=None, loss_is_meaned:bool=True,
                  cb_partials:Optional[List[Callable[[],Callback]]]=None, metric_partials:Optional[List[Callable[[],EvalMetric]]]=None, save_best:bool=True,
-                 pred_cb:Callable[[],PredHandler]=PredHandler, train_on_weights:bool=True, bulk_move:bool=True, start_model_id:int=0,
+                 train_on_weights:bool=True, bulk_move:bool=True, start_model_id:int=0,
                  excl_idxs:Optional[List[int]]=None, unique_trn_idxs:bool=False,
                  live_fdbk:bool=IN_NOTEBOOK, live_fdbk_first_only:bool=False, live_fdbk_extra:bool=True, live_fdbk_extra_first_only:bool=False,
                  savepath:Path=Path('train_weights'), plot_settings:PlotSettings=PlotSettings()) \
@@ -62,8 +61,6 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
             (like :class:`~lumin.nn.callbacks.model_callbacks.SWA`).
         save_best: if true, will save the best performing model as the final model, otherwise will save the model state as per the end of training.
             A copy of the best model will still be saved anyway.
-        pred_cb: pred_cb: :class:`~lumin.nn.callbacks.pred_handlers.PredHandler` callback to determin how predictions are computed.
-            Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
         train_on_weights: If weights are present in training data, whether to pass them to the loss function during training
         bulk_move: if true, will optimise for speed by using more RAM and VRAM
         start_model_id: model ID at whcih to start training,

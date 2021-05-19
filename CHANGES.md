@@ -50,6 +50,7 @@
     - `fold_lr_find`
     - `old_plot_train_history`
     - `_get_folds`
+- Unnecessary `pred_cb` argument in `train_models`
 
 ## Fixes
 
