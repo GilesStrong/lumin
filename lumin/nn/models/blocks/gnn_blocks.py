@@ -127,7 +127,7 @@ class GraphCollapser(AbsGraphBlock):
             self.f_initial_outs = [self.n_fpv]
         else:
             if not is_listy(self.f_initial_outs): self.f_initial_outs = [self.f_initial_outs]
-            fpv = self.n_fpv if self.global_feat_vec and self.f_final_outs is None else 2*self.n_fpv
+            fpv = 2*self.n_fpv if self.global_feat_vec and self.f_final_outs is None else self.n_fpv
             self.f_inital = self._get_nn(fpv, self.f_initial_outs)
             self.gfv_pos = 'pre-initial'
         
