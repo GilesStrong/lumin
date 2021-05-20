@@ -122,6 +122,7 @@ class GraphCollapser(AbsGraphBlock):
         store_attr(but=['n_v', 'n_fpv', 'do', 'bn', 'act', 'lookup_init', 'lookup_act', 'bn_class', 'agg_methods'])
         self._check_agg_methods(agg_methods)
         
+        self.gfv_pos = None
         if self.f_initial_outs is None:
             self.f_inital = lambda x: x
             self.f_initial_outs = [self.n_fpv]
@@ -144,7 +145,7 @@ class GraphCollapser(AbsGraphBlock):
             fpv = self.f_initial_outs[-1] if self.n_sa_layers == 0 else self.f_initial_outs[-1]*(self.n_sa_layers)
             if self.global_feat_vec: fpv *= 2
             self.f_final = self._get_nn(fpv, self.f_final_outs)
-            self.gfv_pos = 'pre-final'
+            if self.gfv_pos is None: self.gfv_pos = 'pre-final'
         
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
         self.agg_methods = []
