@@ -138,10 +138,10 @@ class GraphCollapser(AbsGraphBlock):
         
         if self.f_final_outs is None:
             self.f_final = lambda x: x
-            self.f_final_outs = [self.f_initial_outs[-1]*(1+self.n_sa_layers)]
+            self.f_final_outs = [self.f_initial_outs[-1]] if self.n_sa_layers == 0 else [self.f_initial_outs[-1]*(self.n_sa_layers)]
         else:
             if not is_listy(self.f_final_outs): self.f_final_outs = [self.f_final_outs]
-            fpv = self.f_initial_outs[-1]*(1+self.n_sa_layers)
+            fpv = self.f_initial_outs[-1] if self.n_sa_layers == 0 else self.f_initial_outs[-1]*(self.n_sa_layers)
             if self.global_feat_vec: fpv *= 2
             self.f_final = self._get_nn(fpv, self.f_final_outs)
             self.gfv_pos = 'pre-final'
