@@ -11,7 +11,7 @@ class PredHandler(Callback):
     '''
 
     def on_pred_begin(self) -> None:
-        super().__init__()
+        super().on_pred_begin()
         self.preds = []
 
     def on_pred_end(self) -> None: self.preds = torch.cat(self.preds)
