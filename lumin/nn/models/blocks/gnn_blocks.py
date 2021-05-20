@@ -128,9 +128,9 @@ class GraphCollapser(AbsGraphBlock):
             self.f_initial_outs = [self.n_fpv]
         else:
             if not is_listy(self.f_initial_outs): self.f_initial_outs = [self.f_initial_outs]
-            fpv = 2*self.n_fpv if self.global_feat_vec and self.f_final_outs is None else self.n_fpv
+            fpv = 2*self.n_fpv if self.global_feat_vec else self.n_fpv
             self.f_inital = self._get_nn(fpv, self.f_initial_outs)
-            self.gfv_pos = 'pre-initial'
+            if self.global_feat_vec: self.gfv_pos = 'pre-initial'
         
         if self.n_sa_layers > 0:
             if self.sa_width is None: raise ValueError("Please set a value for sa_width, the width of the self-attention layers.")
@@ -143,9 +143,9 @@ class GraphCollapser(AbsGraphBlock):
         else:
             if not is_listy(self.f_final_outs): self.f_final_outs = [self.f_final_outs]
             fpv = self.f_initial_outs[-1] if self.n_sa_layers == 0 else self.f_initial_outs[-1]*(self.n_sa_layers)
-            if self.global_feat_vec: fpv *= 2
+            if self.global_feat_vec and self.gfv_pos is None: fpv *= 2
             self.f_final = self._get_nn(fpv, self.f_final_outs)
-            if self.gfv_pos is None: self.gfv_pos = 'pre-final'
+            if self.global_feat_vec and self.gfv_pos is None: self.gfv_pos = 'pre-final'
         
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
         self.agg_methods = []
