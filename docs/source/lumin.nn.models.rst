@@ -5,7 +5,8 @@ Subpackages
 -----------
 
 .. toctree::
-
+   :maxdepth: 1
+   
    lumin.nn.models.blocks
    lumin.nn.models.layers
 

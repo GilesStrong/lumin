@@ -28,6 +28,14 @@ lumin.nn.models.layers.mish module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.models.layers.self\_attention module
+---------------------------------------------
+
+.. automodule:: lumin.nn.models.layers.self_attention
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Module contents
 ---------------
