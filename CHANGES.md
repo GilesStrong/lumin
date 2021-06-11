@@ -2,6 +2,8 @@
 
 ## Important changes
 
+- GNN architectures generalised into feature extraction and graph collapse stages, see details below and updated tutorial
+
 ## Breaking
 
 ## Additions
