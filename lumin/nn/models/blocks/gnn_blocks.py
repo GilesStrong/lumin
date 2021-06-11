@@ -253,7 +253,7 @@ class InteractionNet(AbsGraphFeatExtractor):
         Returns:
             columnwise matrix data (batch x new features x vertices)
         '''
-        x = super().forward(x)
+
         mat_o = torch.cat((x@self.mat_rr, x@self.mat_rs), 1)
         mat_o = self.fr(mat_o.transpose(1, 2)).transpose(1, 2)
         

@@ -370,8 +370,9 @@ class GNNHead(AbsMatrixHead):
         bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
     '''
 
-    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str], use_in_bn:bool, cat_means:bool,
-                 extractor:Callable[[Any],AbsGraphFeatExtractor], collapser:Callable[[Any],GraphCollapser], freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 extractor:Callable[[Any],AbsGraphFeatExtractor], collapser:Callable[[Any],GraphCollapser],
+                 use_in_bn:bool=False, cat_means:bool=False, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, freeze=freeze,
                          row_wise=extractor.func.row_wise if is_partially else extractor.row_wise)
         self.cat_means,self.use_in_bn = cat_means,use_in_bn

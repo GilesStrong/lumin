@@ -42,7 +42,7 @@ class Conv1DBlock(nn.Module):
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
         super().__init__()
         store_attr(but=['padding', 'kernel_sz'])
-        self.pad,self.ks = self.padding,self.kernel_sz
+        self.pad,self.ks = padding,kernel_sz
         if self.pad == 'auto': self.pad = self.get_padding(self.ks)
         self.set_layers()
     

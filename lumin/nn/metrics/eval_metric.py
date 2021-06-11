@@ -113,8 +113,7 @@ class EvalMetric(Callback):
         preds = self.model.predict(inputs, bs=bs)
         return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights, bs=bs)
 
-    def evaluate_preds(self, fy:FoldYielder, fold_idx:int, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None,
-                       bs:Optional[int]=None) -> float:
+    def evaluate_preds(self, fy:FoldYielder, fold_idx:int, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> float:
         r'''
         Computes metric value from predictions. fy and fold_idx arguments necessary in case the metric requires extra information beyond inputs, 
         tragets, and weights.

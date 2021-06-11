@@ -5,7 +5,7 @@ LUMIN
 
 Lumin Unifies Many Improvements for Networks
 
-LUMIN aims to become a deep-learning and data-analysis ecosystem for
+LUMIN is a deep-learning and data-analysis ecosystem for
 High-Energy Physics, and perhaps other scientific domains in the future.
 Similar to `Keras`_ and `fastai`_ it is a wrapper framework for a graph
 computation library (PyTorch), but includes many useful functions to
