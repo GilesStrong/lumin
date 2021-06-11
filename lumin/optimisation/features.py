@@ -5,8 +5,11 @@ from fastprogress import progress_bar
 from prettytable import PrettyTable
 import timeit
 from collections import OrderedDict, defaultdict
+import rfpimp
 from rfpimp import importances, feature_dependence_matrix, plot_dependence_heatmap
 import multiprocessing as mp
+from distutils.version import LooseVersion
+import pkg_resources
 
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 
@@ -391,8 +394,6 @@ def auto_filter_on_linear_correlation(train_df:pd.DataFrame, val_df:pd.DataFrame
         Filtered list of training features
     '''
 
-    # XXX remove in V0.8
-
     tmr = timeit.default_timer()
     # Get sets of linearly correlated features clustered by Spearman's rank-order correlation coefficient
     print("Computing Spearman's rank-order correlation coefficients")
@@ -498,7 +499,7 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
 
     .. Note:: Technicalities related to RFPImp's use of SVG for plots mean that the mutual dependence plots can have low resolution when shown or saved.
         Therefore this function does not take a `savename` argument. Users wiching to save the plots as PNG or PDF should compute the dependence matrix themselves
-        using `feature_dependence_matrix` and then plot using `plot_dependence_heatmap`, calling `.save([savename])` on the retunred object. The plotting backend
+        using `feature_dependence_matrix` and then plot using `plot_dependence_heatmap`, calling `.save([savename])` on the returned object. The plotting backend
         might need to be set to SVG, using: `%config InlineBackend.figure_format = 'svg'`.
 
     Arguments:
@@ -523,16 +524,18 @@ def auto_filter_on_mutual_dependence(train_df:pd.DataFrame, val_df:pd.DataFrame,
         Filtered list of training features
     '''
 
-    # XXX remove in V0.8
-    
     tmr = timeit.default_timer()
     remove,skip = [],[]    
     
     def _get_checks(remove:List[str], skip:List[str], plot:bool=False) -> List[str]:
         '''Compute dependencies and return list of features which can probably be safely tested simultaneously'''
         checks,predictors = [],[]
-        dep = feature_dependence_matrix(train_df[[f for f in check_feats if f not in remove]], sort_by_dependence=False,
-                                        rfmodel=RandomForestRegressor(n_estimators=n_estimators, n_jobs=-1, oob_score=True))
+        if LooseVersion(pkg_resources.get_distribution('rfpimp').version) <= LooseVersion("1.3.5"):
+            dep = feature_dependence_matrix(train_df[[f for f in check_feats if f not in remove]], sort_by_dependence=False,
+                                            rfmodel=RandomForestRegressor(n_estimators=n_estimators, n_jobs=-1, oob_score=True))
+        else:
+            dep = feature_dependence_matrix(train_df[[f for f in check_feats if f not in remove]], sort_by_dependence=False,
+                                            rfrmodel=RandomForestRegressor(n_estimators=n_estimators, n_jobs=-1, oob_score=True))
         if plot: plot_dependence_heatmap(dep, figsize=(plot_settings.h_large, plot_settings.h_large),
                                          label_fontsize=plot_settings.lbl_sz/2, value_fontsize=(plot_settings.lbl_sz-2)/2).view()
         print(f'\n{len(dep[dep.Dependence >= md_threshold])} predictable features found to pass mutual dependence threshold of {md_threshold}')

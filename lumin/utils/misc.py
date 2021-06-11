@@ -3,7 +3,8 @@ from typing import Union, List, Tuple, Optional, Any
 import pandas as pd
 import sympy
 from functools import partial
-from fastcore.all import partialler
+import types
+import inspect
 
 from sklearn.utils import resample
 
@@ -185,7 +186,7 @@ def subsample_df(df:pd.DataFrame, objective:str, targ_name:str, n_samples:Option
 
 def is_partially(var:Any) -> bool:
     r'''
-    Retuns true if var is partial or partialler, else false.
+    Retuns true if var is partial, function, or class, else false.
 
     Arguments:
         var: variable to inspect
@@ -194,4 +195,5 @@ def is_partially(var:Any) -> bool:
         true if var is partial or partialler, else false
     '''
 
-    return isinstance(var, partial) or isinstance(var, partialler)
+    return isinstance(var, (partial,types.FunctionType)) or inspect.isclass(var)
+

@@ -2,9 +2,20 @@
 
 ## Important changes
 
+- GNN architectures generalised into feature extraction and graph collapse stages, see details below and updated tutorial
+
 ## Breaking
 
 ## Additions
+
+- `GravNet` GNN head and `GravNetLayer` sub-block [Qasim, Kieseler, Iiyama, & Pierini, 2019](https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9)
+    - Includes optional self-attention
+- `SelfAttention` and `OffsetSelfAttention`
+- Batchnorm:
+    - `LCBatchNorm1d` to run batchnorm over length x channel data
+    - Additional `bn_class` arguments to blocks, allowing the user to choose different batchnorm implementations
+    - 1, 2, & 3D Running batchnorm layers from fastai (https://github.com/fastai/course-v3)
+- `GNNHead` encapsulating head for feature extraction, using `AbsGraphFeatExtractor` classes, and graph collapsing, using `GraphCollapser` classes
 
 ## Removals
 
@@ -41,12 +52,21 @@
     - `fold_lr_find`
     - `old_plot_train_history`
     - `_get_folds`
+- Unnecessary `pred_cb` argument in `train_models`
 
 ## Fixes
 
+- Bug when trying to use batchnorm in `InteractionNet`
+- Bug in `FoldFile.save_fold_pred` when predictions change shape and try to overwrite existing predictions
+
 ## Changes
 
+- `padding` argument in conv 1D blocks renamed to pad
+- Graph nets: generalised into feature extraction for features per vertex and graph collapsing down to flat data (with optional self-attention)
+
 ## Depreciations
+
+- `OldInteractionNet` replaced in favour of `InteractionNet` feature extractor. Will be removed in v0.9
 
 ## Comments
 

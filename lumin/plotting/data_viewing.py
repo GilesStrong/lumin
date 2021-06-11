@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Dict, Any, Union, Tuple
-import warnings
 
 import scipy
 from scipy.cluster import hierarchy as hc

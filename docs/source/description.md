@@ -24,6 +24,7 @@
     - Learning Rate Finders, [Smith, 2015](https://arxiv.org/abs/1506.01186)
     - Entity embedding of categorical features, [Guo & Berkhahn, 2016](https://arxiv.org/abs/1604.06737)
     - Label smoothing [Szegedy et al., 2015](https://arxiv.org/abs/1512.00567)
+    - Running batchnorm [fastai 2019](https://course19.fast.ai/videos/?lesson=10)
 - Flexible architecture construction:
     - `ModelBuilder` takes parameters and modules to yield networks on-demand
     - Networks constructed from modular blocks:
@@ -34,7 +35,7 @@
     - Easy loading and saving of pre-trained embedding weights
     - Modern architectures like:
         - Residual and dense(-like) networks ([He et al. 2015](https://arxiv.org/abs/1512.03385) & [Huang et al. 2016](https://arxiv.org/abs/1608.06993))
-        - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222) & [Moreno et al., 2019](https://arxiv.org/abs/1908.05318)
+        - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222), [Moreno et al., 2019](https://arxiv.org/abs/1908.05318), and [Qasim, Kieseler, Iiyama, & Pierini, 2019](https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9), with optional self-attention [Vaswani et al., 2017](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf).
         - Recurrent layers for series of objects
         - 1D convolutional networks for series of objects
         - HEP-specific architectures, e.g. LorentzBoostNetworks [Erdmann, Geiser, Rath, Rieger, 2018](https://arxiv.org/abs/1812.09722)

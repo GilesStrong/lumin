@@ -6,7 +6,6 @@ from fastprogress import master_bar, progress_bar
 import warnings
 from fastcore.all import is_listy, partialler, Path
 from random import shuffle
-import inspect
 from functools import partial
 
 import torch
@@ -173,7 +172,7 @@ class Model(AbsModel):
                                     val_idx=val_idx, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, cb_savepath=Path(cb_savepath),
                                     loss_func=self.loss, opt=self.opt, val_requires_grad=False)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
-        if inspect.isclass(self.fit_params.loss_func) or is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
+        if is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
                                                 bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
 
@@ -218,8 +217,7 @@ class Model(AbsModel):
 
         try:
             for c in self.fit_params.cbs: c.set_model(self)
-            for c in self.fit_params.cbs:
-                c.on_train_begin()
+            for c in self.fit_params.cbs: c.on_train_begin()
             for e in progress_bar(range(self.fit_params.n_epochs), parent=model_bar, display=visible_bar):
                 fit_epoch()
                 if self.fit_params.stop: break
@@ -281,7 +279,7 @@ class Model(AbsModel):
                                                                        objective=self.objective, shuffle=False, bulk_move=bs is None,
                                                                        input_mask=self.input_mask, drop_last=False)
         self.fit_params = FitParams(cbs=[], by=inputs, state='valid', loss_func=self.loss)
-        if inspect.isclass(self.fit_params.loss_func) or is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
+        if is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.model.eval()
         loss,cnt = 0,0
         try:

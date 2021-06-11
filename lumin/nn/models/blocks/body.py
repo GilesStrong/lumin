@@ -16,9 +16,9 @@ __all__ = ['FullyConnected', 'MultiBlock']
 class AbsBody(AbsBlock):
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]],
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
-        self.n_in,self.feat_map,self.lookup_act = n_in,feat_map,lookup_act
+        self.n_in,self.feat_map,self.lookup_act,self.bn_class = n_in,feat_map,lookup_act,bn_class
     
 
 class FullyConnected(AbsBody):
@@ -44,6 +44,7 @@ class FullyConnected(AbsBody):
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         lookup_act: function taking choice of activation function and returning an activation function layer
         freeze: whether to start with module parameters set to untrainable
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
 
     Examples::
         >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
@@ -66,13 +67,13 @@ class FullyConnected(AbsBody):
 
     def __init__(self, n_in:int, feat_map:Dict[str,List[int]], depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False,
                  dense:bool=False, growth_rate:int=0, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
-        super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
+        super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze, bn_class=bn_class)
         self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.growth_rate = depth,width,do,bn,act,res,dense,growth_rate
 
         if self.res:
             self.depth = 1+int(np.floor(self.depth/2))  # One upscale layer + each subsequent block will contain 2 layers
-            self.res_bns = nn.ModuleList([nn.BatchNorm1d(self.width) for d in range(self.depth-1)])
+            self.res_bns = nn.ModuleList([self.bn_class(self.width) for d in range(self.depth-1)])
             self.layers = nn.ModuleList([self._get_layer(idx=d, fan_in=self.width, fan_out=self.width)
                                          if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
                                          for d in range(self.depth)])
@@ -102,7 +103,7 @@ class FullyConnected(AbsBody):
             self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
             nn.init.zeros_(layers[-1].bias)
             if self.act != 'linear': layers.append(self.lookup_act(self.act))
-            if self.bn and i == 0:  layers.append(nn.BatchNorm1d(fan_out))  # In case of residual, BN will be added after addition
+            if self.bn and i == 0:  layers.append(self.bn_class(fan_out))  # In case of residual, BN will be added after addition
             if self.do: 
                 if self.act == 'selu': layers.append(nn.AlphaDropout(self.do))
                 else:                  layers.append(nn.Dropout(self.do))
@@ -221,7 +222,7 @@ class MultiBlock(AbsBody):
         Get size width of output layer
 
         Returns:
-            Total number of outputs accross all blocks
+            Total number of outputs across all blocks
         '''
         
         return self.n_out

@@ -35,4 +35,7 @@ class Callback(AbsCallback):
         '''
 
         self.plot_settings = plot_settings
-        
+    
+    def on_pred_begin(self) -> None:
+        if self.model is None:
+            raise AttributeError(f"The model for {type(self).__name__} callback has not been set. Please call set_wrapper before on_model_begin.")

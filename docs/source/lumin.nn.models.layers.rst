@@ -12,10 +12,26 @@ lumin.nn.models.layers.activations module
    :undoc-members:
    :show-inheritance:
 
+lumin.nn.models.layers.batchnorms module
+----------------------------------------
+
+.. automodule:: lumin.nn.models.layers.batchnorms
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.models.layers.mish module
 ----------------------------------
 
 .. automodule:: lumin.nn.models.layers.mish
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+lumin.nn.models.layers.self\_attention module
+---------------------------------------------
+
+.. automodule:: lumin.nn.models.layers.self_attention
    :members:
    :undoc-members:
    :show-inheritance:

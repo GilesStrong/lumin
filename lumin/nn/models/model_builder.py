@@ -188,6 +188,7 @@ class ModelBuilder(object):
         if opt_args is None: opt_args = {}
         else:                opt_args = {k.lower(): opt_args[k] for k in opt_args}
         self.opt_args = {k: opt_args[k] for k in opt_args if k != 'opt'}
+        if 'lr' not in self.opt_args: self.opt_args['lr'] = 2e-3
         if 'opt' not in opt_args:
             if 'weight_decay' in opt_args and LooseVersion(torch.__version__) >= LooseVersion("1.2"):
                 print('No optimiser specified but weight decay (L2) requested; defaulting to AdamW')

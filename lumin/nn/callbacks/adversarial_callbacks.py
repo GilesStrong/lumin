@@ -97,8 +97,7 @@ class PivotTraining(Callback):
         
         # prep for combined training
         self.adv_loss_func = self.adv_model_builder.loss
-        if inspect.isclass(self.adv_loss_func) or is_partially(self.adv_loss_func):
-            self.adv_loss_func = self.adv_loss_func()
+        if is_partially(self.adv_loss_func): self.adv_loss_func = self.adv_loss_func()
         self.model.fit_params.cbs.insert(0, TargReplace(['targets']+self.adv_targets))
         self.model.fit_params.cbs[0].set_model(self.model)
         self.count = -1

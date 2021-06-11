@@ -15,13 +15,15 @@ import torch
 from ..helpers import CatEmbedder
 from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act
+from ..layers.batchnorms import LCBatchNorm1d
+from .gnn_blocks import AbsGraphFeatExtractor, GraphCollapser
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
-from ....utils.misc import to_device
+from ....utils.misc import to_device, is_partially
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
-__all__ = ['CatEmbHead', 'MultiHead', 'InteractionNet', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
+__all__ = ['CatEmbHead', 'MultiHead', 'GNNHead', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
 
 
 class AbsHead(AbsBlock):
@@ -50,9 +52,11 @@ class AbsHead(AbsBlock):
 class AbsMatrixHead(AbsHead):
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str], row_wise:bool=True,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
         super().__init__(cont_feats=cont_feats, cat_embedder=None, lookup_init=lookup_init, freeze=freeze)
-        self.vecs,self.fpv,self.row_wise,self.lookup_act = vecs,feats_per_vec,row_wise,lookup_act
+        if row_wise is None: raise ValueError("row_wise is None, possibly a custom inheriting class did not change the class-attribute value. \
+                                               Please set to True or False.")
+        self.vecs,self.fpv,self.row_wise,self.lookup_act,self.bn_class = vecs,feats_per_vec,row_wise,lookup_act,bn_class
         self.n_v,self.n_fpv = len(self.vecs),len(self.fpv)
         self._build_lookup()
             
@@ -342,8 +346,85 @@ class MultiHead(AbsHead):
         return self.flat_head.get_out_size()+self.matrix_head.get_out_size()
 
 
-class InteractionNet(AbsMatrixHead):
+class GNNHead(AbsMatrixHead):
     r'''
+    Encasulating class for applying graph neural-networks to features per vertex.
+    New features are extracted per vertex via a :class:`~lumin.nn.models.blocks.gnn_blocks.AbsGraphFeatExtractor`, and then data is flattened via :class:`~lumin.nn.models.blocks.gnn_blocks.GraphCollapser`
+    
+    Incoming data can either be flat, in which case it is reshaped into a matrix, or be supplied directly into matrix form.
+    Reshaping (row-wise or column-wise) depends on the `row_wise` class attribute of the feature extractor. Data will be automatically converted to row-wise for processing by the grpah collaser.
+
+    .. Note::
+        To allow for the fact that there may be nonexistant features (e.g. z-component of missing energy), `cont_feats` should be a list of all matrix features
+        which really do exist (i.e. are present in input data), and be in the same order as the incoming data. Nonexistant features will be set zero.
+        
+    Arguments:
+        cont_feats: list of all the matrix features which are present in the input data
+        vecs: list of objects, i.e. feature prefixes
+        feats_per_vec: list of features per vertex, i.e. feature suffixes
+        use_int_bn: If true, will apply batch norm to incoming features
+        cat_means: if True, will extend the incoming features per vertex by including the means of all features across all vertices
+        extractor: The :class:`~lumin.nn.models.blocks.gnn_blocks.AbsGraphFeatExtractor` class to instantiate to create new features per vertex
+        collasper: The :class:`~lumin.nn.models.blocks.gnn_blocks.GraphCollapser` class to instantiate to collapse graph to flat data (batch x features)
+        freeze: whether to start with module parameters set to untrainable
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
+    '''
+
+    def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
+                 extractor:Callable[[Any],AbsGraphFeatExtractor], collapser:Callable[[Any],GraphCollapser],
+                 use_in_bn:bool=False, cat_means:bool=False, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
+        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, freeze=freeze,
+                         row_wise=extractor.func.row_wise if is_partially else extractor.row_wise)
+        self.cat_means,self.use_in_bn = cat_means,use_in_bn
+        if self.use_in_bn: self.bn = LCBatchNorm1d(bn_class(self.n_fpv)) if self.row_wise else bn_class(self.n_fpv)
+        if self.cat_means: self.n_fpv *= 2
+        self.extractor = extractor(n_fpv=self.n_fpv, n_v=self.n_v)
+        sz = self.extractor.get_out_size()
+        self.collapser = collapser(n_fpv=sz[1], n_v=sz[0])
+        self._map_outputs()
+        if self.freeze: self.freeze_layers()
+
+    def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
+        r'''
+        Passes input through the GravNet head and returns a flat tensor.
+
+        Arguments:
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will convert the data to a matrix
+        
+        Returns:
+            Resulting tensor
+        '''
+        
+        x = self._process_input(x)  # features per vtx per datapoint
+        if self.use_in_bn: x = self.bn(x)
+        if self.cat_means:
+            if self.row_wise: x = torch.cat([x,x.mean(1).unsqueeze(2).repeat_interleave(repeats=x.shape[1],dim=2).transpose(1,2)],dim=2)
+            else:             x = torch.cat([x,x.mean(2).unsqueeze(1).repeat_interleave(repeats=x.shape[2],dim=1).transpose(1,2)],dim=1)
+        x = self.extractor(x)  # new features per vtx per datapoint
+        if not self.row_wise: x = x.transpose(1,2)
+        x = self.collapser(x)  # features per datapoint
+        return x
+    
+    def _map_outputs(self) -> None:
+        self.feat_map = {}
+        for i, f in enumerate(self.cont_feats): self.feat_map[f] = list(range(self.get_out_size()))
+    
+    def get_out_size(self) -> int:
+        r'''
+        Get size of output
+
+        Returns:
+            Width of output representation
+        '''
+        
+        return self.collapser.get_out_size()
+
+
+class OldInteractionNet(AbsMatrixHead):
+    r'''
+    .. Attention:: This class is depreciated in favour of :class:`~lumin.nn.models.gnn_blocks.InteractionNet`.
+        It is a copy of the old `InteractionNet` class used in lumin<=0.7.2. It will be removed in V0.9
+
     Implementation of the Interaction Graph-Network (https://arxiv.org/abs/1612.00222).
     Shown to be applicable for embedding many 4-momenta in e.g. https://arxiv.org/abs/1908.05318
 
@@ -380,6 +461,7 @@ class InteractionNet(AbsMatrixHead):
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         lookup_act: function taking choice of activation function and returning an activation function layer
         freeze: whether to start with module parameters set to untrainable
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
     
     Examples::
         >>> inet = InteractionNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs,
@@ -396,14 +478,16 @@ class InteractionNet(AbsMatrixHead):
         ...                       do=0.1, bn=True, act='swish', lookup_init=lookup_uniform_init)
     '''
 
+    # XXX remove in V0.9
+
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
                  intfunc_depth:int, intfunc_width:int, intfunc_out_sz:int,
                  outfunc_depth:int, outfunc_width:int, outfunc_out_sz:int, agg_method:str,
                  do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=False,
-                         lookup_act=lookup_act, lookup_init=lookup_init, freeze=freeze)
+                         lookup_act=lookup_act, lookup_init=lookup_init, freeze=freeze, bn_class=bn_class)
         self.intfunc_depth,self.intfunc_width,self.intfunc_out_sz = intfunc_depth,intfunc_width,intfunc_out_sz
         self.outfunc_depth,self.outfunc_width,self.outfunc_out_sz = outfunc_depth,outfunc_width,outfunc_out_sz
         self.do,self.bn,self.act = do,bn,act
@@ -436,7 +520,7 @@ class InteractionNet(AbsMatrixHead):
         self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
         nn.init.zeros_(layers[-1].bias)
         if self.act != 'linear': layers.append(self.lookup_act(self.act))
-        if self.bn:  layers.append(nn.BatchNorm1d(fan_out))
+        if self.bn:  layers.append(LCBatchNorm1d(self.bn_class(fan_out)))
         if self.do: 
             if self.act == 'selu': layers.append(nn.AlphaDropout(self.do))
             else:                  layers.append(nn.Dropout(self.do))
@@ -619,6 +703,7 @@ class AbsConv1dHead(AbsMatrixHead):
         layer_kargs: dictionary of keyword arguments which are passed to `get_layers`
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         freeze: whether to start with module parameters set to untrainable
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
     
     Examples::
         >>> class MyCNN(AbsConv1dHead):
@@ -664,8 +749,9 @@ class AbsConv1dHead(AbsMatrixHead):
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
                  act:str='relu', bn:bool=False, layer_kargs:Optional[Dict[str,Any]]=None,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
-        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
+        super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, row_wise=False, lookup_init=lookup_init, lookup_act=lookup_act,
+                         freeze=freeze, bn_class=bn_class)
         if layer_kargs is None: layer_kargs = {}
         self.layers:nn.Module = self.get_layers(in_c=self.n_fpv, act=act, bn=bn, **layer_kargs)
         self.out_sz = self.check_out_sz()
@@ -691,7 +777,7 @@ class AbsConv1dHead(AbsMatrixHead):
         if training: self.train()
         return x.size(-1)
             
-    def get_conv1d_block(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,act:str='relu', bn:bool=False) -> Conv1DBlock:
+    def get_conv1d_block(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1, act:str='relu', bn:bool=False) -> Conv1DBlock:
         r'''
         Wrapper method to build a :class:`~lumin.nn.models.blocks.conv_blocks.ConvBlock` object.
 
@@ -711,7 +797,7 @@ class AbsConv1dHead(AbsMatrixHead):
         '''
         
         return Conv1DBlock(in_c=in_c, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act, bn=bn,
-                           lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+                           lookup_act=self.lookup_act, lookup_init=self.lookup_init, bn_class=self.bn_class)
     
     def get_conv1d_res_block(self, in_c:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,act:str='relu', bn:bool=False) -> Res1DBlock:
         r'''
@@ -733,7 +819,7 @@ class AbsConv1dHead(AbsMatrixHead):
         '''
 
         return Res1DBlock(in_c=in_c, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act, bn=bn,
-                          lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+                          lookup_act=self.lookup_act, lookup_init=self.lookup_init, bn_class=self.bn_class)
     
     def get_conv1d_resNeXt_block(self, in_c:int, inter_c:int, cardinality:int, out_c:int, kernel_sz:int, padding:Union[int,str]='auto', stride:int=1,
                                  act:str='relu', bn:bool=False) -> ResNeXt1DBlock:
@@ -758,7 +844,7 @@ class AbsConv1dHead(AbsMatrixHead):
         '''
 
         return ResNeXt1DBlock(in_c=in_c, inter_c=inter_c, cardinality=cardinality, out_c=out_c, kernel_sz=kernel_sz, padding=padding, stride=stride, act=act,
-                              bn=bn, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+                              bn=bn, lookup_act=self.lookup_act, lookup_init=self.lookup_init, bn_class=self.bn_class)
     
     @abstractmethod
     def get_layers(self, in_c:int, act:str='relu', bn:bool=False, **kargs) -> nn.Module:
@@ -826,8 +912,8 @@ class LorentzBoostNet(AbsMatrixHead):
 
     Arguments:
         cont_feats: list of all the matrix features which are present in the input data
-        vecs: list of objects, i.e. column headers, feature prefixes
-        feats_per_vec: list of features per object, i.e. row headers, feature suffixes
+        vecs: list of objects, i.e. row headers, feature prefixes
+        feats_per_vec: list of features per object, i.e. column headers, feature suffixes
         n_particles: the number of particles and reference frames to learn
         feat_extractor: if not None, will use the argument as the function to extract features from the 4-momenta of the boosted particles.
         bn: whether batch normalisation should be applied to the extracted features
@@ -835,6 +921,7 @@ class LorentzBoostNet(AbsMatrixHead):
             Purely for inheritance, unused by class as is.
         lookup_act: function taking choice of activation function and returning an activation function layer. Purely for inheritance, unused by class as is.
         freeze: whether to start with module parameters set to untrainable.
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
     
     Examples::
         >>> lbn = LorentzBoostNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs, n_particles=6)
@@ -849,15 +936,16 @@ class LorentzBoostNet(AbsMatrixHead):
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
                  n_particles:int, feat_extractor:Optional[Callable[[Tensor],Tensor]]=None, bn:bool=True,
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
-        super().__init__(cont_feats=cont_feats,vecs=vecs,feats_per_vec=feats_per_vec,row_wise=True,lookup_init=lookup_init,lookup_act=lookup_act,freeze=freeze)
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
+        super().__init__(cont_feats=cont_feats,vecs=vecs,feats_per_vec=feats_per_vec,row_wise=True,lookup_init=lookup_init,lookup_act=lookup_act,freeze=freeze,
+                         bn_class=bn_class)
         self.n_particles = n_particles
         self.comb = torch.combinations(torch.arange(0,self.n_particles))
         if feat_extractor is not None: self.feat_extractor = feat_extractor
         self.part_wgts,self.rf_wgts = self._get_wgts(),self._get_wgts()
         self.out_sz = None
         self.out_sz = self.check_out_sz()
-        self.bn = nn.BatchNorm1d(self.out_sz) if bn else None
+        self.bn = self.bn_class(self.out_sz) if bn else None
         self._map_outputs()
         if self.freeze: self.freeze_layers()
     
@@ -914,7 +1002,7 @@ class LorentzBoostNet(AbsMatrixHead):
         Passes input through the LB network and aggregates down to a flat tensor via the feature extractor, optionally passing through a batchnorm layer.
 
         Arguments:
-            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will conver the data to a matrix
+            x: If a tuple, the second element is assumed to the be the matrix data. If a flat tensor, will convert the data to a matrix
         
         Returns:
             Resulting tensor
@@ -988,6 +1076,7 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
         lookup_act: function taking choice of activation function and returning an activation function layer.
         freeze: whether to start with module parameters set to untrainable.
+        bn_class: class to use for BatchNorm, default is `nn.BatchNorm1d`
     
     Examples::
         >>> aelbn = AutoExtractLorentzBoostNet(cont_feats=matrix_feats, feats_per_vec=feats_per_vec,vecs=vecs, n_particles=6,
@@ -997,7 +1086,7 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
     def __init__(self, cont_feats:List[str], vecs:List[str], feats_per_vec:List[str],
                  n_particles:int, depth:int, width:int, n_singles:int=0, n_pairs:int=0, act:str='swish', do:float=0, bn:bool=False, 
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, **kargs):
+                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
         self.n_singles,self.n_pairs = n_singles,n_pairs
         
         # Mock NNs to allow out_sz computation
@@ -1007,13 +1096,13 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         self.pre_bn    = lambda x: x
         
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, n_particles=n_particles,
-                         bn=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
+                         bn=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze, bn_class=bn_class)
         
         if n_singles > 0: self.single_nn = self._get_nn(n_in=4, depth=depth, width=width,n_out=n_singles, act=act, do=do, bn=bn,
                                                         lookup_act=lookup_act, lookup_init=lookup_init)
         if n_pairs   > 0: self.pair_nn   = self._get_nn(n_in=8, depth=depth, width=width, n_out=n_pairs, act=act, do=do, bn=bn,
                                                         lookup_act=lookup_act, lookup_init=lookup_init)
-        self.pre_bn = nn.BatchNorm1d(4*self.n_particles)
+        self.pre_bn = self.bn_class(4*self.n_particles)
     
     def _get_nn(self, n_in:int, depth:int, width:int, n_out:int, act:str, do:bool, bn:bool,
                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]],
@@ -1029,7 +1118,7 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         lookup_init(act, n_in, n_out)(layers[-1].weight)
         nn.init.zeros_(layers[-1].bias)
         if act != 'linear': layers.append(lookup_act(act))
-        if bn:  layers.append(nn.BatchNorm1d(n_out))
+        if bn:  layers.append(LCBatchNorm1d(nn.BatchNorm1d(n_out)))
         if do: 
             if act == 'selu': layers.append(nn.AlphaDropout(do))
             else:             layers.append(nn.Dropout(do))
