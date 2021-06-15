@@ -13,7 +13,7 @@ import torch
 from torch import Tensor
 
 from .plot_settings import PlotSettings
-from ..utils.misc import to_np, FowardHook
+from ..utils.misc import to_np, ForwardHook
 from ..utils.mod_ver import check_pdpbox
 from ..nn.models.abs_model import AbsModel
 
@@ -236,7 +236,7 @@ def plot_multibody_weighted_outputs(model:AbsModel, inputs:Union[np.ndarray,Tens
     else:
         block_names = [f'{i}' for i in range(len(model.body.blocks))]
     
-    hook = FowardHook(model.tail[0])
+    hook = ForwardHook(model.tail[0])
     model.predict(inputs)
     
     y, itr = [], 0
@@ -277,7 +277,7 @@ def plot_bottleneck_weighted_inputs(model:AbsModel, bottleneck_idx:int, inputs:U
     bn = body.bottleneck_blocks[bottleneck_idx]
     assert bn[0].weight.shape[0] == 1, 'This function currently only supports bottlenecks whose width is one neuron'
     
-    hook = FowardHook(bn[0])
+    hook = ForwardHook(bn[0])
     model.predict(inputs)
     
     weighted_input = to_np(torch.abs(hook.input[0]*bn[0].weight[0]))

@@ -49,6 +49,7 @@ For an introduction and motivation for LUMIN, checkout this talk from IML-2019 a
         - Graph nets for physics objects, e.g. [Battaglia, Pascanu, Lai, Rezende, Kavukcuoglu, 2016](https://arxiv.org/abs/1612.00222), [Moreno et al., 2019](https://arxiv.org/abs/1908.05318), and [Qasim, Kieseler, Iiyama, & Pierini, 2019](https://link.springer.com/article/10.1140/epjc/s10052-019-7113-9), with optional self-attention [Vaswani et al., 2017](https://papers.nips.cc/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf).
         - Recurrent layers for series of objects
         - 1D convolutional networks for series of objects
+        - Squeeze-excitation blocks [Hu, Shen, Albanie, Sun, & Wu, 2017](https://arxiv.org/abs/1709.01507)
         - HEP-specific architectures, e.g. LorentzBoostNetworks [Erdmann, Geiser, Rath, Rieger, 2018](https://arxiv.org/abs/1812.09722)
 - Configurable initialisations, including LSUV [Mishkin, Matas, 2016](https://arxiv.org/abs/1511.06422)
 - HEP-specific losses, e.g. Asimov loss [Elwood & Krücker, 2018](https://arxiv.org/abs/1806.00322)

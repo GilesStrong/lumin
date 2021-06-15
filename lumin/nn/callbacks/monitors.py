@@ -11,7 +11,7 @@ import seaborn as sns
 
 from .callback import Callback
 
-__all__ = ['EarlyStopping', 'SaveBest', 'MetricLogger']
+__all__ = ['EarlyStopping', 'SaveBest', 'MetricLogger', 'EpochSaver']
 
 
 class EarlyStopping(Callback):
@@ -391,3 +391,26 @@ class MetricLogger(Callback):
         if len(self.metric_cbs) > 0:
             for c,v in zip(self.metric_cbs,metrics[:,idx]): results[c.name] = v
         return results
+
+
+class EpochSaver(Callback):
+    r'''
+    Callback to save the model at the end of every epoch, regarless of improvement
+    '''
+
+    def on_train_begin(self) -> None:
+        r'''
+        Reset epoch count
+        '''
+
+        super().on_train_begin()
+        self.epoch = 1
+
+    def on_epoch_end(self):
+        r'''
+        Save the model at the end of each validation epoch to a new file
+        '''
+
+        if self.model.fit_params.state != 'train': return
+        self.model.save(self.model.fit_params.cb_savepath/f'epoch_{self.epoch}.h5')
+        self.epoch += 1

@@ -1,8 +1,10 @@
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Optional
 import numpy as np
 from fastcore.all import is_listy, store_attr
+from abc import abstractmethod
 
 import torch
+from torch import Tensor
 
 from .callback import Callback
 from ..data.batch_yielder import BatchYielder
@@ -179,3 +181,30 @@ class TargReplace(Callback):
         
         if self.model.fit_params.state != 'valid': return
         self.model.fit_params.by.targets = self.model.fit_params.fy.get_column('targets', n_folds=1, fold_idx=self.model.fit_params.val_idx, add_newaxis=True)
+
+
+class AbsWeightData(Callback):
+    r'''
+    Callback to weight folds of data accoridng to a function of the inputs or targets.
+    Inherit and override the `weight_func` method according to your task.
+
+    Arguments:
+        on_eval: if true, also weight data during validation and testing
+    '''
+
+    def __init__(self, on_eval:bool):
+        super().__init__()
+        self.on_eval = on_eval
+    
+    @abstractmethod
+    def weight_func(self, x:Union[np.ndarray,Tensor], mx:Optional[Union[np.ndarray,Tensor]], y:Union[np.ndarray,Tensor], w:Union[np.ndarray,Tensor]) \
+        -> Union[np.ndarray,Tensor]: pass
+    
+    def on_fold_begin(self) -> None:
+        r'''
+        Weight all data in fold.
+        '''
+
+        if self.model.fit_params.state != 'train' and not self.on_eval: return
+        self.model.fit_params.by.weights = self.weight_func(x=self.model.fit_params.by.inputs, mx=self.model.fit_params.by.matrix_inputs,
+                                                            y=self.model.fit_params.by.targets, w=self.model.fit_params.by.weights)

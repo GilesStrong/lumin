@@ -1,6 +1,8 @@
-from typing import Callable, Union, Optional, Any
+from typing import Callable, Union, Optional, Any, List
 from fastcore.all import store_attr
+import numpy as np
 
+import torch
 import torch.nn as nn
 from torch.tensor import Tensor
 
@@ -8,7 +10,8 @@ from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act
 
 
-__all__ = ['Conv1DBlock', 'Res1DBlock', 'ResNeXt1DBlock']
+__all__ = ['Conv1DBlock', 'Res1DBlock', 'ResNeXt1DBlock', 'AdaptiveAvgMaxConcatPool1d', 'AdaptiveAvgMaxConcatPool2d', 'AdaptiveAvgMaxConcatPool3d', 'SEBlock1d',
+           'SEBlock2d', 'SEBlock3d']
 
 
 class Conv1DBlock(nn.Module):
@@ -238,3 +241,86 @@ class ResNeXt1DBlock(Conv1DBlock):
 
         skip = x if self.shortcut is None else self.shortcut(x)
         return skip + self.layers(x)
+
+
+class AdaptiveAvgMaxConcatPool1d(nn.Module):
+    r'''
+    Optional final layer that reduces the size of each channel to the specified size, via to methods: average pooling and max pooling.
+    The outputs are then concatenated channelwise.
+
+    Arguments:
+        sz: Requested output size, default reduces each channel to 2*1 elements.
+            1 is the maximum value in the channel and the other is the average value in the channel.
+    '''
+
+    def __init__(self, sz:Optional[Union[int,List[int]]]=None):
+        super().__init__()
+        self._setup(sz)
+
+    def _setup(self, sz:Optional[Union[int,List[int]]]=None) -> None:
+        if sz is None: sz = (1)
+        self.ap = nn.AdaptiveAvgPool1d(sz)
+        self.mp = nn.AdaptiveMaxPool1d(sz)
+
+    def forward(self, x):
+        r'''
+        Passes input through the adaptive pooling.
+
+        Arguments:
+            x: input tensor
+        
+        Returns:
+            Resulting tensor
+        '''
+        
+        return torch.cat([self.mp(x), self.ap(x)], 1)
+
+
+class AdaptiveAvgMaxConcatPool2d(AdaptiveAvgMaxConcatPool1d):
+    def _setup(self, sz:Optional[Union[int,List[int]]]=None) -> None:
+        if sz is None: sz = (1,1)
+        self.ap = nn.AdaptiveAvgPool2d(sz)
+        self.mp = nn.AdaptiveMaxPool2d(sz)
+        
+
+class AdaptiveAvgMaxConcatPool3d(AdaptiveAvgMaxConcatPool1d):
+    def _setup(self, sz:Optional[Union[int,List[int]]]=None) -> None:
+        if sz is None: sz = (1,1,1)
+        self.ap = nn.AdaptiveAvgPool3d(sz)
+        self.mp = nn.AdaptiveMaxPool3d(sz)
+
+
+class SEBlock1d(nn.Module):
+    pool = nn.AdaptiveAvgPool1d(1)
+    sz = [1]
+
+    def __init__(self, n_in:int, r:int, act:str='relu', lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act):
+        super().__init__()
+        self.n_in,self.r,self.act,self.lookup_init,self.lookup_act = n_in,r,act,lookup_init,lookup_act
+        self.layers = self._get_layers()
+
+    def _get_layers(self) -> nn.Sequential:
+        c = np.max((2,self.n_in//self.r))
+        layers = [nn.Linear(self.n_in, c), self.lookup_act(self.act),
+                  nn.Linear(c, self.n_in), nn.Sigmoid()]
+        self.lookup_init(self.act)(layers[0].weight)
+        self.lookup_init('sigmoid')(layers[2].weight)
+        nn.init.zeros_(layers[0].bias)
+        nn.init.zeros_(layers[2].bias)
+        return nn.Sequential(*layers)
+
+    def forward(self, x:Tensor) -> Tensor:
+        y = self.pool(x).view(-1,self.n_in)
+        y = self.layers(y).view(-1,self.n_in,*self.sz)
+        return x*y
+
+
+class SEBlock2d(SEBlock1d):
+    pool = nn.AdaptiveAvgPool2d(1)
+    sz = [1,1]
+
+
+class SEBlock3d(SEBlock1d):
+    pool = nn.AdaptiveAvgPool3d(1)
+    sz = [1,1,1]
