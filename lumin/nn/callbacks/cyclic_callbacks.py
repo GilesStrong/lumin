@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple, Union, List
 from fastcore.all import store_attr
-from fastprogress import IN_NOTEBOOK
+from fastprogress.fastprogress import IN_NOTEBOOK
 
 from .callback import Callback
 from .monitors import EarlyStopping, SaveBest
