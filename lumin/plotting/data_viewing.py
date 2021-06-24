@@ -17,7 +17,8 @@ __all__ = ['plot_feat', 'compare_events', 'plot_rank_order_dendrogram', 'plot_kd
 def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
               plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, size:str='mid', show_moments:bool=True,
-              ax_labels:Dict[str,Any]={'y': 'Density', 'x': None}, savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+              ax_labels:Dict[str,Any]={'y': 'Density', 'x': None}, log_x:bool=False, log_y:bool=False, savename:Optional[str]=None,
+              settings:PlotSettings=PlotSettings()) -> None:
     r'''
     A flexible function to provide indicative information about the 1D distribution of a feature.
     By default it will produce a weighted KDE+histogram for the [1,99] percentile of the data,
@@ -42,6 +43,8 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
         size: string to pass to :meth:`~lumin.plotting.plot_settings.PlotSettings.str2sz` to determin size of plot
         show_moments: whether to compute and display the mean and standard deviation
         ax_labels: dictionary of x and y axes labels
+        log_x: if true, will use log scale for x-axis
+        log_y: if true, will use log scale for y-axis
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
@@ -90,6 +93,9 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
             sns.distplot(plot_data, label=label, **tmp_plot_params)
 
         if len(cuts) > 1 or show_moments: plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
+        if log_y: plt.yscale('log')
+        if log_x: plt.xscale('log')
+        if log_y or log_x: plt.grid(which="both", axis="y" if log_y and not log_x else "x" if log_x and not log_y else 'both')
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.ylabel(ax_labels['y'], fontsize=settings.lbl_sz, color=settings.lbl_col)

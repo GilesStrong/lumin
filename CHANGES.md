@@ -26,6 +26,7 @@
 - `BackwardHook` for recording telemetric data during backwards passes
 - New losses:
     - `WeightedFractionalMSE`, `WeightedBinnedHuber`, `WeightedFractionalBinnedHuber`
+- Options for log x & y axis in `plot_feat`
 
 ## Removals
 
