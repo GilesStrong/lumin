@@ -75,6 +75,7 @@
 - `padding` argument in conv 1D blocks renamed to pad
 - Graph nets: generalised into feature extraction for features per vertex and graph collapsing down to flat data (with optional self-attention)
 - Renamed `FowardHook` to `ForwardHook`
+- Abstract classes no longer inherit from ABC, but rather have `metaclass=ABCMeta` in order to be compatible with py>=3.7
 
 ## Depreciations
 
