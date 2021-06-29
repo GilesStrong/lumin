@@ -1,7 +1,7 @@
 from typing import Union, Tuple, List, Optional
 import numpy as np
 from fastcore.all import is_listy, store_attr
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 import torch
 from torch import Tensor
@@ -183,7 +183,7 @@ class TargReplace(Callback):
         self.model.fit_params.by.targets = self.model.fit_params.fy.get_column('targets', n_folds=1, fold_idx=self.model.fit_params.val_idx, add_newaxis=True)
 
 
-class AbsWeightData(Callback):
+class AbsWeightData(Callback, metaclass=ABCMeta):
     r'''
     Callback to weight folds of data accoridng to a function of the inputs or targets.
     Inherit and override the `weight_func` method according to your task.

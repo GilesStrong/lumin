@@ -1,10 +1,7 @@
-from abc import ABC
-
-
 __all__ = []
     
 
-class AbsCallback(ABC):
+class AbsCallback():
     r'''
     Abstract callback passing though all action points and indicating where callbacks can affect the model.
     See :meth:`~lumin.nn.models.model.Model.fit` and :meth:`~lumin.nn.models.model.Model.predict_by` to see where exactly these action points are called.

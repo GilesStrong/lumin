@@ -1,6 +1,5 @@
 import numpy as np
 from typing import Optional, Union, Tuple, Callable, List
-from abc import abstractmethod
 
 from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device

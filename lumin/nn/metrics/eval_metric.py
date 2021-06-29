@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from typing import Optional
 from fastcore.all import store_attr
 
@@ -14,7 +14,7 @@ from ...utils.misc import to_np
 __all__ = ['EvalMetric']
 
 
-class EvalMetric(Callback):
+class EvalMetric(Callback, metaclass=ABCMeta):
     r'''
     Abstract class for evaluating performance of a model using some metric
 

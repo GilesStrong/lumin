@@ -1,6 +1,6 @@
 from typing import List, Callable, Any, Optional, Tuple, Union, Dict
 from fastcore.all import store_attr, is_listy
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 import numpy as np
 from functools import partial
 
@@ -53,7 +53,7 @@ class AbsGraphBlock(nn.Module):
         return nn.Sequential(*layers)
 
 
-class AbsGraphFeatExtractor(AbsGraphBlock):
+class AbsGraphFeatExtractor(AbsGraphBlock, metaclass=ABCMeta):
     r'''
     Abstract class for implementing feature extraction for graph neural-network blocks.
     Overridden `forward` should return features per vertex.

@@ -4,7 +4,7 @@ from glob import glob
 from collections import OrderedDict
 from pathlib import Path
 import os
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from functools import partial
 from distutils.version import LooseVersion
 
@@ -26,7 +26,7 @@ from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 __all__ = ['CatEmbHead', 'MultiHead', 'GNNHead', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
 
 
-class AbsHead(AbsBlock):
+class AbsHead(AbsBlock, metaclass=ABCMeta):
     def __init__(self, cont_feats:List[str], cat_embedder:Optional[CatEmbedder]=None, 
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)

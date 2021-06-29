@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Union
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 import torch.nn as nn
 from torch import Tensor
@@ -11,7 +11,7 @@ from ....utils.misc import to_np
 __all__ = ['AbsEndcap']
 
 
-class AbsEndcap(nn.Module):
+class AbsEndcap(nn.Module, metaclass=ABCMeta):
     r'''
     Abstract class for constructing post training layer which performs further calculation on NN outputs.
     Used when NN was trained to some proxy objective
