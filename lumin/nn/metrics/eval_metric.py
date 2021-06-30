@@ -111,7 +111,7 @@ class EvalMetric(Callback, metaclass=ABCMeta):
 
         self.model = model
         preds = self.model.predict(inputs, bs=bs)
-        return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights, bs=bs)
+        return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights)
 
     def evaluate_preds(self, fy:FoldYielder, fold_idx:int, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> float:
         r'''
