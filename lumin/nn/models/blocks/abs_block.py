@@ -1,5 +1,5 @@
 from typing import Callable, Optional
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 
 from torch import Tensor
 import torch.nn as nn
@@ -9,7 +9,7 @@ from ..initialisations import lookup_normal_init
 __all__ = []
 
 
-class AbsBlock(nn.Module):
+class AbsBlock(nn.Module, metaclass=ABCMeta):
     def __init__(self, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         self.lookup_init,self.freeze = lookup_init,freeze
         super().__init__()

@@ -112,6 +112,8 @@ def get_ensemble_feat_importance(ensemble:AbsEnsemble, fy:FoldYielder, bs:Option
         >>>
         >>> fi = get_ensemble_feat_importance(ensemble, train_fy,
         ...                                   eval_metric=AMS(n_total=100000))
+
+    TODO: Weight models
     '''
 
     mean_fi = []

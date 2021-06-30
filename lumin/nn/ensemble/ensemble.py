@@ -331,7 +331,7 @@ class Ensemble(AbsEnsemble):
                 Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
             cbs: list of any instantiated callbacks to use during prediction
             bs: if not `None`, will run prediction in batches of specified size to save of memory
-            auto_deprocess: if true and ensemble has an putput_pipe, will inverse-transform predictions
+            auto_deprocess: if true and ensemble has an output_pipe, will inverse-transform predictions
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor

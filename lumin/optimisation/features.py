@@ -90,7 +90,7 @@ def rf_rank_features(train_df:pd.DataFrame, val_df:pd.DataFrame, objective:str,
         rf = m(**rfp)
         rf.fit(X=train_df[train_feats], y=train_df[targ_name], sample_weight=w_trn)
     
-    if verbose: print("Evalualting importances")
+    if verbose: print("Evaluating importances")
     fi = get_rf_feat_importance(rf, train_df[train_feats], train_df[targ_name], w_trn)
     orig_score = [rf.score(X=val_df[train_feats], y=val_df[targ_name], sample_weight=w_val)]
     if n_rfs > 1:

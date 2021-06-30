@@ -1,13 +1,15 @@
 import numpy as np
-from typing import Tuple, Union
+from typing import Tuple, Union, List
 from fastcore.all import store_attr
+from fastprogress.fastprogress import IN_NOTEBOOK
 
 from .callback import Callback
+from .monitors import EarlyStopping, SaveBest
 
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-__all__ = ['AbsCyclicCallback', 'CycleLR', 'CycleMom', 'OneCycle']
+__all__ = ['AbsCyclicCallback', 'CycleLR', 'CycleMom', 'OneCycle', 'CycleStep']
 
 
 class AbsCyclicCallback(Callback):
@@ -252,3 +254,98 @@ class OneCycle(AbsCyclicCallback):
                 ax.tick_params(axis='x', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
                 ax.tick_params(axis='y', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
             plt.show()
+
+
+class CycleStep(OneCycle):
+    r'''
+    Combination of 1-cycle and step decay. Initial 1-cycle finishes, and step decay begins starting from best performing model and optimiser.
+
+    Arguments:
+        frac_reduction: fractional reduction of the learning rate with each step
+        patience: number of epochs to wait before step
+        lengths: OneCycle lengths
+        lr_range: OneCycle learning rates. Don't have the final LR be too small.
+        mom_range: OneCycle momenta,
+        interp: Iterpolation mode for OneCycle
+        plot_params: If true, will plot the parameter history at the end of training.
+    '''
+
+    def __init__(self, frac_reduction:float, patience:int, lengths:Tuple[int,int], lr_range:List[float], mom_range:Tuple[float,float]=(0.85, 0.95),
+                 interp:str='cosine', plot_params:bool=False):
+        super().__init__(lengths=lengths, lr_range=lr_range, mom_range=mom_range, interp=interp, cycle_ends_training=False)
+        self.frac_reduction,self.patience,self.plot_params = frac_reduction,patience,plot_params
+        
+    def on_train_begin(self):
+        r'''
+        Reset parameters, and check other callbacks in training.
+        '''
+
+        super().on_train_begin()
+        sb,self.early_stopping,self.stepping = False,False,False
+        for c in self.model.fit_params.cbs:
+            if isinstance(c, EarlyStopping): self.early_stopping = c
+            if isinstance(c, SaveBest): sb = True
+        if not(sb and self.early_stopping): raise ValueError("List of training callbacks must include both EarlyStopping and SaveBest callbacks")
+            
+    def _set_params(self) -> None:
+        if not self.stepping:
+            self.lr = self.model.opt.param_groups[0]['lr']
+            self.mom = self.model.opt.param_groups[0]['betas'][0] if 'betas' in self.model.opt.param_groups[0] else self.model.opt.param_groups[0]['momentum']
+        else:
+            self.lr *= self.frac_reduction
+            self.mom = self.mom_range[1]
+        self.model.set_lr(self.lr)
+        self.model.set_mom(self.mom)
+        
+    def on_batch_begin(self) -> None:
+        r'''
+        Computes the new lr and momentum and assigns them to the optimiser
+        '''
+        
+        if self.model.fit_params.state != 'train': return
+        if self.cycle_count == 1 and not self.stepping:  # Finished OneCycle
+            self.model.load(self.model.fit_params.cb_savepath/'best.h5')
+            self.cycle_end = True  # EarlyStopping can now end training
+            self._set_params()
+            self.stepping = True
+        if self.stepping:
+            self.hist['lr'].append(self.lr)
+            self.hist['mom'].append(self.mom)
+        else:
+            super().on_batch_begin()
+        
+    def on_epoch_begin(self) -> None:
+        r'''
+        Increment parameters if stepping
+        '''
+
+        super().on_epoch_begin()
+        self.cycle_end = self.stepping
+        if self.model.fit_params.state != 'valid': return
+        if self.early_stopping.epochs >= self.patience: self._set_params()
+        
+    def on_train_end(self) -> None:
+        r'''
+        Optionally plot the parameter history.
+        '''
+
+        if self.plot_params:self.plot()
+        
+    def plot(self):
+        r'''
+        Plots the history of the lr and momentum evolution as a function of iterations
+        '''
+
+        with sns.axes_style(self.plot_settings.style), sns.color_palette(self.plot_settings.cat_palette):
+            fig, axs = plt.subplots(2, 1, figsize=(self.plot_settings.w_mid, self.plot_settings.h_mid))
+            axs[1].set_xlabel("Iterations", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            axs[0].set_ylabel("Learning Rate", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            axs[1].set_ylabel("Momentum", fontsize=self.plot_settings.lbl_sz, color=self.plot_settings.lbl_col)
+            axs[0].plot(range(len(self.hist['lr'])), self.hist['lr'])
+            axs[1].plot(range(len(self.hist['mom'])), self.hist['mom'])
+            for ax in axs:
+                ax.tick_params(axis='x', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+                ax.tick_params(axis='y', labelsize=self.plot_settings.tk_sz, labelcolor=self.plot_settings.tk_col)
+            plt.savefig(self.model.fit_params.cb_savepath/f'StepCycle_history{self.plot_settings.format}', bbox_inches='tight')            
+            if IN_NOTEBOOK: plt.show()
+            else:           plt.close(fig)

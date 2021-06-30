@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import List, Optional, Union, Generator, Callable
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from torch.tensor import Tensor
 from torch import optim
@@ -18,7 +18,7 @@ class FitParams():
         self.epoch,self.sub_epoch = 0,0
 
 
-class AbsModel(ABC):
+class AbsModel(metaclass=ABCMeta):
     '''Abstract model class for typing'''
     def __init__(self): pass
     

@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, List, Tuple, Optional, Any
+from typing import Callable, Union, List, Tuple, Optional, Any
 import pandas as pd
 import sympy
 from functools import partial
@@ -12,7 +12,7 @@ from torch.tensor import Tensor
 import torch
 import torch.nn as nn
 
-__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'FowardHook', 'subsample_df', 'is_partially']
+__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'ForwardHook', 'BackwardHook', 'subsample_df', 'is_partially']
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')  # TODO: make device choosable by user
 
@@ -116,7 +116,7 @@ def ids2unique(ids: Union[List[int], np.ndarray]) -> np.ndarray:
     return (primes**ids).prod(axis=-1)
 
 
-class FowardHook():
+class ForwardHook():
     r'''
     Create a hook for performing an action based on the forward pass thorugh a nn.Module
 
@@ -129,7 +129,7 @@ class FowardHook():
         >>> model.predict(inputs)
         >>> print(hook.inputs)
     '''
-    def __init__(self, module:nn.Module, hook_fn:Optional=None):
+    def __init__(self, module:nn.Module, hook_fn:Optional[Callable[[nn.Module, Union[Tensor,Tuple[Tensor]], Union[Tensor,Tuple[Tensor]]],None]]=None):
         self.input,self.output = None,None
         if hook_fn is not None: self.hook_fn = partial(hook_fn, self)
         self.hook = module.register_forward_hook(self.hook_fn)
@@ -154,6 +154,25 @@ class FowardHook():
         '''
 
         self.hook.remove()
+
+
+class BackwardHook(ForwardHook):
+    r'''
+    Create a hook for performing an action based on the backward pass thorugh a nn.Module
+
+    Arguments:
+        module: nn.Module to hook
+        hook_fn: Optional function to perform. Default is to record input and output of module
+
+    Examples::
+        >>> hook = BackwardHook(model.tail.dense)
+        >>> model.predict(inputs)
+        >>> print(hook.inputs)
+    '''
+    def __init__(self, module:nn.Module, hook_fn:Optional[Callable[[nn.Module, Union[Tensor,Tuple[Tensor]], Union[Tensor,Tuple[Tensor]]],None]]=None):
+        self.input,self.output = None,None
+        if hook_fn is not None: self.hook_fn = partial(hook_fn, self)
+        self.hook = module.register_backward_hook(self.hook_fn)
 
 
 def subsample_df(df:pd.DataFrame, objective:str, targ_name:str, n_samples:Optional[int]=None, replace:bool=False, strat_key:Optional[str]=None,

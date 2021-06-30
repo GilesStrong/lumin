@@ -16,6 +16,17 @@
     - Additional `bn_class` arguments to blocks, allowing the user to choose different batchnorm implementations
     - 1, 2, & 3D Running batchnorm layers from fastai (https://github.com/fastai/course-v3)
 - `GNNHead` encapsulating head for feature extraction, using `AbsGraphFeatExtractor` classes, and graph collapsing, using `GraphCollapser` classes
+- New callbacks:
+    - `AbsWeightData` to weight folds of data based on their inputs or targets
+    - `EpochSaver` to save the model to a new file at the end of every epoch
+    - `CycleStep` combines OneCycle and step-decay of optimiser hyper-parameters
+- New CNN blocks:
+    - `AdaptiveAvgMaxConcatPool1d`, `AdaptiveAvgMaxConcatPool2d`, `AdaptiveAvgMaxConcatPool3d` use average and maximum pooling to reduce data to specified number sizes per channel
+    - `SEBlock1d`, `SEBlock2d`, `SEBlock3d` apply squeeze-excitation to data channels
+- `BackwardHook` for recording telemetric data during backwards passes
+- New losses:
+    - `WeightedFractionalMSE`, `WeightedBinnedHuber`, `WeightedFractionalBinnedHuber`
+- Options for log x & y axis in `plot_feat`
 
 ## Removals
 
@@ -63,6 +74,8 @@
 
 - `padding` argument in conv 1D blocks renamed to pad
 - Graph nets: generalised into feature extraction for features per vertex and graph collapsing down to flat data (with optional self-attention)
+- Renamed `FowardHook` to `ForwardHook`
+- Abstract classes no longer inherit from ABC, but rather have `metaclass=ABCMeta` in order to be compatible with py>=3.7
 
 ## Depreciations
 
@@ -188,7 +201,7 @@
 
 ## Additions
 
-- `__del__` method to `FowardHook` class
+- `__del__` method to `ForwardHook` class
 - `BatchYielder`:
     - Now takes an `input_mask` argument to filter inputs
     - Now takes an argument allowing incomplete batches to be yielded

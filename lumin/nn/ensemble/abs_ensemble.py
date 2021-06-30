@@ -1,6 +1,6 @@
 import numpy as np
 from typing import Union, List, Optional, Tuple
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 
 from ..models.abs_model import AbsModel
 from ..data.fold_yielder import FoldYielder
@@ -8,7 +8,7 @@ from ..data.fold_yielder import FoldYielder
 __all__ = []
 
 
-class AbsEnsemble(ABC):
+class AbsEnsemble(metaclass=ABCMeta):
     '''Abstract classs for ensembles'''
     def __init__(self): self.models,self.weights,self.size = [],[],0
 

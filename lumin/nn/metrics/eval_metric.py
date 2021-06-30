@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from abc import abstractmethod
+from abc import abstractmethod, ABCMeta
 from typing import Optional
 from fastcore.all import store_attr
 
@@ -14,7 +14,7 @@ from ...utils.misc import to_np
 __all__ = ['EvalMetric']
 
 
-class EvalMetric(Callback):
+class EvalMetric(Callback, metaclass=ABCMeta):
     r'''
     Abstract class for evaluating performance of a model using some metric
 
@@ -111,7 +111,7 @@ class EvalMetric(Callback):
 
         self.model = model
         preds = self.model.predict(inputs, bs=bs)
-        return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights, bs=bs)
+        return self.evaluate_preds(fy=fy, fold_idx=fold_idx, preds=preds, targets=targets, weights=weights)
 
     def evaluate_preds(self, fy:FoldYielder, fold_idx:int, preds:np.ndarray, targets:np.ndarray, weights:Optional[np.ndarray]=None) -> float:
         r'''
