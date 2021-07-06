@@ -76,6 +76,9 @@
 - Graph nets: generalised into feature extraction for features per vertex and graph collapsing down to flat data (with optional self-attention)
 - Renamed `FowardHook` to `ForwardHook`
 - Abstract classes no longer inherit from ABC, but rather have `metaclass=ABCMeta` in order to be compatible with py>=3.7
+- Updated the example of binary classification of signal & background to use the model and training resulting from https://iopscience.iop.org/article/10.1088/2632-2153/ab983a
+    - Also changed the multi-target regression example to use non-densely connected layers, and the multi-target classification example to use a cosine annealed cyclical LR
+- Updated the single-target regression example to use `WeightedBinnedHuber` as a loss
 
 ## Depreciations
 

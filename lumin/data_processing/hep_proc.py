@@ -303,7 +303,7 @@ def proc_event(df:pd.DataFrame, fix_phi:bool=False, fix_y=False, fix_z=False, us
         print(f'Setting {ref_vec_0} to positive eta')
         fix_event_z(df, ref_vec_0) 
     if use_cartesian:
-        print("Converting to use_cartesian coordinates")
+        print("Converting to use Cartesian coordinates")
         event_to_cartesian(df, drop=True)
     if   fix_phi and not use_cartesian: df.drop(columns=[f"{ref_vec_0}_phi"], inplace=True)
     elif fix_phi and     use_cartesian: df.drop(columns=[f"{ref_vec_0}_py"], inplace=True)
