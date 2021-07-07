@@ -5,7 +5,7 @@ import math
 
 from ...utils.misc import to_device
 
-from torch.tensor import Tensor
+from torch import Tensor
 
 __all__ = ['BatchYielder']
 
