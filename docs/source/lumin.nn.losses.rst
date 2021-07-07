@@ -4,6 +4,14 @@ lumin.nn.losses package
 Submodules
 ----------
 
+lumin.nn.losses.advanced\_losses module
+---------------------------------------
+
+.. automodule:: lumin.nn.losses.advanced_losses
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 lumin.nn.losses.basic\_weighted module
 --------------------------------------
 
