@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Union, Any, List, Optional, Tuple
 from sklearn.pipeline import Pipeline
 
-from torch.tensor import Tensor
+from torch import Tensor
 
 from .abs_ensemble import AbsEnsemble
 from ..callbacks.abs_callback import AbsCallback

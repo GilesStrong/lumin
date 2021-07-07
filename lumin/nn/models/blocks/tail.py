@@ -5,7 +5,7 @@ from ..initialisations import lookup_normal_init
 from ....utils.misc import to_device
 from .abs_block import AbsBlock
 
-from torch.tensor import Tensor
+from torch import Tensor
 import torch.nn as nn
 
 __all__ = ['ClassRegMulti']

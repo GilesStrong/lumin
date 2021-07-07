@@ -4,7 +4,7 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-from torch.tensor import Tensor
+from torch import Tensor
 
 from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act

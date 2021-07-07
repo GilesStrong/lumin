@@ -8,7 +8,7 @@ import inspect
 
 from sklearn.utils import resample
 
-from torch.tensor import Tensor
+from torch import Tensor
 import torch
 import torch.nn as nn
 

@@ -8,7 +8,7 @@ from distutils.version import LooseVersion
 
 import torch.nn as nn
 import torch.optim as optim
-from torch.tensor import Tensor
+from torch import Tensor
 import torch
 
 from .layers.activations import lookup_act

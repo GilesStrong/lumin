@@ -2,7 +2,7 @@ from typing import Optional
 
 import torch.nn as nn
 import torch
-from torch.tensor import Tensor
+from torch import Tensor
 
 __all__ = ['WeightedMSE', 'WeightedMAE', 'WeightedCCE']
 

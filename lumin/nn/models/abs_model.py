@@ -3,7 +3,7 @@ import pandas as pd
 from typing import List, Optional, Union, Generator, Callable
 from abc import ABCMeta, abstractmethod
 
-from torch.tensor import Tensor
+from torch import Tensor
 from torch import optim
 
 from ..data.fold_yielder import FoldYielder

@@ -9,7 +9,7 @@ from random import shuffle
 from functools import partial
 
 import torch
-from torch.tensor import Tensor
+from torch import Tensor
 import torch.nn as nn
 
 from .abs_model import AbsModel,FitParams

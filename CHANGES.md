@@ -79,6 +79,7 @@
 - Updated the example of binary classification of signal & background to use the model and training resulting from https://iopscience.iop.org/article/10.1088/2632-2153/ab983a
     - Also changed the multi-target regression example to use non-densely connected layers, and the multi-target classification example to use a cosine annealed cyclical LR
 - Updated the single-target regression example to use `WeightedBinnedHuber` as a loss
+- Changed `from torch.tensor import Tensor` to `from torch import Tensor` for compatibility with latest PyTorch
 
 ## Depreciations
 

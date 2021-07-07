@@ -9,7 +9,7 @@ from functools import partial
 from distutils.version import LooseVersion
 
 import torch.nn as nn
-from torch.tensor import Tensor
+from torch import Tensor
 import torch
 
 from ..helpers import CatEmbedder
