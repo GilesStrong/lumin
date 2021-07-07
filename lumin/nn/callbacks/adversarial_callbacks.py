@@ -1,7 +1,6 @@
 from typing import List, Optional, Callable
 from fastcore.all import is_listy, store_attr
 import timeit
-import inspect
 
 from torch import nn, Tensor
 
