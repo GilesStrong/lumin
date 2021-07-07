@@ -245,12 +245,12 @@ class ResNeXt1DBlock(Conv1DBlock):
 
 class AdaptiveAvgMaxConcatPool1d(nn.Module):
     r'''
-    Optional final layer that reduces the size of each channel to the specified size, via to methods: average pooling and max pooling.
+    Layer that reduces the size of each channel to the specified size, via two methods: average pooling and max pooling.
     The outputs are then concatenated channelwise.
 
     Arguments:
         sz: Requested output size, default reduces each channel to 2*1 elements.
-            1 is the maximum value in the channel and the other is the average value in the channel.
+            The first element is the maximum value in the channel and the other is the average value in the channel.
     '''
 
     def __init__(self, sz:Optional[Union[int,Tuple[int,...]]]=None):
@@ -277,6 +277,15 @@ class AdaptiveAvgMaxConcatPool1d(nn.Module):
 
 
 class AdaptiveAvgMaxConcatPool2d(AdaptiveAvgMaxConcatPool1d):
+    r'''
+    Layer that reduces the size of each channel to the specified size, via two methods: average pooling and max pooling.
+    The outputs are then concatenated channelwise.
+
+    Arguments:
+        sz: Requested output size, default reduces each channel to 2*1 elements.
+            The first element is the maximum value in the channel and the other is the average value in the channel.
+    '''
+
     def _setup(self, sz:Optional[Union[int,Tuple[int,int]]]=None) -> None:
         if sz is None: sz = (1,1)
         self.ap = nn.AdaptiveAvgPool2d(sz)
@@ -284,6 +293,15 @@ class AdaptiveAvgMaxConcatPool2d(AdaptiveAvgMaxConcatPool1d):
         
 
 class AdaptiveAvgMaxConcatPool3d(AdaptiveAvgMaxConcatPool1d):
+    r'''
+    Layer that reduces the size of each channel to the specified size, via two methods: average pooling and max pooling.
+    The outputs are then concatenated channelwise.
+
+    Arguments:
+        sz: Requested output size, default reduces each channel to 2*1 elements.
+            The first element is the maximum value in the channel and the other is the average value in the channel.
+    '''
+
     def _setup(self, sz:Optional[Union[int,Tuple[int,int,int]]]=None) -> None:
         if sz is None: sz = (1,1,1)
         self.ap = nn.AdaptiveAvgPool3d(sz)
@@ -291,14 +309,26 @@ class AdaptiveAvgMaxConcatPool3d(AdaptiveAvgMaxConcatPool1d):
 
 
 class SEBlock1d(nn.Module):
-    pool = nn.AdaptiveAvgPool1d(1)
-    sz = [1]
+    r'''
+    Squeeze-excitation block [Hu, Shen, Albanie, Sun, & Wu, 2017](https://arxiv.org/abs/1709.01507).
+    Incoming data is averaged per channel, fed through a single layer of width `n_in//r` and the chose activation, then a second layer of width `n_in` and a sigmoid activation.
+    Channels in the original data are then multiplied by the learned channe weights.
+
+    Arguments:
+        n_in: number of incoming channels
+        r: the reduction ratio for the channel compression
+        act: string representation of argument to pass to lookup_act
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+    '''
 
     def __init__(self, n_in:int, r:int, act:str='relu', lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act):
         super().__init__()
         self.n_in,self.r,self.act,self.lookup_init,self.lookup_act = n_in,r,act,lookup_init,lookup_act
         self.layers = self._get_layers()
+        self.sz = [1]
+        self.pool = nn.AdaptiveAvgPool1d(self.sz)
 
     def _get_layers(self) -> nn.Sequential:
         c = np.max((2,self.n_in//self.r))
@@ -311,16 +341,62 @@ class SEBlock1d(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x:Tensor) -> Tensor:
+        r'''
+        Rescale the incoming tensor by the learned channel weights
+
+        Arguments:
+            x: incoming tensor
+
+        Returns:
+            x*y, where y is the output of the squeeze-excitation network 
+        '''
+        
         y = self.pool(x).view(-1,self.n_in)
         y = self.layers(y).view(-1,self.n_in,*self.sz)
         return x*y
 
 
 class SEBlock2d(SEBlock1d):
-    pool = nn.AdaptiveAvgPool2d(1)
-    sz = [1,1]
+    r'''
+    Squeeze-excitation block [Hu, Shen, Albanie, Sun, & Wu, 2017](https://arxiv.org/abs/1709.01507).
+    Incoming data is averaged per channel, fed through a single layer of width `n_in//r` and the chose activation, then a second layer of width `n_in` and a sigmoid activation.
+    Channels in the original data are then multiplied by the learned channe weights.
+
+    Arguments:
+        n_in: number of incoming channels
+        r: the reduction ratio for the channel compression
+        act: string representation of argument to pass to lookup_act
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+    '''
+
+    def __init__(self, n_in:int, r:int, act:str='relu', lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act):
+        super().__init__()
+        self.n_in,self.r,self.act,self.lookup_init,self.lookup_act = n_in,r,act,lookup_init,lookup_act
+        self.layers = self._get_layers()
+        self.sz = [1,1]
+        self.pool = nn.AdaptiveAvgPool2d(self.sz)
 
 
 class SEBlock3d(SEBlock1d):
-    pool = nn.AdaptiveAvgPool3d(1)
-    sz = [1,1,1]
+    r'''
+    Squeeze-excitation block [Hu, Shen, Albanie, Sun, & Wu, 2017](https://arxiv.org/abs/1709.01507).
+    Incoming data is averaged per channel, fed through a single layer of width `n_in//r` and the chose activation, then a second layer of width `n_in` and a sigmoid activation.
+    Channels in the original data are then multiplied by the learned channe weights.
+
+    Arguments:
+        n_in: number of incoming channels
+        r: the reduction ratio for the channel compression
+        act: string representation of argument to pass to lookup_act
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+    '''
+
+    def __init__(self, n_in:int, r:int, act:str='relu', lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act):
+        super().__init__()
+        self.n_in,self.r,self.act,self.lookup_init,self.lookup_act = n_in,r,act,lookup_init,lookup_act
+        self.layers = self._get_layers()
+        self.sz = [1,1,1]
+        self.pool = nn.AdaptiveAvgPool3d(self.sz)
