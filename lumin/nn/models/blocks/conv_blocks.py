@@ -1,4 +1,4 @@
-from typing import Callable, Union, Optional, Any, List
+from typing import Callable, Union, Optional, Any, Tuple
 from fastcore.all import store_attr
 import numpy as np
 
@@ -253,11 +253,11 @@ class AdaptiveAvgMaxConcatPool1d(nn.Module):
             1 is the maximum value in the channel and the other is the average value in the channel.
     '''
 
-    def __init__(self, sz:Optional[Union[int,List[int]]]=None):
+    def __init__(self, sz:Optional[Union[int,Tuple[int,...]]]=None):
         super().__init__()
         self._setup(sz)
 
-    def _setup(self, sz:Optional[Union[int,List[int]]]=None) -> None:
+    def _setup(self, sz:Optional[Union[int,Tuple[int]]]=None) -> None:
         if sz is None: sz = (1)
         self.ap = nn.AdaptiveAvgPool1d(sz)
         self.mp = nn.AdaptiveMaxPool1d(sz)
@@ -277,14 +277,14 @@ class AdaptiveAvgMaxConcatPool1d(nn.Module):
 
 
 class AdaptiveAvgMaxConcatPool2d(AdaptiveAvgMaxConcatPool1d):
-    def _setup(self, sz:Optional[Union[int,List[int]]]=None) -> None:
+    def _setup(self, sz:Optional[Union[int,Tuple[int,int]]]=None) -> None:
         if sz is None: sz = (1,1)
         self.ap = nn.AdaptiveAvgPool2d(sz)
         self.mp = nn.AdaptiveMaxPool2d(sz)
         
 
 class AdaptiveAvgMaxConcatPool3d(AdaptiveAvgMaxConcatPool1d):
-    def _setup(self, sz:Optional[Union[int,List[int]]]=None) -> None:
+    def _setup(self, sz:Optional[Union[int,Tuple[int,int,int]]]=None) -> None:
         if sz is None: sz = (1,1,1)
         self.ap = nn.AdaptiveAvgPool3d(sz)
         self.mp = nn.AdaptiveMaxPool3d(sz)
