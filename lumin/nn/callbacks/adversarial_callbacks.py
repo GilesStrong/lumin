@@ -77,7 +77,7 @@ class PivotTraining(Callback):
                  bulk_move=self.model.fit_params.bulk_move, train_on_weights=self.model.fit_params.train_on_weights,
                  trn_idxs=self.model.fit_params.trn_idxs, cbs=cbs, cb_savepath=self.model.fit_params.cb_savepath)
         print(f"pretraining main model took {timeit.default_timer()-model_tmr:.3f}s\n")
-        main.save(self.model.fit_params.cb_savepath/f'pretrain_main.h5')
+        main.save(self.model.fit_params.cb_savepath/'pretrain_main.h5')
         self.model.set_weights(main.get_weights())
         
         print("Pretraining adversary")
@@ -92,7 +92,7 @@ class PivotTraining(Callback):
                      bulk_move=self.model.fit_params.bulk_move, train_on_weights=self.model.fit_params.train_on_weights,
                      trn_idxs=self.model.fit_params.trn_idxs, cbs=cbs, cb_savepath=self.model.fit_params.cb_savepath)
         print(f"pretraining adversary took {timeit.default_timer()-model_tmr:.3f}s\n")
-        self.adv.save(self.model.fit_params.cb_savepath/f'pretrain_adv.h5')
+        self.adv.save(self.model.fit_params.cb_savepath/'pretrain_adv.h5')
         
         # prep for combined training
         self.adv_loss_func = self.adv_model_builder.loss
@@ -108,7 +108,7 @@ class PivotTraining(Callback):
         Save final version of adversary
         '''
         
-        self.adv.save(self.model.fit_params.cb_savepath/f'adv.h5')
+        self.adv.save(self.model.fit_params.cb_savepath/'adv.h5')
         
     def _increment(self) -> None:
         r'''
