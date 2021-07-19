@@ -8,6 +8,7 @@ LUMIN is a deep-learning and data-analysis ecosystem for High-Energy Physics. Si
 Online documentation may be found at https://lumin.readthedocs.io/en/stable
 
 For an introduction and motivation for LUMIN, checkout this talk from IML-2019 at CERN: [video](https://cds.cern.ch/record/2672119), [slides](https://indico.cern.ch/event/766872/timetable/?view=standard#29-lumin-a-deep-learning-and-d).
+And for a live tutorial, checkout my talk at PyHEP 2021: https://www.youtube.com/watch?v=keDWQKHCa2o (tutorial repo here: https://github.com/GilesStrong/talk_pyhep21_lumin)
 
 ## Distinguishing Characteristics
 
