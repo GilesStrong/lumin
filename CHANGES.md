@@ -10,6 +10,8 @@
 
 ## Fixes
 
+- Typo fix in `proc_cats` affecting the detection of categories in the testing data. (Thanks @yaourtpourtoi)
+
 ## Changes
 
 ## Depreciations

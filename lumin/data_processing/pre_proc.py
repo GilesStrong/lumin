@@ -128,7 +128,7 @@ def proc_cats(train_df:pd.DataFrame, cat_feats:List[str],
             if sorted(set(val_df[feat])) != vals:
                 raise Exception(f"Feature {feat} declared categorical, but validation set contains categories different to the training set")
         if test_df is not None:
-            if sorted(set(val_df[feat])) != vals:
+            if sorted(set(test_df[feat])) != vals:
                 raise Exception(f"Feature {feat} declared categorical, but testing set contains categories different to the training set")
         
         for i, val in enumerate(vals):
