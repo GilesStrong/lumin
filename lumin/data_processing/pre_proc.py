@@ -112,7 +112,7 @@ def proc_cats(train_df:pd.DataFrame, cat_feats:List[str],
         test_df: if set will apply the same category to code mapping to the testing data as was performed on the training data
     
     Returns:
-        ordered dictionary mapping categorical features to dictionaries mapping categories to codes
+        ordered dictionary mapping categorical features to dictionaries mapping codes to categories
         ordered dictionary mapping categorical features to their cardinalities
     '''
 
