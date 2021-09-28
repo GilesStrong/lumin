@@ -162,7 +162,7 @@ class FoldYielder:
             self.matrix_is_sparse = self.matrix_feats['is_sparse'] if 'is_sparse' in self.matrix_feats else False
             self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
 
-    def _append_matrix(self, data, idx):
+    def _append_matrix(self, data, idx) -> Dict[str,np.ndarray]:
         data['inputs'] = (data['inputs'],self.get_column('matrix_inputs', n_folds=1, fold_idx=idx))
         return data
 
