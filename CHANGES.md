@@ -13,6 +13,10 @@
 - `proc_cats`
     - Typo fix in `proc_cats` affecting the detection of categories in the testing data. (Thanks @yaourtpourtoi)
     - Doc string incorrectly stated that cat_maps mapped categories to codes, whereas it actually maps codes to categories
+- `lr_find`
+    - Fixes to do with the number of batches to expect when running few number of folds than the `FoldYielder` contains.
+    - Correctly implements leave-one-out for the training folds
+    - renamed `n_folds` to `n_repeats` to more accurately reflect its role.
 
 ## Changes
 

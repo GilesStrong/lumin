@@ -75,13 +75,13 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 
 
 def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
-            train_on_weights:bool=True, n_folds:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
+            train_on_weights:bool=True, n_repeats:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
             cb_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
             bulk_move:bool=True, plot_savename:Optional[str]=None) -> List[LRFinder]:
     r'''
     Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
     using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
-    Trains models for a set number of fold, interpolating LR between set bounds. This repeats for each fold in :class:`~lumin.nn.data.fold_yielder.FoldYielder`,
+    Trains models for a set number of repeats, interpolating LR between set bounds. This repeats for each fold in :class:`~lumin.nn.data.fold_yielder.FoldYielder`,
     and loss evolution is averaged.
 
     Arguments:
@@ -103,17 +103,17 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
 
     if cb_partials is None: cb_partials = []
     if not is_listy(cb_partials): cb_partials = [cb_partials]
-    idxs = range(fy.n_folds) if n_folds < 1 else range(min(n_folds, fy.n_folds))
-    nb = (fy.n_folds-1)*fy.get_data_count(0)//bs
+    nb = n_epochs*(fy.n_folds-1)*fy.get_data_count(0)//bs
     lr_finders = []
     tmr = timeit.default_timer()
-    mb = master_bar(idxs)
+    mb = master_bar(range(fy.n_folds) if n_repeats < 1 else range(min(n_repeats, fy.n_folds)))
     for idx in mb:
         model = Model(model_builder)
         cbs = []
         for c in cb_partials: cbs.append(c())
         lrf = LRFinder(lr_bounds=lr_bounds, nb=nb)
-        trn_idxs = list(idxs).remove(idx)
+        trn_idxs = list(range(fy.n_folds))
+        trn_idxs.remove(idx)
         model.fit(n_epochs=n_epochs, fy=fy, bs=bs, bulk_move=bulk_move, train_on_weights=train_on_weights, trn_idxs=trn_idxs, cbs=cbs+[lrf], model_bar=mb)
         lr_finders.append(lrf)
     del model
