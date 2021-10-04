@@ -24,8 +24,8 @@ def lookup_act(act:str) -> Any:
     if act == 'prelu':      return nn.PReLU()
     if act == 'selu':       return nn.SELU()
     if act == 'sigmoid':    return nn.Sigmoid()
-    if act == 'logsoftmax': return nn.LogSoftmax(1)
-    if act == 'softmax':    return nn.Softmax(1)
+    if act == 'logsoftmax': return nn.LogSoftmax(-1)
+    if act == 'softmax':    return nn.Softmax(-1)
     if act == 'linear':     return lambda x: x
     if 'swish' in act:      return Swish()
     if act == 'mish':       return Mish()

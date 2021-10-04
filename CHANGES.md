@@ -20,6 +20,8 @@
 
 ## Changes
 
+- Softmax and LogSoftmax in lookup_act now act on the last dimension, rather than dimension 1 (no change in behaviour for 2D batches)
+
 ## Depreciations
 
 ## Comments
