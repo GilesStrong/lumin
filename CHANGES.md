@@ -6,6 +6,8 @@
 
 ## Additions
 
+- `plot_feat` now shows a bar plot for categorical data
+
 ## Removals
 
 ## Fixes

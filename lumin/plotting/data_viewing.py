@@ -17,7 +17,7 @@ __all__ = ['plot_feat', 'compare_events', 'plot_rank_order_dendrogram', 'plot_kd
 def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optional[List[pd.Series]]=None,
               labels:Optional[List[str]]='', plot_bulk:bool=True, n_samples:int=100000,
               plot_params:Optional[Union[Dict[str,Any],List[Dict[str,Any]]]]=None, size:str='mid', show_moments:bool=True,
-              ax_labels:Dict[str,Any]={'y': 'Density', 'x': None}, log_x:bool=False, log_y:bool=False, savename:Optional[str]=None,
+              ax_labels:Dict[str,Any]={'y': None, 'x': None}, log_x:bool=False, log_y:bool=False, savename:Optional[str]=None,
               settings:PlotSettings=PlotSettings()) -> None:
     r'''
     A flexible function to provide indicative information about the 1D distribution of a feature.
@@ -55,13 +55,26 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
     if not isinstance(cuts,   list): cuts   = [cuts]
     if plot_params is None: plot_params = {}
     if len(cuts) != len(labels): raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
-    
-    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
+    cat = df[feat].nunique() < 50
+    if ax_labels['y'] is None:
+        ax_labels['y'] = 'Count' if cat else 'Density'
+        
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.str2sz(size, 'x'), settings.str2sz(size, 'y')))
         for i in range(len(cuts)):
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
-
-            if plot_bulk:  # Ignore tails for indicative plotting
+            
+            if cat:
+                tmp_data = df if cuts[i] is None else df.loc[cuts[i]]
+                if wgt_name is None:
+                    plot_data = _filter_data(tmp_data[feat])
+                else:
+                    tmp_data = _filter_data(tmp_data[[wgt_name, feat]])
+                    weights = tmp_data[wgt_name].values.astype('float64')
+                    weights /= weights.sum()
+                    plot_data = tmp_data.sample(n=n_samples, replace=True, weights=weights)[feat]
+                    
+            elif plot_bulk:  # Ignore tails for indicative plotting
                 feat_range = np.percentile(_filter_data(df[feat]), [1, 99])
                 if feat_range[0] == feat_range[1]: break
                 cut = (df[feat] > feat_range[0]) & (df[feat] < feat_range[1])
@@ -73,6 +86,7 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
                     weights = tmp[wgt_name].values.astype('float64')
                     weights /= weights.sum()
                     plot_data = np.random.choice(tmp[feat], n_samples, p=weights)
+                    
             else:
                 tmp_data = df if cuts[i] is None else df.loc[cuts[i]]
                 if wgt_name is None:
@@ -83,14 +97,15 @@ def plot_feat(df:pd.DataFrame, feat:str, wgt_name:Optional[str]=None, cuts:Optio
                     weights /= weights.sum()
                     plot_data = np.random.choice(tmp_data[feat], n_samples, p=weights)
             label = labels[i]
-            if show_moments:
+            if show_moments and not cat:
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
                 std  = uncert_round(moms[2], moms[3])
                 if wgt_name is None: label += r' $\bar{x}=$' + f'{mean[0]}±{mean[1]}' + r', $\sigma_x=$' + f'{std[0]}±{std[1]}'
                 else:                label += r' $\bar{x}=$' + f'{mean[0]}' + r', $\sigma_x=$' + f'{std[0]}'
 
-            sns.distplot(plot_data, label=label, **tmp_plot_params)
+            if cat: sns.countplot(plot_data, label=label, color=palette[0], **tmp_plot_params)
+            else:   sns.distplot(plot_data, label=label, **tmp_plot_params)
 
         if len(cuts) > 1 or show_moments: plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         if log_y: plt.yscale('log')
