@@ -311,7 +311,7 @@ class GravNetLayer(AbsGraphBlock):
         self.f_slr = self._get_nn(fan_in=self.n_fpv, width=2*(self.n_s+self.n_lr), fan_out=self.n_s+self.n_lr, depth=self.f_slr_depth)
         self.f_out = self._get_nn(fan_in=self.n_fpv+(len(self.agg_methods)*self.n_lr), width=2*self.n_out, fan_out=self.n_out, depth=self.f_out_depth)
         if self.use_sa:
-            self.sa_agg = self.sa_class(self.n_lr, self.n_out//4, do=self.do, bn=False, act=self.act, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+            self.sa_agg = self.sa_class(self.n_lr, self.n_lr//4, do=self.do, bn=False, act=self.act, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
         
     def _get_nn(self, fan_in:int, width:int, fan_out:int, depth:int) -> nn.Module:
         return nn.Sequential(*[self._get_layer(fan_in if i == 0 else width, width if i+1 < depth else fan_out) for i in range(depth)])

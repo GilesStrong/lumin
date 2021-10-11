@@ -22,6 +22,8 @@
 
 ## Changes
 
+- `GravNetLayer` Self attention width corrected to `n_lr//4`, was previously `n_out//4`
+
 ## Depreciations
 
 ## Comments
