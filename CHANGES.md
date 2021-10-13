@@ -7,6 +7,7 @@
 ## Additions
 
 - `plot_feat` now shows a bar plot for categorical data
+- `bootstrap_stats` added median computation
 
 ## Removals
 
@@ -19,6 +20,7 @@
     - Fixes to do with the number of batches to expect when running few number of folds than the `FoldYielder` contains.
     - Correctly implements leave-one-out for the training folds
     - renamed `n_folds` to `n_repeats` to more accurately reflect its role.
+- `bootstrap_stats` corrected computation of central 68% CI: was `np.percentile(np.abs(points), 68.2)` now `(np.percentile(points, 84.135)-np.percentile(points, 15.865))/2`
 
 ## Changes
 

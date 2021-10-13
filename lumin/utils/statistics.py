@@ -30,14 +30,15 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> Union[
         Result dictionary if `out_q` is `None` else `None`.
     '''
 
-    out_dict, mean, std, c68, boot = {}, [], [], [], []
+    out_dict, mean, median, std, c68, boot = {}, [], [], [], [], []
     name    = ''   if 'name'    not in args else args['name']
     weights = None if 'weights' not in args else args['weights']
-    if 'n'    not in args: args['n']    = 100
-    if 'kde'  not in args: args['kde']  = False
-    if 'mean' not in args: args['mean'] = False
-    if 'std'  not in args: args['std']  = False  
-    if 'c68'  not in args: args['c68']  = False
+    if 'n'      not in args: args['n']      = 100
+    if 'kde'    not in args: args['kde']    = False
+    if 'mean'   not in args: args['mean']   = False
+    if 'median' not in args: args['median'] = False
+    if 'std'    not in args: args['std']    = False  
+    if 'c68'    not in args: args['c68']    = False
     if args['kde'] and args['data'].dtype != 'float64': data = np.array(args['data'], dtype='float64')
     else:                                               data = args['data']
     len_d = len(data)
@@ -49,14 +50,16 @@ def bootstrap_stats(args:Dict[str,Any], out_q:Optional[mp.Queue]=None) -> Union[
             kde = KDEUnivariate(points)
             kde.fit()
             boot.append([kde.evaluate(x) for x in args['x']])
-        if args['mean']: mean.append(np.mean(points))
-        if args['std']:  std.append(np.std(points, ddof=1))
-        if args['c68']:  c68.append(np.percentile(np.abs(points), 68.2))
+        if args['mean']:   mean.append(np.mean(points))
+        if args['median']: median.append(np.median(points))
+        if args['std']:    std.append(np.std(points, ddof=1))
+        if args['c68']:    c68.append((np.percentile(points, 84.135)-np.percentile(points, 15.865))/2)
 
-    if args['kde']:  out_dict[f'{name}_kde']  = boot
-    if args['mean']: out_dict[f'{name}_mean'] = mean
-    if args['std']:  out_dict[f'{name}_std']  = std
-    if args['c68']:  out_dict[f'{name}_c68']  = c68
+    if args['kde']:    out_dict[f'{name}_kde']    = boot
+    if args['mean']:   out_dict[f'{name}_mean']   = mean
+    if args['median']: out_dict[f'{name}_median'] = median
+    if args['std']:    out_dict[f'{name}_std']    = std
+    if args['c68']:    out_dict[f'{name}_c68']    = c68
     if out_q is not None: out_q.put(out_dict)
     else: return out_dict
 
