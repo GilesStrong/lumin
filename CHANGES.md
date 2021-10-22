@@ -21,10 +21,12 @@
     - Correctly implements leave-one-out for the training folds
     - renamed `n_folds` to `n_repeats` to more accurately reflect its role.
 - `bootstrap_stats` corrected computation of central 68% CI: was `np.percentile(np.abs(points), 68.2)` now `(np.percentile(points, 84.135)-np.percentile(points, 15.865))/2`
+- Error when trying to initialise `SEBlock2d` or `SEBlock3d`
 
 ## Changes
 
 - `GravNetLayer` Self attention width corrected to `n_lr//4`, was previously `n_out//4`
+- New PDPBox version finally released on PIP, so no longer requires separate installation.
 
 ## Depreciations
 

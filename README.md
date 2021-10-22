@@ -142,13 +142,7 @@ cd lumin
 pip install .
 ```
 
-Optionally, run pip install with `-e` flag for development installation. Full functionality requires an additional package as described below.
-
-### Additional modules
-
-Full use of LUMIN requires the latest version of PDPbox, but this is not released yet on PyPI, so you'll need to install it from source, too:
-
-- `git clone https://github.com/SauceCat/PDPbox.git && cd PDPbox && pip install -e .` note the `-e` flag to make sure the version number gets set properly.
+Optionally, run pip install with `-e` flag for development installation.
 
 ## Notes
 
