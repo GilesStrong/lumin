@@ -10,7 +10,7 @@ from ..layers.activations import lookup_act
 from ..initialisations import lookup_normal_init
 from .abs_block import AbsBlock
 
-__all__ = ['FullyConnected', 'MultiBlock']
+__all__ = ['IdentBody', 'FullyConnected', 'MultiBlock']
 
 
 class AbsBody(AbsBlock):
@@ -20,6 +20,17 @@ class AbsBody(AbsBlock):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.feat_map,self.lookup_act,self.bn_class = n_in,feat_map,lookup_act,bn_class
     
+
+class IdentBody(AbsBody):
+    r'''
+    Placeholder body module for cases in which a body is not required. Outputs are equal to imputs.
+    '''
+    
+    def forward(self, x:Tensor) -> Tensor:
+        return x
+    
+    def get_out_size(self) -> int: self.n_in
+
 
 class FullyConnected(AbsBody):
     r'''

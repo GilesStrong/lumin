@@ -8,7 +8,7 @@ from .abs_block import AbsBlock
 from torch import Tensor
 import torch.nn as nn
 
-__all__ = ['ClassRegMulti']
+__all__ = ['IdentTail', 'ClassRegMulti']
 
 
 class AbsTail(AbsBlock):
@@ -16,6 +16,17 @@ class AbsTail(AbsBlock):
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init, freeze:bool=False):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
         self.n_in,self.n_out,self.objective,self.bias_init = n_in,n_out,objective,bias_init
+
+
+class IdentTail(AbsTail):
+    r'''
+    Placeholder tail module for cases in which a tail is not required. Outputs are equal to imputs.
+    '''
+
+    def forward(self, x:Tensor) -> Tensor:
+        return x
+    
+    def get_out_size(self) -> int: self.n_in
 
 
 class ClassRegMulti(AbsTail):

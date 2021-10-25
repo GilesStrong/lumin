@@ -13,7 +13,7 @@ from ..layers.activations import lookup_act
 from ..layers.self_attention import SelfAttention
 from ....utils.misc import to_device
 
-__all__ = ['GraphCollapser', 'InteractionNet', 'GravNet', 'GravNetLayer']
+__all__ = ['GraphCollapser', 'NodePredictor', 'InteractionNet', 'GravNet', 'GravNetLayer']
 
 
 class AbsGraphBlock(nn.Module):
@@ -192,6 +192,61 @@ class GraphCollapser(AbsGraphBlock):
         '''
         
         return self.f_final_outs[-1]*self.n_v if self.flatten else self.f_final_outs[-1]*len(self.agg_methods)
+
+
+class NodePredictor(GraphCollapser):
+    r'''
+    Modified :class:`~lumin.nn.models.blocks.gnn_blocks.GraphCollapser` for providing a set of predictions per node in a graph,
+    i.e collapsing features per vertex (batch x vertices x features) down to predictions per vertex, with approriate output activation functions data (batch x vertices x predictions).
+    For compatibility with the format expected by some loss functions (e.g. `torch.nn.NLLLoss`), the output can be transposed to (batch x predictions x vertices). 
+    Features per vertex can be revised beforehand via neural networks and self-attention.
+    The `f_final` neural network can be used to transform the input size to the required number of predicitons per node.
+
+    .. Important::
+        Since predictions are being provided in the `head` part of the model, but LUMIN expects models to also have a `body` and `tail` section.
+        It is strongly recommended to use the :class:`~lumin.nn.models.blocks.body.IdentBody` and :class:`~lumin.nn.models.blocks.tail.IdentTail` modules to be placeholders.
+    
+    Arguments:
+        n_v: number of vertices per data point to expect
+        n_fpv: number of features per vertex to expect
+        out_act: Output activation function to apply to every set of prediction per vertex. The weight initialisation of the last NN layer will be automatically set.
+        transpose_out: If True, will transpose the putput into (batch x predictions x vertices), otherwise the output will be (batch x vertices x predictions)
+        f_initial_outs: list of widths for the NN layers in an NN before self-attention (None = no NN)
+        n_sa_layers: number of self-attention layers (outputs will be fed into subsequent layers)
+        sa_width: width of self attention representation (paper recommends n_fpv//4)
+        f_final_outs: list of widths for the NN layers in an NN after self-attention (None = no NN)
+        global_feat_vec: if true and f_initial_outs or f_final_outs are not None,
+            will concatenate the mean of each feature as new features to each vertex prior to the last network.
+        do: dropout rate to be applied to hidden layers in the NNs
+        bn: whether batch normalisation should be applied to hidden layers in the NNs
+        act: activation function to apply to hidden layers in the NNs
+        lookup_init: function taking choice of activation function, number of inputs, and number of outputs an returning a function to initialise layer weights.
+        lookup_act: function taking choice of activation function and returning an activation function layer
+        bn_class: class to use for BatchNorm, default is :class:`~lumin.nn.models.layers.batchnorms.LCBatchNorm1d`
+        sa_class: class to use for self-attention layers, default is :class:`~lumin.nn.models.layers.self_attention.SelfAttention`
+    '''
+
+    def __init__(self, n_v:int, n_fpv:int, out_act:str, transpose_out:bool, 
+                 f_initial_outs:Optional[List[int]]=None,
+                 n_sa_layers:int=0, sa_width:Optional[int]=None,
+                 f_final_outs:Optional[List[int]]=None,
+                 global_feat_vec:bool=False,
+                 do:float=0, bn:bool=False, act:str='relu',
+                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
+                 lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
+                 sa_class:Callable[[int],nn.Module]=SelfAttention):
+        super().__init__(n_v=n_v, n_fpv=n_fpv, flatten=True, f_initial_outs=f_initial_outs, n_sa_layers=n_sa_layers, sa_width=sa_width,
+                         f_final_outs=f_final_outs, global_feat_vec=global_feat_vec, sa_class=sa_class,
+                         do=do, bn=bn, act=act, lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
+        self.transpose_out = transpose_out
+        if self.f_final_outs is not None:
+            self.lookup_init(out_act, self.f_final[-1][0].weight.shape[1], self.f_final[-1][0].weight[0])(self.f_final[-1][0].weight)
+            self.f_final[-1] = self.f_final[-1][0]
+        self.out_act = self.lookup_act(out_act)
+    
+    def _agg(self, x:Tensor) -> Tensor:
+        if self.transpose_out: x = x.transpose(1,-1)  # batch, class, node else # batch, node, class
+        return self.out_act(x)
 
 
 class InteractionNet(AbsGraphFeatExtractor):
