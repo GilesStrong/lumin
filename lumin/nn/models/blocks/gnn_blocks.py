@@ -431,7 +431,7 @@ class GravNet(AbsGraphFeatExtractor):
         n_lr: number of features to compute per vertex for latent representation
         k: number of neighbours (including self) each vertex should consider when aggregating latent-representation features
         f_out_depth: number of layers to use for the output NN
-        n_out: number of output features to compute per vertex
+        n_out: number of output features to compute per vertex, if a list will add multiple gravnet layers, each of which outputs the respective number of features
         gn_class: class to use for GravNet layers, default is :class:`~lumin.nn.models.blocks.gnn_blocks.GravNetLayer`
         use_sa: if true, will apply self-attention layer to the neighbourhhood features per vertex prior to aggregation
         do: dropout rate to be applied to hidden layers in the NNs
