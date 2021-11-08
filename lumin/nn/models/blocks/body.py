@@ -29,7 +29,7 @@ class IdentBody(AbsBody):
     def forward(self, x:Tensor) -> Tensor:
         return x
     
-    def get_out_size(self) -> int: self.n_in
+    def get_out_size(self) -> int: return self.n_in
 
 
 class FullyConnected(AbsBody):
