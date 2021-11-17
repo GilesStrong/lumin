@@ -33,6 +33,7 @@
 
 - `GravNetLayer` Self attention width corrected to `n_lr//4`, was previously `n_out//4`
 - New PDPBox version finally released on PIP, so no longer requires separate installation.
+- Relaxed version requirement on statsmodels
 
 ## Depreciations
 
