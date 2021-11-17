@@ -7,7 +7,6 @@ import warnings
 from pathlib import Path
 from collections import OrderedDict
 import json
-import sparse
 from fastcore.all import is_listy
 
 from sklearn.pipeline import Pipeline
@@ -160,6 +159,7 @@ class FoldYielder:
             self.matrix_feats = json.loads(self.foldfile['meta_data/matrix_feats'][()])
             self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=np.bool)
             self.matrix_is_sparse = self.matrix_feats['is_sparse'] if 'is_sparse' in self.matrix_feats else False
+            if self.matrix_is_sparse: import sparse
             self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
 
     def _append_matrix(self, data, idx) -> Dict[str,np.ndarray]:

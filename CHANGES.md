@@ -2,6 +2,8 @@
 
 ## Important changes
 
+- The sparse package is now an optional dependency to help easy installation on some platforms, if required, please install manually, e.g. `pip install sparse`
+
 ## Breaking
 
 ## Additions
@@ -10,6 +12,7 @@
 - `bootstrap_stats` added median computation
 - `IdentBody` and `IdentTail` modules, which are placeholders for the body and tail modules in a network, for use when only a head is needed.
 - `NodePredictor` a special `GraphCollapser` which provides a set of predictions per node in a graph, outputting either (batch x predictions x vertices) or (batch x vertices x predictions)
+- `Ensemble` warns if no `ModelBuilder` is set when saving
 
 ## Removals
 

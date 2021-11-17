@@ -144,6 +144,10 @@ pip install .
 
 Optionally, run pip install with `-e` flag for development installation.
 
+### Optional requirements
+
+- sparse: enables loading on COO sparse-format tensors, install via e.g. `pip install sparse`
+
 ## Notes
 
 ### Why use LUMIN

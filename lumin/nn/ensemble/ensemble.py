@@ -364,7 +364,10 @@ class Ensemble(AbsEnsemble):
             os.system(f"rm {name}*.json {name}*.h5 {name}*.pkl")
             for i, model in enumerate(progress_bar(self.models)): model.save(f'{name}_{i}.h5')    
             with open(f'{name}_weights.pkl', 'wb')         as fout: pickle.dump(self.weights, fout)
-            with open(f'{name}_builder.pkl', 'wb')         as fout: pickle.dump(self.model_builder, fout)
+            if self.model_builder  is not None:
+                with open(f'{name}_builder.pkl', 'wb')     as fout: pickle.dump(self.model_builder, fout)
+            else:
+                print("Model Builder was not saved as it is set to None")
             if self.input_pipe  is not None: 
                 with open(f'{name}_input_pipe.pkl',  'wb') as fout: pickle.dump(self.input_pipe, fout)
             if self.output_pipe is not None: 
