@@ -27,6 +27,7 @@
     - renamed `n_folds` to `n_repeats` to more accurately reflect its role.
 - `bootstrap_stats` corrected computation of central 68% CI: was `np.percentile(np.abs(points), 68.2)` now `(np.percentile(points, 84.135)-np.percentile(points, 15.865))/2`
 - Error when trying to initialise `SEBlock2d` or `SEBlock3d`
+- Fixed ipython display import to only run if in notebook
 
 ## Changes
 
