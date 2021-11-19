@@ -59,7 +59,7 @@ class BatchYielder:
         if self.bulk_move:
             inputs = to_device(Tensor(self.inputs))
             if self.targets is not None:
-                if 'multiclass' in self.objective: targets = to_device(Tensor(self.targets).long().squeeze())
+                if 'multiclass' in self.objective: targets = to_device(Tensor(self.targets).long().squeeze(-1))
                 else:                              targets = to_device(Tensor(self.targets))
             if self.weights is not None and self.use_weights: weights = to_device(Tensor(self.weights))
             else:                                             weights = None
@@ -77,7 +77,7 @@ class BatchYielder:
             for i in range(0, upper, self.bs):
                 idxs = full_idxs[i:i+self.bs]
                 if self.targets is not None:
-                    if 'multiclass' in self.objective: y = to_device(Tensor(self.targets[idxs]).long().squeeze())
+                    if 'multiclass' in self.objective: y = to_device(Tensor(self.targets[idxs]).long().squeeze(-1))
                     else:                              y = to_device(Tensor(self.targets[idxs]))
                 else:
                     y = None
