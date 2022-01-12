@@ -152,9 +152,10 @@ class GraphCollapser(AbsGraphBlock):
         if not is_listy(agg_methods): agg_methods = [agg_methods]
         for m in agg_methods:
             m = m.lower()
-            if   m == 'mean': self.agg_methods.append(lambda x: torch.mean(x,dim=1))
-            elif m == 'max':  self.agg_methods.append(lambda x: torch.max(x,dim=1)[0])
-            else: raise ValueError(f'{m} not in [mean, max]')
+            if   m == 'mean':    self.agg_methods.append(lambda x: torch.mean(x,dim=1))
+            elif m == 'max':     self.agg_methods.append(lambda x: torch.max(x,dim=1)[0])
+            elif m == 'absmax':  self.agg_methods.append(lambda x: torch.max(x.abs(),dim=1)[0])
+            else: raise ValueError(f'{m} not in [mean, max, absmax]')
                 
     def _agg(self, x:Tensor) -> Tensor:
         if self.flatten: return x.reshape((len(x),-1))
@@ -432,6 +433,7 @@ class GravNet(AbsGraphFeatExtractor):
         k: number of neighbours (including self) each vertex should consider when aggregating latent-representation features
         f_out_depth: number of layers to use for the output NN
         n_out: number of output features to compute per vertex, if a list will add multiple gravnet layers, each of which outputs the respective number of features
+        agg_methods: list of text representations of aggregation methods. Default is mean and max.
         gn_class: class to use for GravNet layers, default is :class:`~lumin.nn.models.blocks.gnn_blocks.GravNetLayer`
         use_sa: if true, will apply self-attention layer to the neighbourhhood features per vertex prior to aggregation
         do: dropout rate to be applied to hidden layers in the NNs
@@ -448,7 +450,7 @@ class GravNet(AbsGraphFeatExtractor):
             
     def __init__(self, n_v:int, n_fpv:int, cat_means:bool,
                  f_slr_depth:int, n_s:int, n_lr:int,
-                 k:int, f_out_depth:int, n_out:Union[List[int],int],
+                 k:int, f_out_depth:int, n_out:Union[List[int],int], agg_methods:Union[List[str],str]=['mean','max'],
                  gn_class:Callable[[Dict[str,Any]],GravNetLayer]=GravNetLayer, use_sa:bool=False, do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
@@ -456,9 +458,19 @@ class GravNet(AbsGraphFeatExtractor):
         super().__init__(n_v=n_v, n_fpv=n_fpv, do=do, bn=bn, act=act, lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
         store_attr(but=['n_v', 'n_fpv', 'do', 'bn', 'act', 'lookup_init', 'lookup_act', 'bn_class'])
         if not is_listy(self.n_out): self.n_out = [self.n_out]
-        self.agg_methods = [lambda x: torch.mean(x,dim=2), lambda x: torch.max(x,dim=2)[0]]
+        self._check_agg_methods(agg_methods)
         self.grav_layers = self._get_grav_layers()
         self.out_sz = (self.n_v, np.sum([l.get_out_size() for l in self.grav_layers]))
+
+    def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
+        self.agg_methods = []
+        if not is_listy(agg_methods): agg_methods = [agg_methods]
+        for m in agg_methods:
+            m = m.lower()
+            if   m == 'mean':    self.agg_methods.append(lambda x: torch.mean(x,dim=2))
+            elif m == 'max':     self.agg_methods.append(lambda x: torch.max(x,dim=2)[0])
+            elif m == 'absmax':  self.agg_methods.append(lambda x: torch.max(x.abs(),dim=2)[0])
+            else: raise ValueError(f'{m} not in [mean, max, absmax]')
             
     def _get_grav_layers(self) -> nn.ModuleList:
         ls = []

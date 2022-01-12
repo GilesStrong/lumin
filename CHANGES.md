@@ -13,6 +13,8 @@
 - `IdentBody` and `IdentTail` modules, which are placeholders for the body and tail modules in a network, for use when only a head is needed.
 - `NodePredictor` a special `GraphCollapser` which provides a set of predictions per node in a graph, outputting either (batch x predictions x vertices) or (batch x vertices x predictions)
 - `Ensemble` warns if no `ModelBuilder` is set when saving
+- `agg_methods` argument for `GravNet`
+- `absmax` aggregation method for `GravNet` and `GraphCollapser`
 
 ## Removals
 
