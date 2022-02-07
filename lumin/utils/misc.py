@@ -12,7 +12,8 @@ from torch import Tensor
 import torch
 import torch.nn as nn
 
-__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'ForwardHook', 'BackwardHook', 'subsample_df', 'is_partially']
+__all__ = ['to_np', 'to_device', 'to_tensor', 'str2bool', 'to_binary_class', 'ids2unique', 'ForwardHook', 'BackwardHook', 'subsample_df', 'is_partially',
+           'hard_identity']
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')  # TODO: make device choosable by user
 
@@ -216,3 +217,16 @@ def is_partially(var:Any) -> bool:
 
     return isinstance(var, (partial,types.FunctionType)) or inspect.isclass(var)
 
+
+def hard_identity(x:Any) -> Any:
+    '''
+    A hardcoded identity function to replace lambda x: x
+    
+    Arguments:
+        x: anything
+
+    Return:
+        input
+    '''
+
+    return x

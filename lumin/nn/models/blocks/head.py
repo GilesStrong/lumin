@@ -20,7 +20,7 @@ from .gnn_blocks import AbsGraphFeatExtractor, GraphCollapser
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
-from ....utils.misc import to_device, is_partially
+from ....utils.misc import hard_identity, to_device, is_partially
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
 __all__ = ['CatEmbHead', 'MultiHead', 'GNNHead', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
@@ -1091,9 +1091,11 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         
         # Mock NNs to allow out_sz computation
         self.comb = torch.combinations(torch.arange(0,n_particles))
-        self.single_nn = lambda x: torch.zeros((x.size(0),self.n_singles*self.n_particles))
-        self.pair_nn   = lambda x: torch.zeros((x.size(0),self.n_pairs*len(self.comb)))
-        self.pre_bn    = lambda x: x
+        def mock_nn(x:Tensor, n:int) -> Tensor: return torch.zeros((x.size(0),n))
+
+        self.single_nn = partial(mock_nn, n=self.n_singles*self.n_particles)
+        self.pair_nn   = partial(mock_nn, self.n_pairs*len(self.comb))
+        self.pre_bn    = hard_identity
         
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, n_particles=n_particles,
                          bn=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze, bn_class=bn_class)

@@ -2,7 +2,7 @@ import numpy as np
 from typing import Optional, Union, Tuple, Callable, List
 
 from ..initialisations import lookup_normal_init
-from ....utils.misc import to_device
+from ....utils.misc import hard_identity, to_device
 from .abs_block import AbsBlock
 
 from torch import Tensor
@@ -120,7 +120,7 @@ class ClassRegMulti(AbsTail):
                 bias = 0 if self.bias_init is None else self.bias_init
         else:
             if self.y_range is None:
-                self.act = lambda x: x
+                self.act = hard_identity
                 init = self.lookup_init('linear', self.n_in, self.n_out)
                 bias = 0 if self.bias_init is None else self.bias_init
             else:

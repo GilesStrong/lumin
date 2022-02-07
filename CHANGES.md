@@ -15,6 +15,7 @@
 - `Ensemble` warns if no `ModelBuilder` is set when saving
 - `agg_methods` argument for `GravNet`
 - `absmax` aggregation method for `GravNet` and `GraphCollapser`
+- 'hard_identity' function to replace lambda x: x when required
 
 ## Removals
 
@@ -37,6 +38,7 @@
 - `GravNetLayer` Self attention width corrected to `n_lr//4`, was previously `n_out//4`
 - New PDPBox version finally released on PIP, so no longer requires separate installation.
 - Relaxed version requirement on statsmodels
+- Removed lambda expressions from NN code to make it compatible with the new torch package export method
 
 ## Depreciations
 
