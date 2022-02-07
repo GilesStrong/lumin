@@ -377,6 +377,7 @@ class GravNetLayer(AbsGraphBlock):
         if self.use_sa:
             self.sa_agg = self.sa_class(self.n_lr, self.n_lr//4, do=self.do, bn=False, act=self.act, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
 
+    @staticmethod
     def potential(x:Tensor) -> Tensor:
         return torch.exp(-10*(x**2))
         
@@ -480,7 +481,7 @@ class GravNet(AbsGraphFeatExtractor):
             return torch.max(x,dim=2)[0]
         def _absmax(x:Tensor) -> Tensor:
             return torch.max(x.abs(),dim=2)[0]
-            
+
         self.agg_methods = []
         if not is_listy(agg_methods): agg_methods = [agg_methods]
         for m in agg_methods:
