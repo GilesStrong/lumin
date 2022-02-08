@@ -20,7 +20,7 @@ from .gnn_blocks import AbsGraphFeatExtractor, GraphCollapser
 from ....plotting.plot_settings import PlotSettings
 from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
-from ....utils.misc import to_device, is_partially
+from ....utils.misc import hard_identity, to_device, is_partially
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
 
 __all__ = ['CatEmbHead', 'MultiHead', 'GNNHead', 'RecurrentHead', 'AbsConv1dHead', 'LorentzBoostNet', 'AutoExtractLorentzBoostNet']
@@ -957,10 +957,9 @@ class LorentzBoostNet(AbsMatrixHead):
         return nn.Parameter(torch.randn(self.n_particles,1,self.n_v,1)/self.n_particles)
     
     def _get_particles(self, x:Tensor) -> Tensor:
-        def _upscale(mat:Tensor, wgts:nn.Parameter) -> Tensor: return torch.transpose(torch.abs(wgts)*mat, 0,1).sum(2)
-        
         # Get particles and reference frames
-        parts,rfs = _upscale(x, self.part_wgts),_upscale(x, self.rf_wgts)
+        parts = torch.transpose(torch.abs(self.part_wgts)*x, 0,1).sum(2)
+        rfs = torch.transpose(torch.abs(self.rf_wgts)*x, 0,1).sum(2)
         parts,rfs = parts.reshape(-1,4),rfs.reshape(-1,4)
         
         # Compute boost vectors to reference frames and gamma factors
@@ -986,15 +985,17 @@ class LorentzBoostNet(AbsMatrixHead):
             2D tensor with dimensions [batch, features]
         '''
 
-        def _cos_delta(x:Tensor) -> Tensor:
-            v0,v1 = x[:,:,0,:3],x[:,:,1,:3]
-            d = torch.sum(v0*v1, dim=2)
-            mag = v0.norm(dim=2)*v1.norm(dim=2)
-            return d/mag
-
         bs = x.size(0)
-        out = [x.reshape((bs,-1))]
-        out.append(_cos_delta(x[:,self.comb]))
+        out = [x.reshape((bs,-1))]  # 4-mom of particles
+
+        # cosine angle between all particle pairs
+        comb_x = x[:,self.comb]
+        v0,v1 = comb_x[:,:,0,:3],comb_x[:,:,1,:3]
+        d = torch.sum(v0*v1, dim=2)
+        mag = v0.norm(dim=2)*v1.norm(dim=2)
+        cosdelta = d/mag
+        out.append(cosdelta)
+
         return torch.cat(out, -1)
 
     def forward(self, x:Union[Tensor,Tuple[Tensor,Tensor]]) -> Tensor:
@@ -1088,12 +1089,12 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d, **kargs):
         self.n_singles,self.n_pairs = n_singles,n_pairs
+        self.comb = torch.combinations(torch.arange(0,n_particles))
         
         # Mock NNs to allow out_sz computation
-        self.comb = torch.combinations(torch.arange(0,n_particles))
-        self.single_nn = lambda x: torch.zeros((x.size(0),self.n_singles*self.n_particles))
-        self.pair_nn   = lambda x: torch.zeros((x.size(0),self.n_pairs*len(self.comb)))
-        self.pre_bn    = lambda x: x
+        self.single_nn = partial(self._mock_nn, n=self.n_singles*n_particles)
+        self.pair_nn   = partial(self._mock_nn, n=self.n_pairs*len(self.comb))
+        self.pre_bn    = hard_identity
         
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, n_particles=n_particles,
                          bn=False, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze, bn_class=bn_class)
@@ -1103,6 +1104,9 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         if n_pairs   > 0: self.pair_nn   = self._get_nn(n_in=8, depth=depth, width=width, n_out=n_pairs, act=act, do=do, bn=bn,
                                                         lookup_act=lookup_act, lookup_init=lookup_init)
         self.pre_bn = self.bn_class(4*self.n_particles)
+
+    @staticmethod
+    def _mock_nn(x:Tensor, n:int) -> Tensor: return torch.zeros((x.size(0),n))
     
     def _get_nn(self, n_in:int, depth:int, width:int, n_out:int, act:str, do:bool, bn:bool,
                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]],

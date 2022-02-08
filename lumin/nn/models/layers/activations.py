@@ -4,6 +4,7 @@ import torch
 import torch.nn as nn
 from torch import Tensor
 
+from ....utils.misc import hard_identity
 from .mish import Mish
 
 __all__ = ['lookup_act', 'Swish']
@@ -26,7 +27,7 @@ def lookup_act(act:str) -> Any:
     if act == 'sigmoid':    return nn.Sigmoid()
     if act == 'logsoftmax': return nn.LogSoftmax(1)
     if act == 'softmax':    return nn.Softmax(1)
-    if act == 'linear':     return lambda x: x
+    if act == 'linear':     return hard_identity
     if 'swish' in act:      return Swish()
     if act == 'mish':       return Mish()
     raise ValueError("Activation not implemented")

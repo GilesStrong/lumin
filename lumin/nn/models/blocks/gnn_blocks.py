@@ -11,7 +11,7 @@ from ..initialisations  import lookup_normal_init
 from ..layers.batchnorms import LCBatchNorm1d
 from ..layers.activations import lookup_act
 from ..layers.self_attention import SelfAttention
-from ....utils.misc import to_device
+from ....utils.misc import hard_identity, to_device
 
 __all__ = ['GraphCollapser', 'NodePredictor', 'InteractionNet', 'GravNet', 'GravNetLayer']
 
@@ -124,7 +124,7 @@ class GraphCollapser(AbsGraphBlock):
         
         self.gfv_pos = None
         if self.f_initial_outs is None:
-            self.f_inital = lambda x: x
+            self.f_inital = hard_identity
             self.f_initial_outs = [self.n_fpv]
         else:
             if not is_listy(self.f_initial_outs): self.f_initial_outs = [self.f_initial_outs]
@@ -138,7 +138,7 @@ class GraphCollapser(AbsGraphBlock):
                                                           lookup_act=lookup_act, lookup_init=self.lookup_init) for _ in range(self.n_sa_layers)])
         
         if self.f_final_outs is None:
-            self.f_final = lambda x: x
+            self.f_final = hard_identity
             self.f_final_outs = [self.f_initial_outs[-1]] if self.n_sa_layers == 0 else [self.f_initial_outs[-1]*(self.n_sa_layers)]
         else:
             if not is_listy(self.f_final_outs): self.f_final_outs = [self.f_final_outs]
@@ -146,15 +146,27 @@ class GraphCollapser(AbsGraphBlock):
             if self.global_feat_vec and self.gfv_pos is None: fpv *= 2
             self.f_final = self._get_nn(fpv, self.f_final_outs)
             if self.global_feat_vec and self.gfv_pos is None: self.gfv_pos = 'pre-final'
+
+    @staticmethod
+    def _agg_mean(x:Tensor) -> Tensor:
+        return torch.mean(x,dim=1)
+
+    @staticmethod
+    def _agg_max(x:Tensor) -> Tensor:
+        return torch.max(x,dim=1)[0]
+
+    @staticmethod
+    def _agg_absmax(x:Tensor) -> Tensor:
+        return torch.max(x.abs(),dim=1)[0]
         
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
         self.agg_methods = []
         if not is_listy(agg_methods): agg_methods = [agg_methods]
         for m in agg_methods:
             m = m.lower()
-            if   m == 'mean':    self.agg_methods.append(lambda x: torch.mean(x,dim=1))
-            elif m == 'max':     self.agg_methods.append(lambda x: torch.max(x,dim=1)[0])
-            elif m == 'absmax':  self.agg_methods.append(lambda x: torch.max(x.abs(),dim=1)[0])
+            if   m == 'mean':    self.agg_methods.append(self._agg_mean)
+            elif m == 'max':     self.agg_methods.append(self._agg_max)
+            elif m == 'absmax':  self.agg_methods.append(self._agg_absmax)
             else: raise ValueError(f'{m} not in [mean, max, absmax]')
                 
     def _agg(self, x:Tensor) -> Tensor:
@@ -356,18 +368,23 @@ class GravNetLayer(AbsGraphBlock):
     '''
     
     def __init__(self, n_fpv:int, n_s:int, n_lr:int, k:int, agg_methods:List[Callable[[Tensor],Tensor]], n_out:int,
-                 cat_means:bool=True, f_slr_depth:int=1, f_out_depth:int=1, potential:Callable[[Tensor],Tensor]=lambda x: torch.exp(-10*(x**2)),
+                 cat_means:bool=True, f_slr_depth:int=1, f_out_depth:int=1, potential:Optional[Callable[[Tensor],Tensor]]=None,
                  use_sa:bool=False, do:float=0, bn:bool=False, act:str='relu',
                  lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
                  lookup_act:Callable[[str],Any]=lookup_act, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d,
                  sa_class:Callable[[int],nn.Module]=SelfAttention):
         super().__init__(n_v=None, n_fpv=n_fpv, do=do, bn=bn, act=act, lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
-        store_attr()
+        store_attr(but=['potential'])
+        if potential is not None: self.potential = potential
         if self.cat_means: self.n_fpv *= 2
         self.f_slr = self._get_nn(fan_in=self.n_fpv, width=2*(self.n_s+self.n_lr), fan_out=self.n_s+self.n_lr, depth=self.f_slr_depth)
         self.f_out = self._get_nn(fan_in=self.n_fpv+(len(self.agg_methods)*self.n_lr), width=2*self.n_out, fan_out=self.n_out, depth=self.f_out_depth)
         if self.use_sa:
             self.sa_agg = self.sa_class(self.n_lr, self.n_lr//4, do=self.do, bn=False, act=self.act, lookup_act=self.lookup_act, lookup_init=self.lookup_init)
+
+    @staticmethod
+    def potential(x:Tensor) -> Tensor:
+        return torch.exp(-10*(x**2))
         
     def _get_nn(self, fan_in:int, width:int, fan_out:int, depth:int) -> nn.Module:
         return nn.Sequential(*[self._get_layer(fan_in if i == 0 else width, width if i+1 < depth else fan_out) for i in range(depth)])
@@ -462,14 +479,26 @@ class GravNet(AbsGraphFeatExtractor):
         self.grav_layers = self._get_grav_layers()
         self.out_sz = (self.n_v, np.sum([l.get_out_size() for l in self.grav_layers]))
 
+    @staticmethod
+    def _agg_mean(x:Tensor) -> Tensor:
+        return torch.mean(x,dim=2)
+
+    @staticmethod
+    def _agg_max(x:Tensor) -> Tensor:
+        return torch.max(x,dim=2)[0]
+    
+    @staticmethod
+    def _agg_absmax(x:Tensor) -> Tensor:
+        return torch.max(x.abs(),dim=2)[0]
+
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
         self.agg_methods = []
         if not is_listy(agg_methods): agg_methods = [agg_methods]
         for m in agg_methods:
             m = m.lower()
-            if   m == 'mean':    self.agg_methods.append(lambda x: torch.mean(x,dim=2))
-            elif m == 'max':     self.agg_methods.append(lambda x: torch.max(x,dim=2)[0])
-            elif m == 'absmax':  self.agg_methods.append(lambda x: torch.max(x.abs(),dim=2)[0])
+            if   m == 'mean':    self.agg_methods.append(self._agg_mean)
+            elif m == 'max':     self.agg_methods.append(self._agg_max)
+            elif m == 'absmax':  self.agg_methods.append(self._agg_absmax)
             else: raise ValueError(f'{m} not in [mean, max, absmax]')
             
     def _get_grav_layers(self) -> nn.ModuleList:
