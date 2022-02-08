@@ -1092,8 +1092,8 @@ class AutoExtractLorentzBoostNet(LorentzBoostNet):
         self.comb = torch.combinations(torch.arange(0,n_particles))
         
         # Mock NNs to allow out_sz computation
-        self.single_nn = partial(self.mock_nn, n=self.n_singles*n_particles)
-        self.pair_nn   = partial(self.mock_nn, n=self.n_pairs*len(self.comb))
+        self.single_nn = partial(self._mock_nn, n=self.n_singles*n_particles)
+        self.pair_nn   = partial(self._mock_nn, n=self.n_pairs*len(self.comb))
         self.pre_bn    = hard_identity
         
         super().__init__(cont_feats=cont_feats, vecs=vecs, feats_per_vec=feats_per_vec, n_particles=n_particles,
