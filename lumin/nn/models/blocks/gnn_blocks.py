@@ -146,22 +146,27 @@ class GraphCollapser(AbsGraphBlock):
             if self.global_feat_vec and self.gfv_pos is None: fpv *= 2
             self.f_final = self._get_nn(fpv, self.f_final_outs)
             if self.global_feat_vec and self.gfv_pos is None: self.gfv_pos = 'pre-final'
+
+    @staticmethod
+    def _agg_mean(x:Tensor) -> Tensor:
+        return torch.mean(x,dim=1)
+
+    @staticmethod
+    def _agg_max(x:Tensor) -> Tensor:
+        return torch.max(x,dim=1)[0]
+
+    @staticmethod
+    def _agg_absmax(x:Tensor) -> Tensor:
+        return torch.max(x.abs(),dim=1)[0]
         
     def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
-        def _mean(x:Tensor) -> Tensor:
-            return torch.mean(x,dim=1)
-        def _max(x:Tensor) -> Tensor:
-            return torch.max(x,dim=1)[0]
-        def _absmax(x:Tensor) -> Tensor:
-            return torch.max(x.abs(),dim=1)[0]
-
         self.agg_methods = []
         if not is_listy(agg_methods): agg_methods = [agg_methods]
         for m in agg_methods:
             m = m.lower()
-            if   m == 'mean':    self.agg_methods.append(_mean)
-            elif m == 'max':     self.agg_methods.append(_max)
-            elif m == 'absmax':  self.agg_methods.append(_absmax)
+            if   m == 'mean':    self.agg_methods.append(self._agg_mean)
+            elif m == 'max':     self.agg_methods.append(self._agg_max)
+            elif m == 'absmax':  self.agg_methods.append(self._agg_absmax)
             else: raise ValueError(f'{m} not in [mean, max, absmax]')
                 
     def _agg(self, x:Tensor) -> Tensor:
@@ -474,21 +479,26 @@ class GravNet(AbsGraphFeatExtractor):
         self.grav_layers = self._get_grav_layers()
         self.out_sz = (self.n_v, np.sum([l.get_out_size() for l in self.grav_layers]))
 
-    def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
-        def _mean(x:Tensor) -> Tensor:
-            return torch.mean(x,dim=2)
-        def _max(x:Tensor) -> Tensor:
-            return torch.max(x,dim=2)[0]
-        def _absmax(x:Tensor) -> Tensor:
-            return torch.max(x.abs(),dim=2)[0]
+    @staticmethod
+    def _agg_mean(x:Tensor) -> Tensor:
+        return torch.mean(x,dim=2)
 
+    @staticmethod
+    def _agg_max(x:Tensor) -> Tensor:
+        return torch.max(x,dim=2)[0]
+    
+    @staticmethod
+    def _agg_absmax(x:Tensor) -> Tensor:
+        return torch.max(x.abs(),dim=2)[0]
+
+    def _check_agg_methods(self, agg_methods:Union[List[str],str]) -> None:
         self.agg_methods = []
         if not is_listy(agg_methods): agg_methods = [agg_methods]
         for m in agg_methods:
             m = m.lower()
-            if   m == 'mean':    self.agg_methods.append(_mean)
-            elif m == 'max':     self.agg_methods.append(_max)
-            elif m == 'absmax':  self.agg_methods.append(_absmax)
+            if   m == 'mean':    self.agg_methods.append(self._agg_mean)
+            elif m == 'max':     self.agg_methods.append(self._agg_max)
+            elif m == 'absmax':  self.agg_methods.append(self._agg_absmax)
             else: raise ValueError(f'{m} not in [mean, max, absmax]')
             
     def _get_grav_layers(self) -> nn.ModuleList:
