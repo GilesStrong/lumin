@@ -108,10 +108,10 @@ class Model(AbsModel):
 
     def set_input_mask(self, mask:np.ndarray) -> None:
         r'''
-        Mask input columns by only using input columns whose indeces are listed in mask
+        Mask input columns by only using input columns whose indices are listed in mask
 
         Arguments:
-            mask: array of column indeces to use from all input columns
+            mask: array of column indices to use from all input columns
         '''
 
         self.input_mask = mask

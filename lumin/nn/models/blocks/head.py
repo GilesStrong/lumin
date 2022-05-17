@@ -300,7 +300,7 @@ class MultiHead(AbsHead):
         
     def _map_outputs(self) -> None:
         r'''
-        Combines `feat_maps` of the matrix and flat heads, offsetting to indeces to account for the concatenated outputs.
+        Combines `feat_maps` of the matrix and flat heads, offsetting to indices to account for the concatenated outputs.
         '''
 
         self.feat_map = {**self.flat_head.feat_map}

@@ -26,7 +26,7 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     if 'n'    not in args: args['n']    = 100
     np.random.seed()
     for i in range(args['n']):
-        points = np.random.choice(args['indeces'], len(args['indeces']), replace=True)
+        points = np.random.choice(args['indices'], len(args['indices']), replace=True)
         if len(set(args['labels'].loc[points])) == 2: scores.append(roc_auc_score(y_true=args['labels'].loc[points], y_score=args['preds'].loc[points],
                                                                                   sample_weight=args['weights'].loc[points] if 'weights' in args else None))
     out_dict[f"{args['name']}_score"] = scores
@@ -71,7 +71,7 @@ def plot_roc(data:Union[pd.DataFrame,List[pd.DataFrame]], pred_name:str='pred', 
         if n_bootstrap > 1:
             auc_args = []
             for i in range(len(data)):
-                auc_args.append({'n': n_bootstrap, 'labels': data[i][targ_name], 'preds': data[i][pred_name], 'name': i, 'indeces': data[i].index.tolist()})
+                auc_args.append({'n': n_bootstrap, 'labels': data[i][targ_name], 'preds': data[i][pred_name], 'name': i, 'indices': data[i].index.tolist()})
                 if wgt_name is not None:  auc_args[-1]['weights'] = data[i][wgt_name]
             res = mp_run(auc_args, _bs_roc_auc)
             for i in range(len(data)): mean_scores.append((np.mean(res[f'{i}_score']), np.std(res[f'{i}_score'], ddof=1)))

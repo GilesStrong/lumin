@@ -1,4 +1,4 @@
-{   "editor.autoIndent": true,
+{   "editor.autoIndent": "full",
     "python.linting.pylintEnabled": false,
     "python.linting.enabled": true,
     "python.linting.banditEnabled": false,

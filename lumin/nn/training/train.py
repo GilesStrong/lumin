@@ -65,8 +65,8 @@ def train_models(fy:FoldYielder, n_models:int, bs:int, model_builder:ModelBuilde
         bulk_move: if true, will optimise for speed by using more RAM and VRAM
         start_model_id: model ID at whcih to start training,
             i.e. if training was interupted, this can be set to resume training form the last model which was trained
-        excl_idxs: optional list of fold indeces to exclude from training and validation
-        unique_trn_idxs: if false, then fold indeces can be shared, 
+        excl_idxs: optional list of fold indices to exclude from training and validation
+        unique_trn_idxs: if false, then fold indices can be shared, 
             e.g. if `fy` contains 10 folds and five models are requested, each model will be trained on 9 folds.
             if true, each model will every model will be trained on different folds,
             e.g. if `fy` contains 10 folds and five models are requested, each model will be trained on 2 folds and no same fold is used to train more than one model
