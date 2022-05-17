@@ -27,8 +27,9 @@ def _bs_roc_auc(args:Dict[str,Any], out_q:mp.Queue) -> None:
     np.random.seed()
     for i in range(args['n']):
         points = np.random.choice(args['indices'], len(args['indices']), replace=True)
-        if len(set(args['labels'].loc[points])) == 2: scores.append(roc_auc_score(y_true=args['labels'].loc[points], y_score=args['preds'].loc[points],
-                                                                                  sample_weight=args['weights'].loc[points] if 'weights' in args else None))
+        if len(set(args['labels'].loc[points])) == 2:  # Avoid single class in sampling
+            scores.append(roc_auc_score(y_true=args['labels'].loc[points], y_score=args['preds'].loc[points],
+                                        sample_weight=args['weights'].loc[points] if 'weights' in args else None))
     out_dict[f"{args['name']}_score"] = scores
     out_q.put(out_dict)
 
