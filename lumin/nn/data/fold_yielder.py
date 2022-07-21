@@ -130,9 +130,14 @@ class FoldYielder:
         self.foldfile, self.n_folds = foldfile, len([f for f in foldfile if 'fold_' in f])
         self.has_matrix = 'matrix_inputs' in self.columns()
         if 'meta_data' in self.foldfile: self._load_meta_data()
-        self.fld_szs = {i:self.foldfile[f'fold_{i}/targets'].shape[0] for i in range(self.n_folds)}
+        self.fld_szs = {}
+        for i in range(self.n_folds):
+            if self.target_is_tensor and self.target_tensor_is_sparse:
+                self.fld_szs[i] = self.foldfile[f'fold_{i}/targets'][1,-1]+1
+            else:
+                self.fld_szs[i] = self.foldfile[f'fold_{i}/targets'].shape[0]
 
-    def get_data_count(self, idxs:Union[int,List[int]]) -> int:
+    def get_data_count(self, idxs:Optional[Union[int,List[int]]]=None) -> int:
         r'''
         Returns total number of data entries in requested folds
 
@@ -143,6 +148,7 @@ class FoldYielder:
             Total number of entries in the folds 
         '''
 
+        if idxs is None: idxs = list(range(self.n_folds))
         if not is_listy(idxs): idxs = [idxs]
         s = 0
         for i in idxs: s += self.fld_szs[i]
