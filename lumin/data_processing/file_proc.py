@@ -56,7 +56,7 @@ def fold2foldfile(df:Optional[pd.DataFrame], out_file:h5py.File, fold_idx:int,
                   cont_feats:List[str], cat_feats:List[str], targ_feats:Union[str,List[str]], targ_type:Any,
                   misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None,
                   matrix_lookup:Optional[List[str]]=None, matrix_missing:Optional[np.ndarray]=None, matrix_shape:Optional[Tuple[int,int]]=None,
-                  tensor_data:Optional[np.ndarray]=None, tensor_target:Optional[np.ndarray]=None, compression:Optional[str]=None) -> None:
+                  tensor_data:Optional[np.ndarray]=None, tensor_target:Optional[np.ndarray]=None, compression:Optional[str]=None, n_samples:Optional[int]=None) -> None:
     r'''
     Save fold of data into an h5py Group
 
@@ -81,14 +81,20 @@ def fold2foldfile(df:Optional[pd.DataFrame], out_file:h5py.File, fold_idx:int,
             The first dimension of the array must be compatible with the length of the data frame.
         tensor_target: optional encoding of multi-dimensional targets as a numpy array
         compression: optional compression argument for h5py, e.g. 'lzf'
+        n_samples: in case df is None, please supply the number of samples in the fold: this cannot be determined otherwise, since tensor_data and tensor_target may be sparse
     '''
 
     # TODO infer target type automatically
+
+    if df is None and n_samples is None:
+        raise ValueError("Please supply the number of samples in the fold (n_samples): this cannot be determined otherwise, since tensor_data and tensor_target may be sparse")
 
     grp = out_file.create_group(f'fold_{fold_idx}')
     
     if df is not None:
         save_to_grp(np.hstack((df[cont_feats].values.astype('float32'), df[cat_feats].values.astype('float32'))), grp, 'inputs', compression=compression)
+    else:
+        save_to_grp(np.empty((n_samples,0)), grp, 'inputs', compression=compression)  # Inputs must exist for compatibility and data-count reasons
     if tensor_target is None:
         save_to_grp(df[targ_feats].values.astype(targ_type), grp, 'targets', compression=compression)
     else:
@@ -196,7 +202,7 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
                       targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat,
                       matrix_lookup=lookup, matrix_missing=missing, matrix_shape=shape, tensor_data=fold_tensor_data if tensor_data is not None else None,
                       tensor_target=fold_tensor_targ if tensor_target is not None else None,
-                      compression=compression)
+                      compression=compression, n_samples=len(fold))
     add_meta_data(out_file=out_file, feats=df.columns if df is not None else [], cont_feats=cont_feats, cat_feats=cat_feats, cat_maps=cat_maps,
                   targ_feats=targ_feats, wgt_feat=wgt_feat,
                   matrix_vecs=matrix_vecs, matrix_feats_per_vec=matrix_feats_per_vec, matrix_row_wise=matrix_row_wise,
