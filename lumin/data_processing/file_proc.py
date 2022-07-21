@@ -183,7 +183,6 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
 
         if tensor_data is not None:
             fold_tensor_data = tensor_data[fold]
-            print()
             if tensor_as_sparse:
                 fold_tensor_data = sparse.as_coo(fold_tensor_data)
                 fold_tensor_data = np.vstack((fold_tensor_data.data, fold_tensor_data.coords))
@@ -192,7 +191,6 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
             if tensor_target_as_sparse:
                 fold_tensor_targ = sparse.as_coo(fold_tensor_targ)
                 fold_tensor_targ = np.vstack((fold_tensor_targ.data, fold_tensor_targ.coords))
-                print(fold_tensor_targ.shape)
 
         fold2foldfile(df.iloc[fold].copy() if df is not None else None, out_file, fold_idx, cont_feats=cont_feats, cat_feats=cat_feats, targ_feats=targ_feats,
                       targ_type=targ_type, misc_feats=misc_feats, wgt_feat=wgt_feat,
