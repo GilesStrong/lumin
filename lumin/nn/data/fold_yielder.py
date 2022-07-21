@@ -130,9 +130,14 @@ class FoldYielder:
         self.foldfile, self.n_folds = foldfile, len([f for f in foldfile if 'fold_' in f])
         self.has_matrix = 'matrix_inputs' in self.columns()
         if 'meta_data' in self.foldfile: self._load_meta_data()
-        self.fld_szs = {i:self.foldfile[f'fold_{i}/targets'].shape[0] for i in range(self.n_folds)}
+        self.fld_szs = {}
+        for i in range(self.n_folds):
+            if self.target_tensor_is_sparse:
+                self.fld_szs[i] = self.foldfile[f'fold_{i}/targets'][1,-1]+1
+            else:
+                self.fld_szs[i] = self.foldfile[f'fold_{i}/targets'].shape[0]
 
-    def get_data_count(self, idxs:Union[int,List[int]]) -> int:
+    def get_data_count(self, idxs:Optional[Union[int,List[int]]]=None) -> int:
         r'''
         Returns total number of data entries in requested folds
 
@@ -143,6 +148,7 @@ class FoldYielder:
             Total number of entries in the folds 
         '''
 
+        if idxs is None: idxs = list(range(self.n_folds))
         if not is_listy(idxs): idxs = [idxs]
         s = 0
         for i in idxs: s += self.fld_szs[i]
@@ -161,11 +167,15 @@ class FoldYielder:
             self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=np.bool)
             self.matrix_is_sparse = self.matrix_feats['is_sparse'] if 'is_sparse' in self.matrix_feats else False
             self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
+        else:
+            self.matrix_is_sparse = False
         self.target_is_tensor = 'target_tensor' in self.foldfile['meta_data']
         if self.target_is_tensor:
             self.target_tensor_feats = json.loads(self.foldfile['meta_data/target_tensor'][()])
             self.target_tensor_is_sparse = self.target_tensor_feats['is_sparse'] if 'is_sparse' in self.target_tensor_feats else False
             self.target_tensor_shape = self.target_tensor_feats['shape'] if 'shape' in self.target_tensor_feats else False
+        else:
+            self.target_tensor_is_sparse = False
         if self.matrix_is_sparse or self.target_tensor_is_sparse:
             self.sparse_module = import_module('sparse')  # Don't want to make sparse a dependency due to difficulty of installation on some systems
     
@@ -291,7 +301,7 @@ class FoldYielder:
                 if column == 'matrix_inputs' and self.matrix_is_sparse:
                     c = tmp[1:].astype(int)
                     tmp = self.sparse_module.COO(coords=c, data=tmp[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
-                if column == 'targets' and self.target_is_tensor and self.target_tensor_is_sparse:
+                if column == 'targets' and self.target_tensor_is_sparse:
                     c = tmp[1:].astype(int)
                     tmp = self.sparse_module.COO(coords=c, data=tmp[0], shape=[c[0][-1]+1]+self.target_tensor_shape).todense()
                 data.append(tmp)
@@ -302,7 +312,7 @@ class FoldYielder:
             if column == 'matrix_inputs' and self.matrix_is_sparse:
                 c = data[1:].astype(int)
                 data = self.sparse_module.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
-            if column == 'targets' and self.target_is_tensor and self.target_tensor_is_sparse:
+            if column == 'targets' and self.target_tensor_is_sparse:
                 c = data[1:].astype(int)
                 data = self.sparse_module.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.target_tensor_shape).todense()
         return data[:, None] if data[0].shape == () and add_newaxis else data
