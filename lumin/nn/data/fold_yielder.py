@@ -8,6 +8,7 @@ from pathlib import Path
 from collections import OrderedDict
 import json
 from fastcore.all import is_listy
+from importlib import import_module
 
 from sklearn.pipeline import Pipeline
 
@@ -159,9 +160,15 @@ class FoldYielder:
             self.matrix_feats = json.loads(self.foldfile['meta_data/matrix_feats'][()])
             self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=np.bool)
             self.matrix_is_sparse = self.matrix_feats['is_sparse'] if 'is_sparse' in self.matrix_feats else False
-            if self.matrix_is_sparse: import sparse
             self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
-
+        self.target_is_tensor = 'target_tensor' in self.foldfile['meta_data']
+        if self.target_is_tensor:
+            self.target_tensor_feats = json.loads(self.foldfile['meta_data/target_tensor'][()])
+            self.target_tensor_is_sparse = self.target_tensor_feats['is_sparse'] if 'is_sparse' in self.target_tensor_feats else False
+            self.target_tensor_shape = self.target_tensor_feats['shape'] if 'shape' in self.target_tensor_feats else False
+        if self.matrix_is_sparse or self.target_tensor_is_sparse:
+            self.sparse_module = import_module('sparse')  # Don't want to make sparse a dependency due to difficulty of installation on some systems
+    
     def _append_matrix(self, data, idx) -> Dict[str,np.ndarray]:
         data['inputs'] = (data['inputs'],self.get_column('matrix_inputs', n_folds=1, fold_idx=idx))
         return data
@@ -283,7 +290,10 @@ class FoldYielder:
                 tmp = self.foldfile[f'{fold}/{column}'][()]
                 if column == 'matrix_inputs' and self.matrix_is_sparse:
                     c = tmp[1:].astype(int)
-                    tmp = sparse.COO(coords=c, data=tmp[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
+                    tmp = self.sparse_module.COO(coords=c, data=tmp[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
+                if column == 'targets' and self.target_is_tensor and self.target_tensor_is_sparse:
+                    c = tmp[1:].astype(int)
+                    tmp = self.sparse_module.COO(coords=c, data=tmp[0], shape=[c[0][-1]+1]+self.target_tensor_shape).todense()
                 data.append(tmp)
             data = np.concatenate(data)
         else:
@@ -291,7 +301,10 @@ class FoldYielder:
             data = self.foldfile[f'fold_{fold_idx}/{column}'][()]
             if column == 'matrix_inputs' and self.matrix_is_sparse:
                 c = data[1:].astype(int)
-                data = sparse.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
+                data = self.sparse_module.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.matrix_shape).todense()
+            if column == 'targets' and self.target_is_tensor and self.target_tensor_is_sparse:
+                c = data[1:].astype(int)
+                data = self.sparse_module.COO(coords=c, data=data[0], shape=[c[0][-1]+1]+self.target_tensor_shape).todense()
         return data[:, None] if data[0].shape == () and add_newaxis else data
 
     def get_data(self, n_folds:Optional[int]=None, fold_idx:Optional[int]=None) -> Dict[str,np.ndarray]:
