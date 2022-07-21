@@ -16,6 +16,7 @@
 - `agg_methods` argument for `GravNet`
 - `absmax` aggregation method for `GravNet` and `GraphCollapser`
 - 'hard_identity' function to replace lambda x: x when required
+- `fold2foldfile`, `df2foldfile`, and `add_meta_data` can now deal with targets in the form of multi dimensional tensors, and convert them to sparse COO format
 
 ## Removals
 
@@ -32,6 +33,7 @@
 - Error when trying to initialise `SEBlock2d` or `SEBlock3d`
 - Fixed ipython display import to only run if in notebook
 - Bug in multiclass-classification with on a batch of 1 data-point caused by targets being squeezed 2 dimensions, rather than 1.
+- `tensor_is_sparse` argument for `df2foldfile` not functioning as expected
 
 ## Changes
 
