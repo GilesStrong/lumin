@@ -35,6 +35,7 @@
 - Bug in multiclass-classification with on a batch of 1 data-point caused by targets being squeezed 2 dimensions, rather than 1.
 - `tensor_is_sparse` argument for `df2foldfile` not functioning as expected
 - Possible bug when applying data augmentation using `HEPAugFoldYielder` to target features, but not supplying target features when initialising the fold yielder
+- Potential bug in `NodePredictor` when `f_final` is a `hard_identity` and `f_final_outs` is not None.
 
 ## Changes
 
