@@ -252,7 +252,7 @@ class NodePredictor(GraphCollapser):
                          f_final_outs=f_final_outs, global_feat_vec=global_feat_vec, sa_class=sa_class,
                          do=do, bn=bn, act=act, lookup_init=lookup_init, lookup_act=lookup_act, bn_class=bn_class)
         self.transpose_out = transpose_out
-        if self.f_final_outs is not None:
+        if self.f_final_outs is not None and isinstance(self.f_final, nn.Module):
             self.lookup_init(out_act, self.f_final[-1][0].weight.shape[1], self.f_final[-1][0].weight[0])(self.f_final[-1][0].weight)
             self.f_final[-1] = self.f_final[-1][0]
         self.out_act = self.lookup_act(out_act)
