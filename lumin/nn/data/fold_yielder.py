@@ -475,8 +475,9 @@ class HEPAugFoldYielder(FoldYielder):
         if rot_mult > 0 and not random_rot and rot_mult % 2 != 0:
             warnings.warn('Warning: rot_mult must currently be even for fixed rotations, adding an extra rotation multiplicity')
             rot_mult += 1
-        self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug,self.targ_feats = \
-            rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug,targ_feats
+        self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug = \
+            rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug
+        if not hasattr(self, 'targ_feats'): self.targ_feats = targ_feats
         self.augmented,self.reflect_axes,self.aug_mult = True,[],1
         self.vectors = [x[:-3] for x in self.cont_feats if '_px' in x]
         if self.targ_feats is not None: self.targ_vectors = [x[:-3] for x in self.targ_feats if '_px' in x]
