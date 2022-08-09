@@ -175,16 +175,15 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
             print(f'{dup} present in both matrix features and continuous features; removing from continuous features')
             cont_feats = [f for f in cont_feats if f not in dup]
 
-    if shuffle:
-        if strat_key is not None and strat_key not in df.columns:
-            print(f'{strat_key} not found in DataFrame')
-            strat_key = None
-        if strat_key is None or shuffle is False:
-            kf = KFold(n_splits=n_folds, shuffle=shuffle)
-            folds = kf.split(X=df if df is not None else tensor_data)
-        else:
-            kf = StratifiedKFold(n_splits=n_folds, shuffle=True)
-            folds = kf.split(X=df, y=df[strat_key])
+    if strat_key is not None and strat_key not in df.columns:
+        print(f'{strat_key} not found in DataFrame')
+        strat_key = None
+    if strat_key is None or shuffle is False:
+        kf = KFold(n_splits=n_folds, shuffle=shuffle)
+        folds = kf.split(X=df if df is not None else tensor_data)
+    else:
+        kf = StratifiedKFold(n_splits=n_folds, shuffle=True)
+        folds = kf.split(X=df, y=df[strat_key])
 
     if tensor_as_sparse or tensor_target_as_sparse: import sparse
     for fold_idx, (_, fold) in enumerate(folds):
