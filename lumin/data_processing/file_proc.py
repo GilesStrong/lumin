@@ -159,8 +159,8 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
             The format is `coo_x = sparse.as_coo(x); m = np.vstack((coo_x.data, coo_x.coords))`, where `m` is the tensor passed to `tensor_target`.
     '''
 
-    if shuffle and ('test' in savename or 'tst' in savename): print('Testing data will be shuffled, pass shuffle=Flase is this is not desired')
     savename = str(savename)
+    if shuffle and ('test' in savename or 'tst' in savename): print('Testing data will be shuffled, pass shuffle=Flase is this is not desired')
     os.system(f'rm {savename}.hdf5')
     os.makedirs(savename[:savename.rfind('/')], exist_ok=True)
     out_file = h5py.File(f'{savename}.hdf5', "w")
