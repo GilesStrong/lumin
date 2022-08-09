@@ -121,7 +121,7 @@ def fold2foldfile(df:Optional[pd.DataFrame], out_file:h5py.File, fold_idx:int,
 
 def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], cat_feats:List[str],
                 targ_feats:Union[str,List[str]], savename:Union[Path,str], targ_type:str,
-                strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None, cat_maps:Optional[Dict[str,Dict[int,Any]]]=None,
+                shuffle:bool=True, strat_key:Optional[str]=None, misc_feats:Optional[List[str]]=None, wgt_feat:Optional[str]=None, cat_maps:Optional[Dict[str,Dict[int,Any]]]=None,
                 matrix_vecs:Optional[List[str]]=None, matrix_feats_per_vec:Optional[List[str]]=None, matrix_row_wise:Optional[bool]=None,
                 tensor_data:Optional[np.ndarray]=None, tensor_name:Optional[str]=None, tensor_as_sparse:bool=False, compression:Optional[str]=None,
                 tensor_target:Optional[np.ndarray]=None, tensor_target_as_sparse:bool=False) -> None:
@@ -137,6 +137,7 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
         targ_feats: (list of) column(s) in df to save as target feature(s)
         savename: name of h5py file to create (.h5py extension not required)
         targ_type: type of target feature, e.g. int,'float32'
+        shuffle: if true will shuffle data prior to splitting into folds, otherwise folds will be contiguous splits of the unsuffled data, useful e.g. for testing datasets
         strat_key: column to use for stratified splitting
         misc_feats: any extra columns to save
         wgt_feat: column to save as data weights
@@ -158,6 +159,7 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
             The format is `coo_x = sparse.as_coo(x); m = np.vstack((coo_x.data, coo_x.coords))`, where `m` is the tensor passed to `tensor_target`.
     '''
 
+    if shuffle and ('test' in savename or 'tst' in savename): print('Testing data will be shuffled, pass shuffle=Flase is this is not desired')
     savename = str(savename)
     os.system(f'rm {savename}.hdf5')
     os.makedirs(savename[:savename.rfind('/')], exist_ok=True)
@@ -173,15 +175,16 @@ def df2foldfile(df:Optional[pd.DataFrame], n_folds:int, cont_feats:List[str], ca
             print(f'{dup} present in both matrix features and continuous features; removing from continuous features')
             cont_feats = [f for f in cont_feats if f not in dup]
 
-    if strat_key is not None and strat_key not in df.columns:
-        print(f'{strat_key} not found in DataFrame')
-        strat_key = None
-    if strat_key is None:
-        kf = KFold(n_splits=n_folds, shuffle=True)
-        folds = kf.split(X=df if df is not None else tensor_data)
-    else:
-        kf = StratifiedKFold(n_splits=n_folds, shuffle=True)
-        folds = kf.split(X=df, y=df[strat_key])
+    if shuffle:
+        if strat_key is not None and strat_key not in df.columns:
+            print(f'{strat_key} not found in DataFrame')
+            strat_key = None
+        if strat_key is None or shuffle is False:
+            kf = KFold(n_splits=n_folds, shuffle=shuffle)
+            folds = kf.split(X=df if df is not None else tensor_data)
+        else:
+            kf = StratifiedKFold(n_splits=n_folds, shuffle=True)
+            folds = kf.split(X=df, y=df[strat_key])
 
     if tensor_as_sparse or tensor_target_as_sparse: import sparse
     for fold_idx, (_, fold) in enumerate(folds):
