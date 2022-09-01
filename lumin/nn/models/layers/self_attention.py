@@ -9,7 +9,7 @@ from .activations import lookup_act
 from .batchnorms import LCBatchNorm1d
 from ..initialisations import lookup_normal_init
 
-__all__ = ['SelfAttention']
+__all__ = ['SelfAttention', 'OffsetSelfAttention']
 
 
 class SelfAttention(nn.Module):
@@ -18,7 +18,7 @@ class SelfAttention(nn.Module):
     
     Arguments:
         n_fpv: number of features per vertex to expect
-        n_a: width of self attention representation (paper recommends n_fpv//4)
+        n_a: width of self attention representation
         do: dropout rate to be applied to hidden layers in the NNs
         bn: whether batch normalisation should be applied to hidden layers in the NNs
         act: activation function to apply to hidden layers in the NNs
