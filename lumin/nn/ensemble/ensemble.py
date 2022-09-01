@@ -75,20 +75,21 @@ class Ensemble(AbsEnsemble):
         self.output_pipe = pipe
     
     @staticmethod
-    def load_trained_model(model_idx:int, model_builder:ModelBuilder, name:str='train_weights/train_') -> Model:
+    def load_trained_model(name:Union[Path,str], model_builder:ModelBuilder) -> Model:
         r'''
         Load trained model from save file of the form `{name}{model_idx}.h5`
 
         Arguments
-            model_idx: index of model to load
+            name: name of file from which to load model
             model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` used to build the model
-            name: base name of file from which to load model
 
         Returns:
             Model loaded from save
         '''
         model = Model(model_builder)
-        model.load(f'{name}{model_idx}.h5')
+        if isinstance(name, Path): name = Path(name)
+        if name.suffix not in ['.h5', '.hdf5', '.pt']: name = name.with_suffix('.h5')
+        model.load(name)
         return model
     
     @staticmethod
@@ -201,10 +202,10 @@ class Ensemble(AbsEnsemble):
     def _build_ensemble(self, results:List[Dict[str,float]], size:int, model_builder:ModelBuilder, metric:str='loss', weighting:str='reciprocal',
                         higher_metric_better:bool=False, snapshot_args:Optional[Dict[str,Any]]=None, verbose:bool=True) -> None:
         r'''
-        Load up an instantiated :class:`~lumin.nn.ensemble.ensemble.Ensemble` with outputs of :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
+        Load up an instantiated :class:`~lumin.nn.ensemble.ensemble.Ensemble` with outputs of :meth:`~lumin.nn.training.train.train_models`
 
         Arguments:
-            results: results saved/returned by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
+            results: results saved/returned by :meth:`~lumin.nn.training.train.train_models`
             size: number of models to load as ranked by metric
             model_builder: :class:`~lumin.nn.models.model_builder.ModelBuilder` used for building :class:`~lumin.nn.models.model.Model` from saved models
             metric: metric name listed in results to use for ranking and weighting trained models
@@ -213,8 +214,8 @@ class Ensemble(AbsEnsemble):
                 'uniform' = models treated with equal weighting
             higher_metric_better: whether metric should be maximised or minimised
             snapshot_args: Dictionary potentially containing:
-                'cycle_losses': returned/save by :meth:`~lumin.nn.training.fold_train.fold_train_ensemble` when using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`
-                'patience': patience value that was passed to :meth:`~lumin.nn.training.fold_train.fold_train_ensemble`
+                'cycle_losses': returned/save by :meth:`~lumin.nn.training.train.train_models` when using an :class:`~lumin.nn.callbacks.cyclic_callbacks.AbsCyclicCallback`
+                'patience': patience value that was passed to :meth:`~lumin.nn.training.train.train_models`
                 'n_cycles': number of cycles to load per model
                 'load_cycles_only': whether to only load cycles, or also the best performing model
                 'weighting_pwr': weight cycles according to (n+1)**weighting_pwr, where n is the number of cycles loaded so far.
@@ -252,24 +253,28 @@ class Ensemble(AbsEnsemble):
             weighting = 'uniform'
     
         if verbose: print(f"Choosing ensemble by {metric}")
-        values = np.sort(np.array([(i, result[metric] if not higher_metric_better else 1/result[metric], result['path']) for i, result in enumerate(results)],
-                                  dtype=[('model', int), ('result', float), ('path', Path)]), order=['result'])
+        values = np.sort(np.array([(i,
+                                   int(result['path'].name.split('_')[-1]),  # May be different from idx
+                                   result[metric] if not higher_metric_better else 1/result[metric], result['path']) for i,
+                                   result in enumerate(results)],
+                                  dtype=[('idx', int), ('model_idx', int), ('result', float), ('path', Path)]), order=['result'])
 
         self.models, weights = [], []
         for i in progress_bar(range(min([size, len(results)]))):
             if not (load_cycles_only and n_cycles):
-                self.models.append(self.load_trained_model(values[i]['model'], self.model_builder, name=values[i]['path']/'train_'))
+                name = values[i]['path']/f'train_{values[i]["model_idx"]}'
+                self.models.append(self.load_trained_model(name, self.model_builder))
                 weights.append(self._get_weights(values[i]['result'], metric, weighting))
                 if verbose:
-                    print(f"Model {i} is {values[i]['model']} with {metric} = {values[i]['result'] if not higher_metric_better else 1/values[i]['result']}")
+                    print(f"Model {i} is {name} with {metric} = {values[i]['result'] if not higher_metric_better else 1/values[i]['result']}")
 
             if n_cycles:
-                end_cycle = len(cycle_losses[values[i]['model']])-patience-1
+                end_cycle = len(cycle_losses[values[i]['idx']])-patience-1
                 if load_cycles_only: end_cycle += 1
                 for n, c in enumerate(range(end_cycle, max(0, end_cycle-n_cycles), -1)):
-                    self.models.append(self.load_trained_model(c, self.model_builder, name=values[i]['path']/'cycle_'))
+                    self.models.append(self.load_trained_model(values[i]['path']/f'cycle_{c}', self.model_builder))
                     weights.append((n+1 if load_cycles_only else n+2)**weighting_pwr)
-                    if verbose: print(f"Model {i} cycle {c} has {metric} = {cycle_losses[values[i]['model']][c]} and weight {weights[-1]}")
+                    if verbose: print(f"Model {i} cycle {c} has {metric} = {cycle_losses[values[i]['idx']][c]} and weight {weights[-1]}")
         
         weights = np.array(weights)
         self.weights = weights/weights.sum()
