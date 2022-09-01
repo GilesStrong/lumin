@@ -6,6 +6,8 @@
 
 ## Breaking
 
+- `targ_feats` argument in `HEPAugFoldYielder` renamed to `aug_targ_feats`
+
 ## Additions
 
 - `plot_feat` now shows a bar plot for categorical data
@@ -37,6 +39,7 @@
 - `tensor_is_sparse` argument for `df2foldfile` not functioning as expected
 - Possible bug when applying data augmentation using `HEPAugFoldYielder` to target features, but not supplying target features when initialising the fold yielder
 - Potential bug in `NodePredictor` when `f_final` is a `hard_identity` and `f_final_outs` is not None.
+- `OffsetSelfAttention` missing from module `__all__`
 
 ## Changes
 

@@ -440,7 +440,7 @@ class HEPAugFoldYielder(FoldYielder):
         cont_feats: list of names of continuous features present in input data, not required if foldfile contains meta data already
         cat_feats: list of names of categorical features present in input data, not required if foldfile contains meta data already
         ignore_feats: optional list of input features which should be ignored
-        targ_feats: optional list of target features to also be transformed
+        aug_targ_feats: optional list of target vectors to also be transformed, leave as `None` for no augmentation of targets vectirs
         rot_mult: number of rotations of event in phi to make at test-time (currently must be even).
                   Greater than zero will also apply random rotations during train-time
         random_rot: whether test-time rotation angles should be random or in steps of 2pi/rot_mult
@@ -462,7 +462,7 @@ class HEPAugFoldYielder(FoldYielder):
     '''
 
     def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:Optional[List[str]]=None, cat_feats:Optional[List[str]]=None,
-                 ignore_feats:Optional[List[str]]=None, targ_feats:Optional[List[str]]=None,
+                 ignore_feats:Optional[List[str]]=None, aug_targ_feats:Optional[List[str]]=None,
                  rot_mult:int=2, random_rot:bool=False,
                  reflect_x:bool=False, reflect_y:bool=True, reflect_z:bool=True,
                  train_time_aug:bool=True, test_time_aug:bool=True,
@@ -477,10 +477,10 @@ class HEPAugFoldYielder(FoldYielder):
             rot_mult += 1
         self.rot_mult,self.random_rot,self.reflect_x,self.reflect_y,self.reflect_z,self.train_time_aug,self.test_time_aug = \
             rot_mult,random_rot,reflect_x,reflect_y,reflect_z,train_time_aug,test_time_aug
-        if not hasattr(self, 'targ_feats'): self.targ_feats = targ_feats
+        self.aug_targ_feats = aug_targ_feats if isinstance(aug_targ_feats, list) else [aug_targ_feats]
         self.augmented,self.reflect_axes,self.aug_mult = True,[],1
         self.vectors = [x[:-3] for x in self.cont_feats if '_px' in x]
-        if self.targ_feats is not None: self.targ_vectors = [x[:-3] for x in self.targ_feats if '_px' in x]
+        if self.aug_targ_feats is not None: self.targ_vectors = [x[:-3] for x in self.aug_targ_feats if '_px' in x]
 
         if self.rot_mult:
             print("Augmenting via phi rotations")
@@ -539,24 +539,24 @@ class HEPAugFoldYielder(FoldYielder):
         data = self.get_data(n_folds=1, fold_idx=idx)
         if not self.augmented: return data
         inputs = pd.DataFrame(self.foldfile[f'fold_{idx}/inputs'][()], columns=self.input_feats)
-        if self.targ_feats is not None: targets = pd.DataFrame(self.foldfile[f'fold_{idx}/targets'][()], columns=self.targ_feats)
+        if self.aug_targ_feats is not None: targets = pd.DataFrame(self.foldfile[f'fold_{idx}/targets'][()], columns=self.targ_feats)
             
         if self.rot_mult:
             inputs['aug_angle'] = (2*np.pi*np.random.random(size=len(inputs)))-np.pi
             self._rotate(inputs, self.vectors)
-            if self.targ_feats is not None:
+            if self.aug_targ_feats is not None:
                 targets['aug_angle'] = inputs['aug_angle']
                 self._rotate(targets, self.targ_vectors)
             
         for coord in self.reflect_axes:
             inputs[f'aug{coord}'] = np.random.randint(0, 2, size=len(inputs))
-            if self.targ_feats is not None: targets[f'aug{coord}'] = inputs[f'aug{coord}']
+            if self.aug_targ_feats is not None: targets[f'aug{coord}'] = inputs[f'aug{coord}']
         self._reflect(inputs, self.vectors)
-        if self.targ_feats is not None: self._reflect(targets, self.targ_vectors)
+        if self.aug_targ_feats is not None: self._reflect(targets, self.targ_vectors)
 
         inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
         data['inputs'] = np.nan_to_num(inputs.values)
-        if self.targ_feats is not None:
+        if self.aug_targ_feats is not None:
             targets = targets[self.targ_feats]
             data['targets'] = np.nan_to_num(targets.values)
         return self._append_matrix(data, idx) if self.has_matrix and self.yield_matrix else data
@@ -610,7 +610,7 @@ class HEPAugFoldYielder(FoldYielder):
         inputs = inputs[[f for f in self.input_feats if f not in self._ignore_feats]]
         data['inputs'] = np.nan_to_num(inputs.values)
         
-        if self.targ_feats is not None:
+        if self.aug_targ_feats is not None:
             targets = pd.DataFrame(self.foldfile[f'fold_{idx}/targets'][()], columns=self.targ_feats)
             if len(self.reflect_axes) > 0 and self.rot_mult > 0:
                 rot_idx = aug_idx % self.rot_mult
