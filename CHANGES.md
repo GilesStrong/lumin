@@ -48,6 +48,7 @@
 - New PDPBox version finally released on PIP, so no longer requires separate installation.
 - Relaxed version requirement on statsmodels
 - Removed lambda expressions and locally defined function from NN code to make it compatible with the new torch package export method
+- Extends Model training and inference to instantiate BatchYielders as prescribed by the FoldYielder, allowing users to provide their own BatchYielders in cases where data needs to be split in specific ways
 
 ## Depreciations
 

@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, Type
 from collections import OrderedDict
 from fastprogress import master_bar, progress_bar
 import warnings
@@ -173,7 +173,7 @@ class Model(AbsModel):
                                     loss_func=self.loss, opt=self.opt, val_requires_grad=False)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
         if is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
-        self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
+        self.fit_params.partial_by = partialler(fy.batch_yielder_type, objective=self.objective, use_weights=self.fit_params.train_on_weights,
                                                 bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
 
         if trn_idxs is None: trn_idxs = list(range(fy.n_folds))
@@ -247,9 +247,9 @@ class Model(AbsModel):
         return pred_cb.get_preds()
 
     def _predict_array(self, inputs:Union[np.ndarray,pd.DataFrame,Tensor,Tuple], as_np:bool=True, pred_cb:PredHandler=PredHandler(),
-                       cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor]:
-        by = BatchYielder(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective, shuffle=False, bulk_move=bs is None,
-                          input_mask=self.input_mask, drop_last=False)
+                       cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None, batch_yielder_type:Type[BatchYielder]=BatchYielder) -> Union[np.ndarray, Tensor]:
+        by = batch_yielder_type(inputs=inputs, bs=len(inputs) if bs is None else bs, objective=self.objective, shuffle=False, bulk_move=bs is None,
+                                input_mask=self.input_mask, drop_last=False)
         preds = self._predict_by(by, pred_cb=pred_cb, cbs=cbs)
         if as_np:
             preds = to_np(preds)
@@ -257,7 +257,7 @@ class Model(AbsModel):
         return preds
 
     def evaluate(self, inputs:Union[np.ndarray,Tensor,Tuple,BatchYielder], targets:Optional[Union[np.ndarray,Tensor]]=None,
-                 weights:Optional[Union[np.ndarray,Tensor]]=None, bs:Optional[int]=None) -> float:
+                 weights:Optional[Union[np.ndarray,Tensor]]=None, bs:Optional[int]=None, batch_yielder_type:Type[BatchYielder]=BatchYielder) -> float:
         r'''
         Compute loss on provided data.
 
@@ -266,6 +266,7 @@ class Model(AbsModel):
             targets: targets, not required if :class:`~lumin.nn.data.batch_yielder.BatchYielder` is passed to inputs
             weights: Optional weights, not required if :class:`~lumin.nn.data.batch_yielder.BatchYielder`, or no weights should be considered
             bs: batch size to use. If `None`, will evaluate all data at once
+            batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
 
         Returns:
             (weighted) loss of model predictions on provided data
@@ -275,9 +276,9 @@ class Model(AbsModel):
 
         if hasattr(self, 'fit_params') and self.fit_params is not None:
             raise ValueError('Evaluate will overwrite exisiting fit_params for this model. Most likely it is being called during training.')
-        if not isinstance(inputs, BatchYielder): inputs = BatchYielder(inputs=inputs, targets=targets, weights=weights, bs=len(inputs) if bs is None else bs,
-                                                                       objective=self.objective, shuffle=False, bulk_move=bs is None,
-                                                                       input_mask=self.input_mask, drop_last=False)
+        if not isinstance(inputs, BatchYielder): inputs = batch_yielder_type(inputs=inputs, targets=targets, weights=weights, bs=len(inputs) if bs is None else bs,
+                                                                             objective=self.objective, shuffle=False, bulk_move=bs is None,
+                                                                             input_mask=self.input_mask, drop_last=False)
         self.fit_params = FitParams(cbs=[], by=inputs, state='valid', loss_func=self.loss)
         if is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
         self.model.eval()
@@ -299,14 +300,15 @@ class Model(AbsModel):
                 pred = self._predict_array(fy.get_fold(fold_idx)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs)
             else:
                 tmpPred = []
-                for aug in range(fy.aug_mult): tmpPred.append(self._predict_array(fy.get_test_fold(fold_idx, aug)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs))
+                for aug in range(fy.aug_mult): tmpPred.append(self._predict_array(fy.get_test_fold(fold_idx, aug)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs,
+                                                                                  batch_yielder_type=fy.batch_yielder_type))
                 pred = np.mean(tmpPred, axis=0)
 
             if self.n_out > 1: fy.save_fold_pred(pred, fold_idx, pred_name=pred_name)
             else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
 
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred', pred_cb:PredHandler=PredHandler(),
-                cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
+                cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None, batch_yielder_type:Type[BatchYielder]=BatchYielder) -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
         
@@ -318,13 +320,15 @@ class Model(AbsModel):
                 Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
             cbs: list of any instantiated callbacks to use during prediction
             bs: if not `None`, will run prediction in batches of specified size to save of memory
+            batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
 
         if isinstance(inputs, BatchYielder): return self._predict_by(inputs, pred_cb=pred_cb, cbs=cbs)
-        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, pred_cb=pred_cb, cbs=cbs, bs=bs,
+                                                                           batch_yielder_type=BatchYielder)
         self._predict_folds(inputs, pred_name, pred_cb=pred_cb, cbs=cbs, bs=bs)
 
     def get_weights(self) -> OrderedDict:

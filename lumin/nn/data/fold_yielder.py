@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import h5py
-from typing import Dict, Optional, Union, List
+from typing import Dict, Optional, Union, List, Type
 import pickle
 import warnings
 from pathlib import Path
@@ -9,8 +9,9 @@ from collections import OrderedDict
 import json
 from fastcore.all import is_listy
 from importlib import import_module
-
 from sklearn.pipeline import Pipeline
+
+from .batch_yielder import BatchYielder
 
 __all__ = ['FoldYielder', 'HEPAugFoldYielder']
 
@@ -28,6 +29,7 @@ class FoldYielder:
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
         yield_matrix: whether to actually yield matrix data if present
         matrix_pipe: preprocessing pipe for matrix data
+        batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
 
 
     Examples::
@@ -44,9 +46,10 @@ class FoldYielder:
 
     def __init__(self, foldfile:Union[str,Path,h5py.File], cont_feats:Optional[List[str]]=None, cat_feats:Optional[List[str]]=None,
                  ignore_feats:Optional[List[str]]=None, input_pipe:Optional[Union[str,Pipeline,Path]]=None, output_pipe:Optional[Union[str,Pipeline,Path]]=None,
-                 yield_matrix:bool=True, matrix_pipe:Optional[Union[str,Pipeline,Path]]=None):
+                 yield_matrix:bool=True, matrix_pipe:Optional[Union[str,Pipeline,Path]]=None, batch_yielder_type:Type[BatchYielder]=BatchYielder):
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = cont_feats,cat_feats,input_pipe,output_pipe
         self.yield_matrix,self.matrix_pipe = yield_matrix,matrix_pipe
+        self.batch_yielder_type = batch_yielder_type
         self.augmented,self.aug_mult,self.train_time_aug,self.test_time_aug = False,0,False,False
         self._set_foldfile(foldfile)
         self.input_feats = self.cont_feats + self.cat_feats
