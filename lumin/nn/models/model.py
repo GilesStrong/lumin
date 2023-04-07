@@ -294,7 +294,7 @@ class Model(AbsModel):
         return loss/cnt
 
     def _predict_folds(self, fy:FoldYielder, pred_name:str='pred', pred_cb:PredHandler=PredHandler(), cbs:Optional[List[AbsCallback]]=None,
-                       bs:Optional[int]=None, batch_yielder_type=fy.batch_yielder_type) -> None:
+                       bs:Optional[int]=None) -> None:
         for fold_idx in progress_bar(range(len(fy))):
             if not fy.test_time_aug:
                 pred = self._predict_array(fy.get_fold(fold_idx)['inputs'], pred_cb=pred_cb, cbs=cbs, bs=bs)
@@ -308,7 +308,7 @@ class Model(AbsModel):
             else: fy.save_fold_pred(pred[:, 0], fold_idx, pred_name=pred_name)
 
     def predict(self, inputs:Union[np.ndarray, pd.DataFrame, Tensor, FoldYielder], as_np:bool=True, pred_name:str='pred', pred_cb:PredHandler=PredHandler(),
-                cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None) -> Union[np.ndarray, Tensor, None]:
+                cbs:Optional[List[AbsCallback]]=None, bs:Optional[int]=None, batch_yielder_type:Type[BatchYielder]=BatchYielder) -> Union[np.ndarray, Tensor, None]:
         r'''
         Apply model to inputed data and compute predictions.
         
@@ -320,13 +320,15 @@ class Model(AbsModel):
                 Default simply returns the model predictions. Other uses could be e.g. running argmax on a multiclass classifier
             cbs: list of any instantiated callbacks to use during prediction
             bs: if not `None`, will run prediction in batches of specified size to save of memory
+            batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
 
         Returns:
             if inputs are a Numpy array, Pandas DataFrame, or tensor, will return predicitions as either array or tensor
         '''
 
         if isinstance(inputs, BatchYielder): return self._predict_by(inputs, pred_cb=pred_cb, cbs=cbs)
-        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, pred_cb=pred_cb, cbs=cbs, bs=bs)
+        if not isinstance(inputs, FoldYielder): return self._predict_array(inputs, as_np=as_np, pred_cb=pred_cb, cbs=cbs, bs=bs,
+                                                                           batch_yielder_type=BatchYielder)
         self._predict_folds(inputs, pred_name, pred_cb=pred_cb, cbs=cbs, bs=bs)
 
     def get_weights(self) -> OrderedDict:
