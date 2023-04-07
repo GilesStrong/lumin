@@ -29,6 +29,7 @@ class FoldYielder:
         output_pipe: optional Pipeline, or filename for pickled Pipeline, which was used for processing the targets
         yield_matrix: whether to actually yield matrix data if present
         matrix_pipe: preprocessing pipe for matrix data
+        batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
 
 
     Examples::
