@@ -173,7 +173,7 @@ class Model(AbsModel):
                                     loss_func=self.loss, opt=self.opt, val_requires_grad=False)
         self.fit_params.cb_savepath.mkdir(parents=True, exist_ok=True)
         if is_partially(self.fit_params.loss_func): self.fit_params.loss_func = self.fit_params.loss_func()
-        self.fit_params.partial_by = partialler(BatchYielder, objective=self.objective, use_weights=self.fit_params.train_on_weights,
+        self.fit_params.partial_by = partialler(fy.batch_yielder_type, objective=self.objective, use_weights=self.fit_params.train_on_weights,
                                                 bulk_move=self.fit_params.bulk_move, input_mask=self.input_mask)
 
         if trn_idxs is None: trn_idxs = list(range(fy.n_folds))
