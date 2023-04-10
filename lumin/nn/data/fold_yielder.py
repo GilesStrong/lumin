@@ -685,11 +685,12 @@ class TorchGeometricFoldYielder(FoldYielder):
         if fold_indices is None:
             kf = KFold(n_splits=n_folds, shuffle=True)
             fold_indices = [f[1] for f in kf.split(X=np.arange(len(self.dataset)))]
+            self.n_folds = n_folds
         else:
-            n_folds = len(fold_indices)
+            self.n_folds = len(fold_indices)
         
         self.fold_indices = fold_indices
-        self.fld_szs = {len(f) for f in self.fold_indices}
+        self.fld_szs = {i:len(f) for i,f in enumerate(self.fold_indices)}
 
     def columns(self) -> List[str]:
         raise NotImplementedError()
@@ -717,7 +718,7 @@ class TorchGeometricFoldYielder(FoldYielder):
             PyTorch Geometric Dataset slice
         '''
 
-        return self.dataset[self.fold_indices[idx]]
+        return {'inputs':self.dataset[self.fold_indices[idx]]}
 
     def get_column(self, column:str, n_folds:Optional[int]=None, fold_idx:Optional[int]=None, add_newaxis:bool=False) -> Union[np.ndarray, None]:
         raise NotImplementedError()
