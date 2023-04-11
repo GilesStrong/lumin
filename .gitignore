@@ -4,11 +4,10 @@ dev/
 **/.DS_Store
 *~
 
-
 #Examples
 examples/*/*
 **/train_weights
-**/data
+examples/**/data
 **/weights
 
 # Byte-compiled / optimized / DLL files

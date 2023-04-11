@@ -117,9 +117,10 @@ class TorchGeometricBatchYielder(BatchYielder):
 
     from torch_geometric.data import Dataset
 
-    def __init__(self, inputs: Dataset, bs:int, shuffle:bool=True, exclude_keys:Optional[List[str]]=None, **kwargs:Any):
+    def __init__(self, inputs: Dataset, bs:int, shuffle:bool=True, exclude_keys:Optional[List[str]]=None, use_weights:bool=True, **kwargs:Any):
         from torch_geometric.loader import DataLoader
         self.loader = DataLoader(inputs, batch_size=bs, shuffle=shuffle, exclude_keys=exclude_keys)
+        self.use_weights = use_weights
 
     def __iter__(self) -> Tuple[Dict[str, Tensor], Dict[str, Tensor], Optional[Dict[str, Tensor]]]:
         r'''
@@ -133,7 +134,7 @@ class TorchGeometricBatchYielder(BatchYielder):
             batch = to_device(batch)
             x = {k: batch[k] for k in batch.keys if k not in ['y', 'ptr']}
             y = {'y': batch.y, 'batch': batch.batch}
-            w = {'weight': batch.weight, 'batch': batch.batch} if 'weight' in batch.keys else None
+            w = {'weight': batch.weight, 'batch': batch.batch} if 'weight' in batch.keys and self.use_weights else None
             yield x, y, w
 
     def __len__(self): return len(self.loader)
