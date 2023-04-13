@@ -20,6 +20,7 @@
 - 'hard_identity' function to replace lambda x: x when required
 - `fold2foldfile`, `df2foldfile`, and `add_meta_data` can now deal with targets in the form of multi dimensional tensors, and convert them to sparse COO format
 - `df2foldfile` now has the option to not shuffle data into folds and instead split it into contiguous folds
+- Limited handling of PyTorch Geometric data: `TorchGeometricFoldYielder`, `TorchGeometricBatchYielder`, `TorchGeometricEvalMetric`
 
 ## Removals
 
