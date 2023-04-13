@@ -11,7 +11,7 @@ from ..data.fold_yielder import FoldYielder
 from ..callbacks.callback import Callback
 from ...utils.misc import to_np
 
-__all__ = ['EvalMetric']
+__all__ = ['EvalMetric', 'TorchGeometricEvalMetric']
 
 
 class EvalMetric(Callback, metaclass=ABCMeta):
@@ -167,3 +167,53 @@ class EvalMetric(Callback, metaclass=ABCMeta):
         else:
             df['pred'] = self.preds.squeeze()
         return df
+
+
+class TorchGeometricEvalMetric(EvalMetric):
+    r'''
+    Abstract class for evaluating performance of a model using some metric and PyTorch Geometric data
+
+    Arguments:
+        name: optional name for metric, otherwise will be inferred from class
+        lower_metric_better: whether a lower metric value should be treated as representing better perofrmance
+        main_metric: whether this metic should be treated as the primary metric for SaveBest and EarlyStopping
+            Will automatically set the first EvalMetric to be main if multiple primary metrics are submitted
+    '''
+
+    def on_epoch_begin(self) -> None:
+        r'''
+        Resets prediction tracking
+        '''
+        
+        self.preds, self.targets, self.batches, self.weights, self.metric = [],[],[],[],None
+        self.batch_cnt = 0
+    
+    def on_forwards_end(self) -> None:
+        r'''
+        Save predictions from batch
+        '''
+
+        if self.model.fit_params.state == 'valid':
+            self.preds.append(self.model.fit_params.y_pred.cpu().detach())
+            self.targets.append(self.model.fit_params.y['y'].cpu().detach())
+            self.batches.append(self.model.fit_params.y['batch'].cpu().detach()+self.batch_cnt)
+            self.batch_cnt = self.batches[-1].max()
+            if self.model.fit_params.w is not None:
+                self.weights.append(self.model.fit_params.w.cpu().detach())
+            
+    def on_epoch_end(self) -> None:
+        r'''
+        Compute metric using saved predictions
+        '''
+
+        if self.model.fit_params.state != 'valid': return
+        self.preds = torch.cat(self.preds, dim=0)
+        if 'multiclass' in self.model.objective: self.preds = torch.exp(self.preds)
+        self.targets = torch.cat(self.targets, dim=0)
+        self.batches = torch.cat(self.batches, dim=0)
+        self.weights = torch.cat(self.weights, dim=0) if len(self.weights) > 0 else None
+        self.metric = self.evaluate()
+        del self.preds
+        del self.targets
+        del self.batches
+        del self.weights  

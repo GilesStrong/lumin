@@ -1,24 +1,21 @@
+from __future__ import annotations
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, Any, Dict
 import math
 
 from ...utils.misc import to_device
 
 from torch import Tensor
 
-__all__ = ['BatchYielder']
-
-
-'''
-Todo
-- Improve this/change to dataloader
-'''
+__all__ = ['BatchYielder', 'TorchGeometricBatchYielder']
 
 
 class BatchYielder:
     r'''
     Yields minibatches to model during training. Iteration provides one minibatch as tuple of tensors of inputs, targets, and weights.
+
+    TODO: Improve this/change to dataloader
     
     Arguments:
         inputs: input array for (sub-)epoch
@@ -89,9 +86,72 @@ class BatchYielder:
     def __len__(self): return len(self.inputs)//self.bs if self.drop_last else math.ceil(len(self.inputs)/self.bs)
 
     def get_inputs(self, on_device:bool=False) -> Union[Tensor, Tuple[Tensor,Tensor]]:
+        r'''
+        Returns all data.
+        
+        Arguments:
+            on_device: whether to place tensor on device
+
+        Returns:
+            tuple of inputs, targets, and weights as tensors on device
+        '''
+
         if on_device:
             if self.matrix_inputs is None: return to_device(Tensor(self.inputs))
             else:                          return (to_device(Tensor(self.inputs)), to_device(Tensor(self.matrix_inputs)))
         else:
             if self.matrix_inputs is None: return self.inputs
             else:                          return (self.inputs, self.matrix_inputs)
+
+
+class TorchGeometricBatchYielder(BatchYielder):
+    r'''
+    :class:`~lumin.nn.data.batch_yielder.BatchYielder` for PyTorch Geometric data. kwargs for compatibility only.
+    
+    Arguments:
+        inputs: PyTorch Geometric Dataset containing inputs, weights, and targets
+        bs: batchsize, number of data to include per minibatch
+        shuffle: whether to shuffle the data at the beginning of an iteration
+        exclude_keys: data keys to exclude from inputs
+    '''
+
+    from torch_geometric.data import Dataset
+
+    def __init__(self, inputs: Dataset, bs:int, shuffle:bool=True, exclude_keys:Optional[List[str]]=None, use_weights:bool=True, **kwargs:Any):
+        from torch_geometric.loader import DataLoader
+        self.loader = DataLoader(inputs, batch_size=bs, shuffle=shuffle, exclude_keys=exclude_keys)
+        self.use_weights = use_weights
+
+    def __iter__(self) -> Tuple[Dict[str, Tensor], Dict[str, Tensor], Optional[Dict[str, Tensor]]]:
+        r'''
+        Iterate through data in batches.
+
+        Returns:
+            tuple of batches of inputs, targets, and weights as dictionaries of tensors on device
+        '''
+        
+        for batch in self.loader:
+            batch = to_device(batch)
+            x = {k: batch[k] for k in batch.keys if k not in ['y', 'ptr']}
+            y = {'y': batch.y, 'batch': batch.batch}
+            w = {'weight': batch.weight, 'batch': batch.batch} if 'weight' in batch.keys and self.use_weights else None
+            yield x, y, w
+
+    def __len__(self): return len(self.loader)
+
+    def get_inputs(self, on_device:bool=False) -> Union[Tensor, Tuple[Tensor,Tensor]]:
+        r'''
+        Returns all data.
+        
+        Arguments:
+            on_device: whether to place tensor on device
+
+        Returns:
+            tuple of inputs, targets, and weights as dictionaries of tensors on device
+        '''
+        
+        if on_device:
+            x = {k: to_device(self.loader.dataset[k]) for k in self.loader.dataset.keys if k not in ['y', 'ptr']}
+        else:
+            x = {k: self.loader.dataset[k] for k in self.loader.dataset.keys if k not in ['y', 'ptr']}
+        return x
