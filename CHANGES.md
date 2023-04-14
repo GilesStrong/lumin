@@ -46,7 +46,7 @@
 ## Changes
 
 - `GravNetLayer` Self attention width corrected to `n_lr//4`, was previously `n_out//4`
-- New PDPBox version finally released on PIP, so no longer requires separate installation.
+- New PDPBox version finally released on PIP, so no longer requires separate installation, however PDPBox is now an optional dependency
 - Relaxed version requirement on statsmodels
 - Removed lambda expressions and locally defined function from NN code to make it compatible with the new torch package export method
 - Extends Model training and inference to instantiate BatchYielders as prescribed by the FoldYielder, allowing users to provide their own BatchYielders in cases where data needs to be split in specific ways

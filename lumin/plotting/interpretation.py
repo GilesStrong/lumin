@@ -1,10 +1,12 @@
+from __future__ import annotations
 import numpy as np
-from typing import Optional, Any, Tuple, List, Dict, Union
+from typing import Optional, Any, Tuple, List, Dict, Union, TYPE_CHECKING
 import pandas as pd
 from collections import OrderedDict
-from pdpbox import pdp
-from pdpbox.pdp import PDPIsolate, PDPInteract
 from sklearn.pipeline import Pipeline
+
+if TYPE_CHECKING:
+    from pdpbox.pdp import PDPIsolate, PDPInteract
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -14,7 +16,6 @@ from torch import Tensor
 
 from .plot_settings import PlotSettings
 from ..utils.misc import to_np, ForwardHook
-from ..utils.mod_ver import check_pdpbox
 from ..nn.models.abs_model import AbsModel
 
 __all__ = ['plot_importance', 'plot_embedding', 'plot_1d_partial_dependence', 'plot_2d_partial_dependence', 'plot_multibody_weighted_outputs',
@@ -103,6 +104,7 @@ def plot_1d_partial_dependence(model:Any, df:pd.DataFrame, feat:str, train_feats
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''
 
+    import pdpbox as pdp
     if pdp_isolate_kargs is None: pdp_isolate_kargs = {}
     if pdp_plot_kargs    is None: pdp_plot_kargs    = {}
 
@@ -158,7 +160,7 @@ def plot_2d_partial_dependence(model:Any, df:pd.DataFrame, feats:Tuple[str,str],
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
     '''    
     
-    check_pdpbox()
+    import pdpbox as pdp
     if pdp_interact_kargs      is None: pdp_interact_kargs      = {}
     if pdp_interact_plot_kargs is None: pdp_interact_plot_kargs = {}
 
