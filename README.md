@@ -147,6 +147,7 @@ Optionally, run pip install with `-e` flag for development installation.
 ### Optional requirements
 
 - sparse: enables loading on COO sparse-format tensors, install via e.g. `pip install sparse`
+- PDPBox: model interpretation, requires numpy < 1.24.0
 
 ## Notes
 
