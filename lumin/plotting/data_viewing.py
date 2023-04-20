@@ -210,7 +210,7 @@ def plot_rank_order_dendrogram(df:pd.DataFrame, threshold:float=0.8, savename:Op
 
 def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,Dict[str,Any]], 
                       feat:str, units:Optional[str]=None, moments=True,
-                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+                      savename:Optional[str]=None, settings:PlotSettings=PlotSettings(), show_plot:bool=True) -> None:
     r'''
     Plots KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
 
@@ -222,6 +222,7 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         moments: whether to display mean and standard deviation of each distribution
         savename: Optional name of file to which to save the plot of feature importances
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        show_plot: whether to the show plot, or just save them
     '''
 
     # TODO: update to sns 9
@@ -252,7 +253,8 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
-        plt.show()
+        if show_plot:
+            plt.show()
 
 
 def plot_binary_sample_feat(df:pd.DataFrame, feat:str, targ_name:str='gen_target', wgt_name:str='gen_weight', sample_name:str='gen_sample',

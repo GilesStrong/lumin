@@ -61,7 +61,7 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
 
 
 def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
-                    log_y:Union[str,bool]='auto', savename:Optional[str]=None, settings:PlotSettings=PlotSettings()) -> None:
+                    log_y:Union[str,bool]='auto', savename:Optional[str]=None, settings:PlotSettings=PlotSettings(), show_plot:bool=True) -> None:
     r'''
     Plot mean loss evolution against learning rate for several :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder callbacks as returned by
     :meth:`~lumin.nn.optimisation.hyper_param.fold_lr_find`.
@@ -78,6 +78,7 @@ def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,
         log_y: whether to plot y-axis as log. If 'auto', will set to log if maximal fractional difference in loss values is greater than 50
         savename: Optional name of file to which to save the plot
         settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
+        show_plot: whether to show the plot, or just save them
     '''
     
     df = pd.DataFrame()
@@ -107,4 +108,4 @@ def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,
         plt.xlabel("Learning rate", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}.png', bbox_inches='tight')
-        plt.show()
+        if show_plot: plt.show()
