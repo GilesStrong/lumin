@@ -77,7 +77,7 @@ def get_opt_rf_params(x_trn:np.ndarray, y_trn:np.ndarray, x_val:np.ndarray, y_va
 def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
             train_on_weights:bool=True, n_repeats:int=-1, lr_bounds:Tuple[float,float]=[1e-5, 10],
             cb_partials:Optional[List[partial]]=None, plot_settings:PlotSettings=PlotSettings(),
-            bulk_move:bool=True, plot_savename:Optional[str]=None) -> List[LRFinder]:
+            bulk_move:bool=True, plot_savename:Optional[str]=None, show_plot:bool=True) -> List[LRFinder]:
     r'''
     Wrapper function for training using :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which runs a Smith LR range test (https://arxiv.org/abs/1803.09820)
     using folds in :class:`~lumin.nn.data.fold_yielder.FoldYielder`.
@@ -96,6 +96,7 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
         cb_partials: optional list of functools.partial, each of which will a instantiate :class:`~lumin.nn.callbacks.callback.Callback` when called        
         plot_settings: :class:`~lumin.plotting.plot_settings.PlotSettings` class to control figure appearance
         savename: Optional name of file to which to save the plot
+        show_plot: whether to show the plot, or just save them
 
     Returns:
         List of :class:`~lumin.nn.callbacks.opt_callbacks.LRFinder` which were used for each model trained
@@ -120,6 +121,6 @@ def lr_find(fy:FoldYielder, model_builder:ModelBuilder, bs:int, n_epochs:int=1,
         
     print("LR finder took {:.3f}s ".format(timeit.default_timer()-tmr))
     plot_lr_finders(lr_finders, loss_range='auto', settings=plot_settings, log_y='auto' if 'regress' in model_builder.objective.lower() else False,
-                    savename=plot_savename)
+                    savename=plot_savename, show_plot=show_plot)
     return lr_finders
 
