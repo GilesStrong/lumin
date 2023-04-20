@@ -31,16 +31,21 @@ class RunningBatchNorm1d(nn.Module):
         mom: momentum (fraction to add to running averages)
         n_warmup: number of warmup iterations (during which variance is clamped)
         eps: epsilon to prevent division by zero
+        affine: whether to apply a learnable linear transformation to incoming data
     '''
 
-    def __init__(self, nf:int, mom:float=0.1, n_warmup:int=20, eps:float=1e-5):
+    def __init__(self, nf:int, mom:float=0.1, n_warmup:int=20, eps:float=1e-5, affine:bool=True):
         super().__init__()
         store_attr()
         self._set_params()
 
     def _set_params(self) -> None:
-        self.weight = nn.Parameter(torch.ones(self.nf,1))
-        self.bias = nn.Parameter(torch.zeros(self.nf,1))
+        if self.affine:
+            self.weight = nn.Parameter(torch.ones(self.nf,1))
+            self.bias = nn.Parameter(torch.zeros(self.nf,1))
+        else:
+            self.weight = 1
+            self.bias = 0
         self.register_buffer('sums', torch.zeros(1,self.nf,1))
         self.register_buffer('sqrs', torch.zeros(1,self.nf,1))
         self.register_buffer('batch', tensor(0.))
@@ -89,8 +94,12 @@ class RunningBatchNorm2d(RunningBatchNorm1d):
     '''
 
     def _set_params(self) -> None:
-        self.weight = nn.Parameter(torch.ones(self.nf,1,1))
-        self.bias = nn.Parameter(torch.zeros(self.nf,1,1))
+        if self.affine:
+            self.weight = nn.Parameter(torch.ones(self.nf,1,1))
+            self.bias = nn.Parameter(torch.zeros(self.nf,1,1))
+        else:
+            self.weight = 1
+            self.bias = 0
         self.register_buffer('sums', torch.zeros(1,self.nf,1,1))
         self.register_buffer('sqrs', torch.zeros(1,self.nf,1,1))
         self.register_buffer('batch', tensor(0.))
@@ -120,8 +129,12 @@ class RunningBatchNorm3d(RunningBatchNorm2d):
     '''
 
     def _set_params(self) -> None:
-        self.weight = nn.Parameter(torch.ones(self.nf,1,1,1))
-        self.bias = nn.Parameter(torch.zeros(self.nf,1,1,1))
+        if self.affine:
+            self.weight = nn.Parameter(torch.ones(self.nf,1,1,1))
+            self.bias = nn.Parameter(torch.zeros(self.nf,1,1,1))
+        else:
+            self.weight = 1
+            self.bias = 0
         self.register_buffer('sums', torch.zeros(1,self.nf,1,1,1))
         self.register_buffer('sqrs', torch.zeros(1,self.nf,1,1,1))
         self.register_buffer('batch', tensor(0.))
