@@ -657,16 +657,19 @@ class TorchGeometricFoldYielder(FoldYielder):
         fold_indices: list of lists of indices; each list of indices is a fold. Must provide either this or `n_folds`
         shuffle: if no `fold_indeces` are provided, data will be split into the speified number of folds.
             This controls whether the indeces will be shuffled beforehand or not.
+        seed: if no `fold_indeces` are provided, data will be split into the speified number of folds.
+            This sets the random seed used for shuffling, if requested.
         batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
     '''
 
     from torch_geometric.data import Dataset
     from .batch_yielder import TorchGeometricBatchYielder
 
-    def __init__(self, dataset:Dataset, n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True, batch_yielder_type:Type[BatchYielder]=TorchGeometricBatchYielder):
+    def __init__(self, dataset:Dataset, n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True, seed:Optional[int]=None,
+                 batch_yielder_type:Type[BatchYielder]=TorchGeometricBatchYielder):
         self.dataset = dataset
         self.batch_yielder_type = batch_yielder_type
-        self._set_folds(n_folds, fold_indices, shuffle)
+        self._set_folds(n_folds, fold_indices, shuffle, seed)
         
         self.cont_feats,self.cat_feats,self.input_pipe,self.output_pipe = [],[],None,None
         self.yield_matrix,self.matrix_pipe = True,None
@@ -683,9 +686,9 @@ class TorchGeometricFoldYielder(FoldYielder):
     def __iter__(self) -> Dataset:
         for i in range(self.n_folds): yield self.get_fold(i)
             
-    def _set_folds(self, n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True) -> None:
+    def _set_folds(self, n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True, seed:Optional[int]=None) -> None:
         if fold_indices is None:
-            kf = KFold(n_splits=n_folds, shuffle=shuffle)
+            kf = KFold(n_splits=n_folds, shuffle=shuffle, random_state=seed)
             fold_indices = [f[1] for f in kf.split(X=np.arange(len(self.dataset)))]
             self.n_folds = n_folds
         else:
