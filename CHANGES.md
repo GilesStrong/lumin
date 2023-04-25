@@ -43,6 +43,7 @@
 - Potential bug in `NodePredictor` when `f_final` is a `hard_identity` and `f_final_outs` is not None.
 - `OffsetSelfAttention` missing from module `__all__`
 - Possible bug when building ensembles from results caused by a misalignment between model index in results and model savename
+- Require matplotlib <= 3.4.0
 
 ## Changes
 
