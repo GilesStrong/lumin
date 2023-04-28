@@ -255,6 +255,8 @@ def plot_kdes_from_bs(x:np.ndarray, bs_stats:Dict[str,Any], name2args:Dict[str,D
         if savename is not None: plt.savefig(settings.savepath/f'{savename}{settings.format}', bbox_inches='tight')
         if show_plot:
             plt.show()
+        else:
+            plt.close()
 
 
 def plot_binary_sample_feat(df:pd.DataFrame, feat:str, targ_name:str='gen_target', wgt_name:str='gen_weight', sample_name:str='gen_sample',

@@ -45,7 +45,10 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
             plt.yscale('log')
             plt.grid(b=True, which="both", axis="both")
         if savename is not None: plt.savefig(settings.savepath/f'{savename}_loss{settings.format}', bbox_inches='tight')
-        if show: plt.show()
+        if show:
+            plt.show()
+        else:
+            plt.close()
 
     for metric in history[1].keys():
         with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
@@ -57,7 +60,10 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
             plt.xlabel("Subepoch", fontsize=settings.lbl_sz, color=settings.lbl_col)
             plt.ylabel(metric, fontsize=settings.lbl_sz, color=settings.lbl_col)
             if savename is not None: plt.savefig(settings.savepath/f'{savename}_{metric}{settings.format}', bbox_inches='tight')
-            if show: plt.show()
+            if show:
+                plt.show()
+            else:
+                plt.close()
 
 
 def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,Tuple]]=None, loss_range:Optional[Union[float,Tuple,str]]='auto',
@@ -108,4 +114,7 @@ def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,
         plt.xlabel("Learning rate", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
         if savename is not None: plt.savefig(settings.savepath/f'{savename}.png', bbox_inches='tight')
-        if show_plot: plt.show()
+        if show_plot:
+            plt.show()
+        else:
+            plt.close()
