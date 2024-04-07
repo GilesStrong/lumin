@@ -24,7 +24,7 @@ class AbsBlock(nn.Module, metaclass=ABCMeta):
             trainable: if true (default) only count trainable parameters
 
         Returns:
-            NUmber of (trainable) parameters in block
+            Number of (trainable) parameters in block
         '''
         
         return sum(p.numel() for p in self.parameters() if p.requires_grad) 
