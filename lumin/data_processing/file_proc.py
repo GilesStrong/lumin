@@ -30,7 +30,7 @@ def save_to_grp(arr:np.ndarray, grp:h5py.Group, name:str, compression:Optional[s
 
 def _build_matrix_lookups(feats:List[str], vecs:List[str], feats_per_vec:List[str], row_wise:bool) -> Tuple[List[str],np.ndarray,Tuple[int,int]]:
     shape = (len(vecs),len(feats_per_vec)) if row_wise else (len(feats_per_vec),len(vecs))
-    lookup,missing = np.zeros(shape, dtype=np.array(feats).dtype),np.zeros(shape, dtype=np.bool)
+    lookup,missing = np.zeros(shape, dtype=np.array(feats).dtype),np.zeros(shape, dtype=bool)
     if row_wise:
         for i, v in enumerate(vecs):
             for j, c in enumerate(feats_per_vec):

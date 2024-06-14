@@ -169,7 +169,7 @@ class FoldYielder:
         if 'cat_maps' in self.foldfile['meta_data']: self.cat_maps = OrderedDict(json.loads(self.foldfile['meta_data/cat_maps'][()]))
         if self.has_matrix:
             self.matrix_feats = json.loads(self.foldfile['meta_data/matrix_feats'][()])
-            self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=np.bool)
+            self.matrix_feats['missing'] = np.array(self.matrix_feats['missing'], dtype=bool)
             self.matrix_is_sparse = self.matrix_feats['is_sparse'] if 'is_sparse' in self.matrix_feats else False
             self.matrix_shape = self.matrix_feats['shape'] if 'shape' in self.matrix_feats else False
         else:
