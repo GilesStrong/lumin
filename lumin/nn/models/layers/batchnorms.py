@@ -50,7 +50,6 @@ class RunningBatchNorm1d(nn.Module):
         self.register_buffer('sqrs', torch.zeros(1,self.nf,1))
         self.register_buffer('batch', tensor(0.))
         self.register_buffer('count', tensor(0.))
-        self.register_buffer('step', tensor(0.))
         self.dims = (0,2)
 
     def update_stats(self, x:Tensor) -> None:
@@ -104,7 +103,6 @@ class RunningBatchNorm2d(RunningBatchNorm1d):
         self.register_buffer('sqrs', torch.zeros(1,self.nf,1,1))
         self.register_buffer('batch', tensor(0.))
         self.register_buffer('count', tensor(0.))
-        self.register_buffer('step', tensor(0.))
         self.dims = (0,2,3)
 
     def forward(self, x:Tensor) -> Tensor:
@@ -139,5 +137,4 @@ class RunningBatchNorm3d(RunningBatchNorm2d):
         self.register_buffer('sqrs', torch.zeros(1,self.nf,1,1,1))
         self.register_buffer('batch', tensor(0.))
         self.register_buffer('count', tensor(0.))
-        self.register_buffer('step', tensor(0.))
         self.dims = (0,2,3,4)

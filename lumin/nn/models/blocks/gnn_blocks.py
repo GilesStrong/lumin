@@ -177,7 +177,7 @@ class GraphCollapser(AbsGraphBlock):
         r'''
         Collapses features per vertex down to features
         
-        Arguemnts:
+        Arguments:
             x: incoming data (batch x vertices x features)
             
         Returns:
