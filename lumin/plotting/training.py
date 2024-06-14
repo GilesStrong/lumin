@@ -43,7 +43,7 @@ def plot_train_history(histories:List[OrderedDict], savename:Optional[str]=None,
         plt.ylabel("Loss", fontsize=settings.lbl_sz, color=settings.lbl_col)
         if log_y:
             plt.yscale('log')
-            plt.grid(b=True, which="both", axis="both")
+            plt.grid(visible=True, which="both", axis="both")
         if savename is not None: plt.savefig(settings.savepath/f'{savename}_loss{settings.format}', bbox_inches='tight')
         if show:
             plt.show()
@@ -107,7 +107,7 @@ def plot_lr_finders(lr_finders:List[AbsCallback], lr_range:Optional[Union[float,
             if df.Loss.max()/df.Loss.min() > 50: plt.yscale('log')
         elif log_y:
             plt.yscale('log')
-        plt.grid(b=True, which="both", axis="both")
+        plt.grid(visible=True, which="both", axis="both")
         if loss_range is not None: plt.ylim((0,loss_range) if isinstance(loss_range, float) else loss_range)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
