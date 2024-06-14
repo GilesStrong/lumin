@@ -662,10 +662,9 @@ class TorchGeometricFoldYielder(FoldYielder):
         batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
     '''
 
-    from torch_geometric.data import Dataset
     from .batch_yielder import TorchGeometricBatchYielder
 
-    def __init__(self, dataset:Dataset, n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True, seed:Optional[int]=None,
+    def __init__(self, dataset:'Dataset', n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True, seed:Optional[int]=None,
                  batch_yielder_type:Type[BatchYielder]=TorchGeometricBatchYielder):
         self.dataset = dataset
         self.batch_yielder_type = batch_yielder_type
@@ -681,9 +680,9 @@ class TorchGeometricFoldYielder(FoldYielder):
     
     def __len__(self) -> int: return self.n_folds
     
-    def __getitem__(self, idx:int) -> Dataset: return self.get_fold(idx)
+    def __getitem__(self, idx:int) -> 'Dataset': return self.get_fold(idx)
     
-    def __iter__(self) -> Dataset:
+    def __iter__(self) -> 'Dataset':
         for i in range(self.n_folds): yield self.get_fold(i)
             
     def _set_folds(self, n_folds:Optional[int], fold_indices:Optional[List[List[int]]]=None, shuffle:bool=True, seed:Optional[int]=None) -> None:

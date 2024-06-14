@@ -115,9 +115,7 @@ class TorchGeometricBatchYielder(BatchYielder):
         exclude_keys: data keys to exclude from inputs
     '''
 
-    from torch_geometric.data import Dataset
-
-    def __init__(self, inputs: Dataset, bs:int, shuffle:bool=True, exclude_keys:Optional[List[str]]=None, use_weights:bool=True, **kwargs:Any):
+    def __init__(self, inputs: 'Dataset', bs:int, shuffle:bool=True, exclude_keys:Optional[List[str]]=None, use_weights:bool=True, **kwargs:Any):
         from torch_geometric.loader import DataLoader
         self.loader = DataLoader(inputs, batch_size=bs, shuffle=shuffle, exclude_keys=exclude_keys)
         self.use_weights = use_weights
