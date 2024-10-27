@@ -1,0 +1,63 @@
+
+[tool.poetry]
+name = "lumin"
+version = "1.0.0"
+description = "LUMIN Unifies Many Improvements for Networks: A PyTorch wrapper to make deep learning more accessable to scientists."
+license = "Apache Software License 2.0"
+authors = [
+    "Giles Strong <giles.c.strong@gmail.com>",
+]
+readme = "README.md"
+homepage = "https://mode-collaboration.github.io/"
+classifiers = [
+        'Programming Language :: Python :: 3.10',
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: MacOS :: MacOS X ",
+        "Operating System :: POSIX :: Linux",
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'Natural Language :: English',
+        'Development Status :: 4 - Beta',
+]
+documentation = "https://lumin.readthedocs.io/en/stable/?badge=stable"
+keywords = ["deep learning", "differential programming", "physics", "science", "statistics"]
+include = ["py.typed"]
+
+[tool.poetry.dependencies]
+python = "3.10.12"
+
+[tool.poetry.group.dev.dependencies]
+notebook = "<7.0.0"
+jupyter = "1.0.0"
+jupyter-server = "1.24.0"
+traitlets = "5.9.0"
+ipykernel = "^6.29.5"
+pre-commit = "^3.6.1"
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+black = "^24.2.0"
+pandas-stubs = "^2.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
