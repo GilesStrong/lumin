@@ -41,6 +41,8 @@ pandas = "^2.2.3"
 matplotlib = "^3.9.2"
 seaborn = "^0.13.2"
 poetry-plugin-export = "^1.8.0"
+lxml-html-clean = "^0.3.1"
+pdpbox = { git = "https://github.com/GilesStrong/PDPbox.git", branch = "refactor_requirements" }
 
 [tool.poetry.group.dev.dependencies]
 notebook = "<7.0.0"

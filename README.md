@@ -140,7 +140,7 @@ Check out the repo locally:
 
 ```bash
 git clone git@github.com:GilesStrong/lumin.git
-cd tomopt
+cd lumin
 ```
 
 For development usage, we use [`poetry`](https://python-poetry.org/docs/#installing-with-the-official-installer) to handle dependency installation.
@@ -174,7 +174,6 @@ poetry run pre-commit install
 ### Optional requirements
 
 - sparse: enables loading on COO sparse-format tensors, install via e.g. `pip install sparse`
-- PDPBox: model interpretation, requires numpy < 1.24.0
 
 ## Notes
 
