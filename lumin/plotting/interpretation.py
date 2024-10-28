@@ -353,7 +353,14 @@ def plot_multibody_weighted_outputs(
 
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
-        sns.boxplot(x=block_names, y=y)
+        print(y[0].shape)
+        dfs = []
+        for i in range(len(block_names)):
+            df = pd.DataFrame({"y": y[i]})
+            df["x"] = block_names[i]
+            dfs.append(df)
+        df = pd.concat(dfs, ignore_index=True)
+        sns.boxplot(x="x", y="y", data=df)
         plt.xlabel("Block", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel(
             r"Mean $|\bar{w}\cdot\bar{x}|$" if use_mean else r"$|\bar{w}\cdot\bar{x}|$",
@@ -413,9 +420,16 @@ def plot_bottleneck_weighted_inputs(
     order = np.argsort(y.mean(axis=1))
     x, y = list(x[order]), list(y[order])
 
+    dfs = []
+    for i in range(len(x)):
+        df = pd.DataFrame({"y": y[i]})
+        df["x"] = x[i]
+        dfs.append(df)
+    df = pd.concat(dfs, ignore_index=True)
+
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
-        sns.boxplot(x=x, y=y)
+        sns.boxplot(x="x", y="y", data=df)
         plt.xlabel("Features", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.ylabel(r"$|w_i\times x_i|$", fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
