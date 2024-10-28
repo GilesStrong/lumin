@@ -269,6 +269,7 @@ def plot_kdes_from_bs(
     Plots KDEs computed via :meth:`~lumin.utils.statistics.bootstrap_stats`
 
     Arguments:
+        x: x-axis values
         bs_stats: (filtered) dictionary retruned by :meth:`~lumin.utils.statistics.bootstrap_stats`
         name2args: Dictionary mapping names of different distributions to arguments to pass to seaborn tsplot
         feat: Name of feature being plotted (for axis lablels)
@@ -279,25 +280,31 @@ def plot_kdes_from_bs(
         show_plot: whether to the show plot, or just save them
     """
 
-    # TODO: update to sns 9
-
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
         plt.figure(figsize=(settings.w_mid, settings.h_mid))
+        dfs = []
         for i, name in enumerate(name2args):
             if "color" not in name2args[name]:
                 name2args[name]["color"] = palette[i]
-            if "label" in name2args[name]:
-                name2args[name]["condition"] = name2args[name]["label"]
-                name2args[name].pop("label")
-            if "condition" in name2args[name] and moments:
+            df = pd.concat(
+                [
+                    pd.DataFrame({"x": x, "y": np.array(bs).flatten(), "label": name2args[name]["label"]})
+                    for bs in bs_stats[f"{name}_kde"]
+                ],
+                ignore_index=True,
+            )
+            if "label" in name2args[name] and moments:
                 mean, mean_unc = uncert_round(
                     np.mean(bs_stats[f"{name}_mean"]), np.std(bs_stats[f"{name}_mean"], ddof=1)
                 )
                 std, std_unc = uncert_round(np.mean(bs_stats[f"{name}_std"]), np.std(bs_stats[f"{name}_std"], ddof=1))
-                name2args[name]["condition"] += r", $\overline{x}=" + r"{}\pm{}\ \sigma= {}\pm{}$".format(
+                name2args[name]["label"] += r", $\overline{x}=" + r"{}\pm{}\ \sigma= {}\pm{}$".format(
                     mean, mean_unc, std, std_unc
                 )
-            sns.tsplot(data=bs_stats[f"{name}_kde"], time=x, **name2args[name])
+            df["label"] = name2args[name].pop("label")
+            dfs.append(df)
+        df = pd.concat(dfs, ignore_index=True)
+        sns.lineplot(x="x", y="y", data=df, hue="label", **name2args[name])
 
         plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
         y_lbl = r"$\frac{1}{N}\ \frac{dN}{d" + feat.replace("$", "") + r"}$"
