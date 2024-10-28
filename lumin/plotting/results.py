@@ -303,7 +303,7 @@ def plot_sample_pred(
                 weights=wgt_scale * df[df[sample_name] == sample][wgt_name],
                 label=sample,
                 histtype="step",
-                linewidth="3",
+                linewidth=3,
                 color="black",
                 **hist_params,
             )
@@ -313,7 +313,7 @@ def plot_sample_pred(
                     weights=wgt_scale * df[df[sample_name] == sample][wgt_name],
                     label=None,
                     histtype="step",
-                    linewidth="3",
+                    linewidth=3,
                     color="black",
                     **hist_params,
                 )

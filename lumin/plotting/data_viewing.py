@@ -382,7 +382,7 @@ def plot_binary_sample_feat(
                 weights=wgt_scale * df[df[sample_name] == sample][wgt_name],
                 label=sample,
                 histtype="step",
-                linewidth="3",
+                linewidth=3,
                 color="black",
                 **hist_params,
             )
