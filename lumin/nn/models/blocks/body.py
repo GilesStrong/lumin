@@ -10,30 +10,37 @@ from ..layers.activations import lookup_act
 from ..initialisations import lookup_normal_init
 from .abs_block import AbsBlock
 
-__all__ = ['IdentBody', 'FullyConnected', 'MultiBlock']
+__all__ = ["IdentBody", "FullyConnected", "MultiBlock"]
 
 
 class AbsBody(AbsBlock):
-    def __init__(self, n_in:int, feat_map:Dict[str,List[int]],
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
+    def __init__(
+        self,
+        n_in: int,
+        feat_map: Dict[str, List[int]],
+        lookup_init: Callable[[str, Optional[int], Optional[int]], Callable[[Tensor], None]] = lookup_normal_init,
+        lookup_act: Callable[[str], Any] = lookup_act,
+        freeze: bool = False,
+        bn_class: Callable[[int], nn.Module] = nn.BatchNorm1d,
+    ):
         super().__init__(lookup_init=lookup_init, freeze=freeze)
-        self.n_in,self.feat_map,self.lookup_act,self.bn_class = n_in,feat_map,lookup_act,bn_class
-    
+        self.n_in, self.feat_map, self.lookup_act, self.bn_class = n_in, feat_map, lookup_act, bn_class
+
 
 class IdentBody(AbsBody):
-    r'''
+    r"""
     Placeholder body module for cases in which a body is not required. Outputs are equal to imputs.
-    '''
-    
-    def forward(self, x:Tensor) -> Tensor:
+    """
+
+    def forward(self, x: Tensor) -> Tensor:
         return x
-    
-    def get_out_size(self) -> int: return self.n_in
+
+    def get_out_size(self) -> int:
+        return self.n_in
 
 
 class FullyConnected(AbsBody):
-    r'''
+    r"""
     Fully connected set of hidden layers. Designed to be passed as a 'body' to :class:`~lumin.nn.models.model_builder.ModelBuilder`.
     Supports batch normalisation and dropout.
     Order is dense->activation->BN->DO, except when res is true in which case the BN is applied after the addition.
@@ -63,91 +70,153 @@ class FullyConnected(AbsBody):
         >>>
         >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
         ...                       width=200, act='relu', growth_rate=-0.3)
-        >>>                                  
+        >>>
         >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=4,
         ...                       width=100, act='swish', do=0.1, res=True)
-        >>>                                  
+        >>>
         >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6,
         ...                       width=32, act='selu', dense=True,
         ...                       growth_rate=0.5)
-        >>>                                  
+        >>>
         >>> body = FullyConnected(n_in=32, feat_map=head.feat_map, depth=6,
         ...                       width=50, act='prelu', bn=True,
         ...                       lookup_init=lookup_uniform_init)
-    '''
+    """
 
-    def __init__(self, n_in:int, feat_map:Dict[str,List[int]], depth:int, width:int, do:float=0, bn:bool=False, act:str='relu', res:bool=False,
-                 dense:bool=False, growth_rate:int=0, lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False, bn_class:Callable[[int],nn.Module]=nn.BatchNorm1d):
-        super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze, bn_class=bn_class)
-        self.depth,self.width,self.do,self.bn,self.act,self.res,self.dense,self.growth_rate = depth,width,do,bn,act,res,dense,growth_rate
+    def __init__(
+        self,
+        n_in: int,
+        feat_map: Dict[str, List[int]],
+        depth: int,
+        width: int,
+        do: float = 0,
+        bn: bool = False,
+        act: str = "relu",
+        res: bool = False,
+        dense: bool = False,
+        growth_rate: int = 0,
+        lookup_init: Callable[[str, Optional[int], Optional[int]], Callable[[Tensor], None]] = lookup_normal_init,
+        lookup_act: Callable[[str], Any] = lookup_act,
+        freeze: bool = False,
+        bn_class: Callable[[int], nn.Module] = nn.BatchNorm1d,
+    ):
+        super().__init__(
+            n_in=n_in,
+            feat_map=feat_map,
+            lookup_init=lookup_init,
+            lookup_act=lookup_act,
+            freeze=freeze,
+            bn_class=bn_class,
+        )
+        self.depth, self.width, self.do, self.bn, self.act, self.res, self.dense, self.growth_rate = (
+            depth,
+            width,
+            do,
+            bn,
+            act,
+            res,
+            dense,
+            growth_rate,
+        )
 
         if self.res:
-            self.depth = 1+int(np.floor(self.depth/2))  # One upscale layer + each subsequent block will contain 2 layers
-            self.res_bns = nn.ModuleList([self.bn_class(self.width) for d in range(self.depth-1)])
-            self.layers = nn.ModuleList([self._get_layer(idx=d, fan_in=self.width, fan_out=self.width)
-                                         if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
-                                         for d in range(self.depth)])
+            self.depth = 1 + int(
+                np.floor(self.depth / 2)
+            )  # One upscale layer + each subsequent block will contain 2 layers
+            self.res_bns = nn.ModuleList([self.bn_class(self.width) for d in range(self.depth - 1)])
+            self.layers = nn.ModuleList(
+                [
+                    (
+                        self._get_layer(idx=d, fan_in=self.width, fan_out=self.width)
+                        if d > 0
+                        else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
+                    )
+                    for d in range(self.depth)
+                ]
+            )
         elif self.dense:
             self.layers = []
             for d in range(self.depth):
-                self.layers.append(self._get_layer(idx=d, fan_in=self.n_in if d == 0 else self.n_in+np.sum([l[0].out_features for l in self.layers]),
-                                   fan_out=max(1,self.width+int(self.width*d*self.growth_rate))))
+                self.layers.append(
+                    self._get_layer(
+                        idx=d,
+                        fan_in=self.n_in if d == 0 else self.n_in + np.sum([l[0].out_features for l in self.layers]),
+                        fan_out=max(1, self.width + int(self.width * d * self.growth_rate)),
+                    )
+                )
             self.layers = nn.ModuleList(self.layers)
         else:
-            self.layers = nn.Sequential(*[self._get_layer(idx=d, fan_in=self.width+int(self.width*(d-1)*self.growth_rate),
-                                                          fan_out=self.width+int(self.width*d*self.growth_rate))
-                                          if d > 0 else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
-                                          for d in range(self.depth)])
-            
-        if self.freeze: self.freeze_layers()
+            self.layers = nn.Sequential(
+                *[
+                    (
+                        self._get_layer(
+                            idx=d,
+                            fan_in=self.width + int(self.width * (d - 1) * self.growth_rate),
+                            fan_out=self.width + int(self.width * d * self.growth_rate),
+                        )
+                        if d > 0
+                        else self._get_layer(idx=d, fan_in=self.n_in, fan_out=self.width)
+                    )
+                    for d in range(self.depth)
+                ]
+            )
 
-    def _get_layer(self, idx:int, fan_in:Optional[int]=None, fan_out:Optional[int]=None) -> nn.Module:
-        fan_in  = self.width if fan_in  is None else fan_in
+        if self.freeze:
+            self.freeze_layers()
+
+    def _get_layer(self, idx: int, fan_in: Optional[int] = None, fan_out: Optional[int] = None) -> nn.Module:
+        fan_in = self.width if fan_in is None else fan_in
         fan_out = self.width if fan_out is None else fan_out
-        if fan_in  < 1: fan_in  = 1
-        if fan_out < 1: fan_out = 1        
-        
+        if fan_in < 1:
+            fan_in = 1
+        if fan_out < 1:
+            fan_out = 1
+
         layers = []
         for i in range(2 if self.res and idx > 0 else 1):
             layers.append(nn.Linear(fan_in, fan_out))
             self.lookup_init(self.act, fan_in, fan_out)(layers[-1].weight)
             nn.init.zeros_(layers[-1].bias)
-            if self.act != 'linear': layers.append(self.lookup_act(self.act))
-            if self.bn and i == 0:  layers.append(self.bn_class(fan_out))  # In case of residual, BN will be added after addition
-            if self.do: 
-                if self.act == 'selu': layers.append(nn.AlphaDropout(self.do))
-                else:                  layers.append(nn.Dropout(self.do))
+            if self.act != "linear":
+                layers.append(self.lookup_act(self.act))
+            if self.bn and i == 0:
+                layers.append(self.bn_class(fan_out))  # In case of residual, BN will be added after addition
+            if self.do:
+                if self.act == "selu":
+                    layers.append(nn.AlphaDropout(self.do))
+                else:
+                    layers.append(nn.Dropout(self.do))
         return nn.Sequential(*layers)
-    
-    def forward(self, x:Tensor) -> Tensor:
+
+    def forward(self, x: Tensor) -> Tensor:
         if self.dense:
-            for l in self.layers[:-1]: x = torch.cat((l(x), x), -1)
+            for l in self.layers[:-1]:
+                x = torch.cat((l(x), x), -1)
             x = self.layers[-1](x)
         elif self.res:
             for i, l in enumerate(self.layers):
                 if i > 0:
-                    x = l(x)+x
-                    x = self.res_bns[i-1](x)  # Renormalise after addition
+                    x = l(x) + x
+                    x = self.res_bns[i - 1](x)  # Renormalise after addition
                 else:
                     x = l(x)
         else:
             x = self.layers(x)
         return x
-    
+
     def get_out_size(self) -> int:
-        r'''
+        r"""
         Get size width of output layer
 
         Returns:
             Width of output layer
-        '''
-        
+        """
+
         return self.layers[-1][0].out_features
 
 
 class MultiBlock(AbsBody):
-    r'''
+    r"""
     Body block allowing outputs of head block to be split amongst a series of body blocks.
     Output is the concatination of all sub-body blocks.
     Optionally, single-neuron 'bottleneck' layers can be used to pass an input to each sub-block based on a learned function of the input features that block
@@ -191,18 +260,26 @@ class MultiBlock(AbsBody):
         ...     feats_per_block=[[f for f in train_feats if 'DER_' in f],
         ...                      [f for f in train_feats if 'PRI_' in f]],
         ...     bottleneck=True, bottleneck_act='swish')
-    '''
+    """
 
-    def __init__(self, n_in:int, feat_map:Dict[str,List[int]], blocks:List[partial], feats_per_block:List[List[str]],
-                 bottleneck_sz:int=0, bottleneck_act:Optional[str]=None,
-                 lookup_init:Callable[[str,Optional[int],Optional[int]],Callable[[Tensor],None]]=lookup_normal_init,
-                 lookup_act:Callable[[str],Any]=lookup_act, freeze:bool=False):
+    def __init__(
+        self,
+        n_in: int,
+        feat_map: Dict[str, List[int]],
+        blocks: List[partial],
+        feats_per_block: List[List[str]],
+        bottleneck_sz: int = 0,
+        bottleneck_act: Optional[str] = None,
+        lookup_init: Callable[[str, Optional[int], Optional[int]], Callable[[Tensor], None]] = lookup_normal_init,
+        lookup_act: Callable[[str], Any] = lookup_act,
+        freeze: bool = False,
+    ):
         super().__init__(n_in=n_in, feat_map=feat_map, lookup_init=lookup_init, lookup_act=lookup_act, freeze=freeze)
-        self.feats_per_block,self.bottleneck_sz,self.bottleneck_act = feats_per_block,bottleneck_sz,bottleneck_act
-        self.blocks,self.n_out,self.masks,self.bottleneck_blocks = [],0,[],None
-        
+        self.feats_per_block, self.bottleneck_sz, self.bottleneck_act = feats_per_block, bottleneck_sz, bottleneck_act
+        self.blocks, self.n_out, self.masks, self.bottleneck_blocks = [], 0, [], None
+
         if self.bottleneck_sz > 0:
-            self.bottleneck_blocks,self.bottleneck_masks = [],[]
+            self.bottleneck_blocks, self.bottleneck_masks = [], []
             for fpb in self.feats_per_block:
                 tmp_map = {f: self.feat_map[f] for f in self.feat_map if f not in fpb}
                 self.bottleneck_masks.append([i for f in tmp_map for i in tmp_map[f]])
@@ -212,15 +289,22 @@ class MultiBlock(AbsBody):
         for i, b in enumerate(blocks):
             tmp_map = {f: self.feat_map[f] for f in self.feat_map if f in self.feats_per_block[i]}
             self.masks.append([i for f in tmp_map for i in tmp_map[f]])
-            self.blocks.append(b(n_in=len(self.masks[-1])+self.bottleneck_sz, feat_map=tmp_map, lookup_init=self.lookup_init,
-                                 lookup_act=self.lookup_act, freeze=self.freeze))
+            self.blocks.append(
+                b(
+                    n_in=len(self.masks[-1]) + self.bottleneck_sz,
+                    feat_map=tmp_map,
+                    lookup_init=self.lookup_init,
+                    lookup_act=self.lookup_act,
+                    freeze=self.freeze,
+                )
+            )
             self.n_out += self.blocks[-1].get_out_size()
         self.blocks = nn.ModuleList(self.blocks)
 
-    def _get_bottleneck(self, mask:List[int]) -> nn.Module:
+    def _get_bottleneck(self, mask: List[int]) -> nn.Module:
         layers = [nn.Linear(len(mask), self.bottleneck_sz)]
         if self.bottleneck_act is None:
-            init = self.lookup_init('linear', len(mask), self.bottleneck_sz)
+            init = self.lookup_init("linear", len(mask), self.bottleneck_sz)
         else:
             init = self.lookup_init(self.bottleneck_act, len(mask), self.bottleneck_sz)
             layers.append(self.lookup_act(self.bottleneck_act))
@@ -229,24 +313,26 @@ class MultiBlock(AbsBody):
         return nn.Sequential(*layers)
 
     def get_out_size(self) -> int:
-        r'''
+        r"""
         Get size width of output layer
 
         Returns:
             Total number of outputs across all blocks
-        '''
-        
+        """
+
         return self.n_out
-    
-    def forward(self, x:Tensor) -> Tensor:
+
+    def forward(self, x: Tensor) -> Tensor:
         y = None
         for i, b in enumerate(self.blocks):
             if self.bottleneck_sz:
-                a = self.bottleneck_blocks[i](x[:,self.bottleneck_masks[i]])
-                tmp_x = torch.cat((x[:,self.masks[i]], a), -1)
+                a = self.bottleneck_blocks[i](x[:, self.bottleneck_masks[i]])
+                tmp_x = torch.cat((x[:, self.masks[i]], a), -1)
             else:
-                tmp_x = x[:,self.masks[i]]
+                tmp_x = x[:, self.masks[i]]
             out = b(tmp_x)
-            if y is None: y = out
-            else:         y = torch.cat((y, out), -1)
+            if y is None:
+                y = out
+            else:
+                y = torch.cat((y, out), -1)
         return y

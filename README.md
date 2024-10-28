@@ -125,14 +125,12 @@ Several examples are present in the form of Jupyter Notebooks in the `examples` 
 
 ## Installation
 
-Due to some strict version requirements on packages, it is recommended to install LUMIN in its own Python environment, e.g `conda create -n lumin python=3.6`
-
 ### From PyPI
 
 The main package can be installed via:
 `pip install lumin`
 
-Full functionality requires two additional packages as described below.
+Full functionality requires an additional package as described below.
 
 ### For development
 
