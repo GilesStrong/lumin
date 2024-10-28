@@ -71,26 +71,15 @@ def plot_feat(
         plot_params = {}
     if len(cuts) != len(labels):
         raise ValueError(f"{len(cuts)} plots requested, but {len(labels)} labels passed")
-    cat = df[feat].nunique() < 50
     if ax_labels["y"] is None:
-        ax_labels["y"] = "Count" if cat else "Density"
+        ax_labels["y"] = "Density"
 
-    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette) as palette:
+    with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
         plt.figure(figsize=(settings.str2sz(size, "x"), settings.str2sz(size, "y")))
         for i in range(len(cuts)):
             tmp_plot_params = plot_params[i] if isinstance(plot_params, list) else plot_params
 
-            if cat:
-                tmp_data = df if cuts[i] is None else df.loc[cuts[i]]
-                if wgt_name is None:
-                    plot_data = _filter_data(tmp_data[feat])
-                else:
-                    tmp_data = _filter_data(tmp_data[[wgt_name, feat]])
-                    weights = tmp_data[wgt_name].values.astype("float64")
-                    weights /= weights.sum()
-                    plot_data = tmp_data.sample(n=n_samples, replace=True, weights=weights)[feat]
-
-            elif plot_bulk:  # Ignore tails for indicative plotting
+            if plot_bulk:  # Ignore tails for indicative plotting
                 feat_range = np.percentile(_filter_data(df[feat]), [1, 99])
                 if feat_range[0] == feat_range[1]:
                     break
@@ -115,7 +104,7 @@ def plot_feat(
                     weights /= weights.sum()
                     plot_data = np.random.choice(tmp_data[feat], n_samples, p=weights)
             label = labels[i]
-            if show_moments and not cat:
+            if show_moments:
                 moms = get_moments(plot_data)
                 mean = uncert_round(moms[0], moms[1])
                 std = uncert_round(moms[2], moms[3])
@@ -124,10 +113,7 @@ def plot_feat(
                 else:
                     label += r" $\bar{x}=$" + f"{mean[0]}" + r", $\sigma_x=$" + f"{std[0]}"
 
-            if cat:
-                sns.countplot(plot_data, label=label, color=palette[0], **tmp_plot_params)
-            else:
-                sns.distplot(plot_data, label=label, **tmp_plot_params)
+            sns.distplot(plot_data, label=label, **tmp_plot_params)
 
         if len(cuts) > 1 or show_moments:
             plt.legend(loc=settings.leg_loc, fontsize=settings.leg_sz)
