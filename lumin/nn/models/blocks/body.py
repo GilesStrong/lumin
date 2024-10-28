@@ -1,13 +1,13 @@
-from typing import Optional, Callable, Any, List, Dict
-import numpy as np
 from functools import partial
+from typing import Any, Callable, Dict, List, Optional
 
-import torch.nn as nn
+import numpy as np
 import torch
+import torch.nn as nn
 from torch import Tensor
 
-from ..layers.activations import lookup_act
 from ..initialisations import lookup_normal_init
+from ..layers.activations import lookup_act
 from .abs_block import AbsBlock
 
 __all__ = ["IdentBody", "FullyConnected", "MultiBlock"]

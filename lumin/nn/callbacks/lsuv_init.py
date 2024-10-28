@@ -28,12 +28,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 The Apache Licence 2.0 underwhich the majority of the rest of LUMIN is distributed does not apply to the code within this file.
 """
 
-import numpy as np
-from typing import Union, Tuple
+from typing import Tuple, Union
 
+import numpy as np
 import torch
-import torch.nn.init
 import torch.nn as nn
+import torch.nn.init
 from torch import Tensor
 
 from lumin.nn.callbacks.callback import Callback

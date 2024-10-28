@@ -1,24 +1,24 @@
-from typing import Dict, List, Tuple, Optional, Callable
-from pathlib import Path
-from fastprogress import master_bar, progress_bar
-from fastprogress.fastprogress import IN_NOTEBOOK
+import os
 import pickle
 import timeit
-import numpy as np
-import os
-from fastcore.all import is_listy
-
-from ..data.fold_yielder import FoldYielder
-from ..models.model_builder import ModelBuilder
-from ..models.model import Model
-from ..callbacks.callback import Callback
-from ..callbacks.monitors import EarlyStopping, SaveBest, MetricLogger
-from ...utils.statistics import uncert_round
-from ..metrics.eval_metric import EvalMetric
-from ...plotting.training import plot_train_history
-from ...plotting.plot_settings import PlotSettings
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
+from fastcore.all import is_listy
+from fastprogress import master_bar, progress_bar
+from fastprogress.fastprogress import IN_NOTEBOOK
+
+from ...plotting.plot_settings import PlotSettings
+from ...plotting.training import plot_train_history
+from ...utils.statistics import uncert_round
+from ..callbacks.callback import Callback
+from ..callbacks.monitors import EarlyStopping, MetricLogger, SaveBest
+from ..data.fold_yielder import FoldYielder
+from ..metrics.eval_metric import EvalMetric
+from ..models.model import Model
+from ..models.model_builder import ModelBuilder
 
 __all__ = ["train_models"]
 

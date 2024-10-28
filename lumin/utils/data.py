@@ -1,8 +1,8 @@
-import numpy as np
 from typing import Optional, Union
+
+import numpy as np
 import pandas as pd
 from fastprogress import progress_bar
-
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_auc_score
 

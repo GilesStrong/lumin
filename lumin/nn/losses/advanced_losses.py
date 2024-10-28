@@ -1,7 +1,7 @@
 from typing import Optional
 
 import torch
-from torch import nn, Tensor
+from torch import Tensor, nn
 
 from ...utils.misc import to_device
 

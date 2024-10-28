@@ -1,22 +1,21 @@
 from __future__ import annotations
-import numpy as np
-from typing import Optional, Any, Tuple, List, Dict, Union, TYPE_CHECKING
-import pandas as pd
+
 from collections import OrderedDict
-from sklearn.pipeline import Pipeline
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from pdpbox import pdp
-from pdpbox.pdp import PDPIsolate, PDPInteract
-
-import seaborn as sns
 import matplotlib.pyplot as plt
-
+import numpy as np
+import pandas as pd
+import seaborn as sns
 import torch
+from pdpbox import pdp
+from pdpbox.pdp import PDPInteract, PDPIsolate
+from sklearn.pipeline import Pipeline
 from torch import Tensor
 
-from .plot_settings import PlotSettings
-from ..utils.misc import to_np, ForwardHook
 from ..nn.models.abs_model import AbsModel
+from ..utils.misc import ForwardHook, to_np
+from .plot_settings import PlotSettings
 
 __all__ = [
     "plot_importance",

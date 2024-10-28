@@ -1,15 +1,15 @@
+from abc import ABCMeta, abstractmethod
+from typing import Optional
+
 import numpy as np
 import pandas as pd
-from abc import abstractmethod, ABCMeta
-from typing import Optional
+import torch
 from fastcore.all import store_attr
 
-import torch
-
-from ..models.abs_model import AbsModel, FitParams
-from ..data.fold_yielder import FoldYielder
-from ..callbacks.callback import Callback
 from ...utils.misc import to_np
+from ..callbacks.callback import Callback
+from ..data.fold_yielder import FoldYielder
+from ..models.abs_model import AbsModel, FitParams
 
 __all__ = ["EvalMetric", "TorchGeometricEvalMetric"]
 

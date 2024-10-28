@@ -1,6 +1,6 @@
-from .abs_callback import AbsCallback
-from ..models.abs_model import AbsModel
 from ...plotting.plot_settings import PlotSettings
+from ..models.abs_model import AbsModel
+from .abs_callback import AbsCallback
 
 __all__ = ["Callback"]
 

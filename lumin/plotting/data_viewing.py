@@ -1,15 +1,14 @@
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Dict, Any, Union, Tuple
-
 import scipy
+import seaborn as sns
 from scipy.cluster import hierarchy as hc
 
+from ..utils.statistics import get_moments, uncert_round
 from .plot_settings import PlotSettings
-from ..utils.statistics import uncert_round, get_moments
-
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 __all__ = ["plot_feat", "compare_events", "plot_rank_order_dendrogram", "plot_kdes_from_bs", "plot_binary_sample_feat"]
 

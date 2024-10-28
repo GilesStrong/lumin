@@ -1,26 +1,26 @@
-import numpy as np
-import pandas as pd
+import glob
 import os
 import pickle
-import glob
 import warnings
-from fastprogress import progress_bar, master_bar
 from pathlib import Path
-from typing import Dict, Union, Any, List, Optional, Tuple
-from sklearn.pipeline import Pipeline
+from typing import Any, Dict, List, Optional, Tuple, Union
 
+import numpy as np
+import pandas as pd
+from fastprogress import master_bar, progress_bar
+from sklearn.pipeline import Pipeline
 from torch import Tensor
 
-from .abs_ensemble import AbsEnsemble
+from ...plotting.plot_settings import PlotSettings
 from ..callbacks.abs_callback import AbsCallback
 from ..callbacks.pred_handlers import PredHandler
-from ..models.model import Model
-from ..models.abs_model import AbsModel
-from ..models.model_builder import ModelBuilder
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_ensemble_feat_importance
 from ..metrics.eval_metric import EvalMetric
-from ...plotting.plot_settings import PlotSettings
+from ..models.abs_model import AbsModel
+from ..models.model import Model
+from ..models.model_builder import ModelBuilder
+from .abs_ensemble import AbsEnsemble
 
 __all__ = ["Ensemble"]
 

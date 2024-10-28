@@ -1,6 +1,7 @@
+from typing import List, Optional
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional
 from fastprogress import progress_bar
 
 __all__ = ["bin_binary_class_pred"]

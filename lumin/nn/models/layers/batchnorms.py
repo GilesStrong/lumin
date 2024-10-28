@@ -1,7 +1,8 @@
-from fastcore.all import store_attr
 import math
+
 import torch
-from torch import nn, Tensor, tensor
+from fastcore.all import store_attr
+from torch import Tensor, nn, tensor
 
 __all__ = ["LCBatchNorm1d", "RunningBatchNorm1d", "RunningBatchNorm2d", "RunningBatchNorm3d"]
 

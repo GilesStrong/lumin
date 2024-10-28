@@ -1,7 +1,8 @@
-import torch.nn as nn
-import torch
-from torch import Tensor
 from typing import Callable
+
+import torch
+import torch.nn as nn
+from torch import Tensor
 
 __all__ = ["SignificanceLoss"]
 

@@ -1,14 +1,13 @@
-from typing import Callable, Union, Optional, Any, Tuple
-from fastcore.all import store_attr
-import numpy as np
+from typing import Any, Callable, Optional, Tuple, Union
 
+import numpy as np
 import torch
 import torch.nn as nn
+from fastcore.all import store_attr
 from torch import Tensor
 
 from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act
-
 
 __all__ = [
     "Conv1DBlock",

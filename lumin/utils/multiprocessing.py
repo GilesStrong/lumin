@@ -1,5 +1,5 @@
 import multiprocessing as mp
-from typing import Callable, Any, List, Dict
+from typing import Any, Callable, Dict, List
 
 __all__ = ["mp_run"]
 

@@ -1,9 +1,10 @@
-import numpy as np
-from typing import Union, List, Optional, Tuple
 from abc import ABCMeta, abstractmethod
+from typing import List, Optional, Tuple, Union
 
-from ..models.abs_model import AbsModel
+import numpy as np
+
 from ..data.fold_yielder import FoldYielder
+from ..models.abs_model import AbsModel
 
 __all__ = []
 

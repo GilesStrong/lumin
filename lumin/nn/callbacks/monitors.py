@@ -1,12 +1,12 @@
-from fastcore.all import store_attr
 import math
-import numpy as np
-from fastprogress.fastprogress import IN_NOTEBOOK
 from collections import OrderedDict
 from typing import Dict, Tuple
 
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
+from fastcore.all import store_attr
+from fastprogress.fastprogress import IN_NOTEBOOK
 
 if IN_NOTEBOOK:
     from IPython.display import display

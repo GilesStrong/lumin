@@ -1,27 +1,27 @@
-import numpy as np
-from typing import Dict, Optional, Callable, List, Any, Union, Tuple
-from glob import glob
-from collections import OrderedDict
-from pathlib import Path
 import os
-from abc import abstractmethod, ABCMeta
-from functools import partial
+from abc import ABCMeta, abstractmethod
+from collections import OrderedDict
 from distutils.version import LooseVersion
+from functools import partial
+from glob import glob
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import numpy as np
+import torch
 import torch.nn as nn
 from torch import Tensor
-import torch
 
+from ....plotting.interpretation import plot_embedding
+from ....plotting.plot_settings import PlotSettings
+from ....utils.misc import hard_identity, is_partially, to_device
 from ..helpers import CatEmbedder
 from ..initialisations import lookup_normal_init
 from ..layers.activations import lookup_act
 from ..layers.batchnorms import LCBatchNorm1d
-from .gnn_blocks import AbsGraphFeatExtractor, GraphCollapser
-from ....plotting.plot_settings import PlotSettings
-from ....plotting.interpretation import plot_embedding
 from .abs_block import AbsBlock
-from ....utils.misc import hard_identity, to_device, is_partially
 from .conv_blocks import Conv1DBlock, Res1DBlock, ResNeXt1DBlock
+from .gnn_blocks import AbsGraphFeatExtractor, GraphCollapser
 
 __all__ = [
     "CatEmbHead",

@@ -1,17 +1,19 @@
 from __future__ import annotations
-import numpy as np
-import pandas as pd
-import h5py
-from typing import Dict, Optional, Union, List, Type
+
+import json
 import pickle
 import warnings
-from pathlib import Path
 from collections import OrderedDict
-import json
-from fastcore.all import is_listy
 from importlib import import_module
-from sklearn.pipeline import Pipeline
+from pathlib import Path
+from typing import Dict, List, Optional, Type, Union
+
+import h5py
+import numpy as np
+import pandas as pd
+from fastcore.all import is_listy
 from sklearn.model_selection import KFold
+from sklearn.pipeline import Pipeline
 
 from .batch_yielder import BatchYielder
 

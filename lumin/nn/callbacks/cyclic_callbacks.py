@@ -1,13 +1,13 @@
+from typing import List, Tuple, Union
+
+import matplotlib.pyplot as plt
 import numpy as np
-from typing import Tuple, Union, List
+import seaborn as sns
 from fastcore.all import store_attr
 from fastprogress.fastprogress import IN_NOTEBOOK
 
 from .callback import Callback
 from .monitors import EarlyStopping, SaveBest
-
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 __all__ = ["AbsCyclicCallback", "CycleLR", "CycleMom", "OneCycle", "CycleStep"]
 

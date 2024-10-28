@@ -1,13 +1,13 @@
-from typing import Union, Tuple, List, Optional
-import numpy as np
-from fastcore.all import is_listy, store_attr
-from abc import abstractmethod, ABCMeta
+from abc import ABCMeta, abstractmethod
+from typing import List, Optional, Tuple, Union
 
+import numpy as np
 import torch
+from fastcore.all import is_listy, store_attr
 from torch import Tensor
 
-from .callback import Callback
 from ..data.batch_yielder import BatchYielder
+from .callback import Callback
 
 __all__ = ["BinaryLabelSmooth", "BootstrapResample", "ParametrisedPrediction", "TargReplace"]
 

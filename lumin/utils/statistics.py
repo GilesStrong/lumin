@@ -1,8 +1,8 @@
-import numpy as np
-from typing import Tuple, Dict, Optional, Any, Union
-import multiprocessing as mp
 import math
+import multiprocessing as mp
+from typing import Any, Dict, Optional, Tuple, Union
 
+import numpy as np
 from statsmodels.nonparametric.kde import KDEUnivariate
 
 __all__ = ["bootstrap_stats", "get_moments", "uncert_round"]

@@ -1,17 +1,18 @@
-from fastprogress import master_bar, progress_bar
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import sklearn.utils
-from typing import Optional
+from fastprogress import master_bar, progress_bar
 
-from ...utils.statistics import bootstrap_stats
-from ...utils.multiprocessing import mp_run
 from ...plotting.interpretation import plot_importance
-from ..models.abs_model import AbsModel
-from ..ensemble.abs_ensemble import AbsEnsemble
-from ..data.fold_yielder import FoldYielder
-from ..metrics.eval_metric import EvalMetric
 from ...plotting.plot_settings import PlotSettings
+from ...utils.multiprocessing import mp_run
+from ...utils.statistics import bootstrap_stats
+from ..data.fold_yielder import FoldYielder
+from ..ensemble.abs_ensemble import AbsEnsemble
+from ..metrics.eval_metric import EvalMetric
+from ..models.abs_model import AbsModel
 
 __all__ = ["get_nn_feat_importance", "get_ensemble_feat_importance"]
 

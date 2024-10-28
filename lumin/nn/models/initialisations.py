@@ -1,9 +1,9 @@
-import numpy as np
-from typing import Optional, Callable
 from functools import partial
+from typing import Callable, Optional
 
-from torch import Tensor
+import numpy as np
 import torch.nn as nn
+from torch import Tensor
 
 __all__ = ["lookup_normal_init", "lookup_uniform_init"]
 

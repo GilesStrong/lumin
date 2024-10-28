@@ -1,13 +1,13 @@
-from typing import Callable, Optional, Any
 import math
-from fastcore.all import store_attr
+from typing import Any, Callable, Optional
 
 import torch
-from torch import nn, Tensor
+from fastcore.all import store_attr
+from torch import Tensor, nn
 
+from ..initialisations import lookup_normal_init
 from .activations import lookup_act
 from .batchnorms import LCBatchNorm1d
-from ..initialisations import lookup_normal_init
 
 __all__ = ["SelfAttention", "OffsetSelfAttention"]
 

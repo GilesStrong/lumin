@@ -26,9 +26,8 @@ The Apache Licence 2.0 underwhich the majority of the rest of LUMIN is distribut
 """
 
 import torch
-from torch import nn
 import torch.nn.functional as F
-
+from torch import nn
 
 __all__ = ["Mish"]
 

@@ -1,25 +1,25 @@
-import pandas as pd
-import numpy as np
-from typing import List, Optional, Dict, Any, Tuple, Union
-from fastprogress import progress_bar
-from prettytable import PrettyTable
+import multiprocessing as mp
 import timeit
 from collections import OrderedDict, defaultdict
-import rfpimp
-from rfpimp import importances, feature_dependence_matrix, plot_dependence_heatmap
-import multiprocessing as mp
 from distutils.version import LooseVersion
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
+import pandas as pd
 import pkg_resources
+import rfpimp
+from fastprogress import progress_bar
+from prettytable import PrettyTable
+from rfpimp import feature_dependence_matrix, importances, plot_dependence_heatmap
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-
-from .hyper_param import get_opt_rf_params
+from ..plotting.data_viewing import plot_rank_order_dendrogram
 from ..plotting.interpretation import plot_importance
 from ..plotting.plot_settings import PlotSettings
-from ..plotting.data_viewing import plot_rank_order_dendrogram
-from ..utils.statistics import uncert_round
 from ..utils.misc import subsample_df
 from ..utils.multiprocessing import mp_run
+from ..utils.statistics import uncert_round
+from .hyper_param import get_opt_rf_params
 
 __all__ = [
     "get_rf_feat_importance",

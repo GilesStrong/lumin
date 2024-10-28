@@ -1,5 +1,6 @@
-from typing import List, Tuple, Optional, Union
 from pathlib import Path
+from typing import List, Optional, Tuple, Union
+
 import numpy as np
 
 from ..data.fold_yielder import FoldYielder

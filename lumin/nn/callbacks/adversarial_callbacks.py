@@ -1,14 +1,14 @@
-from typing import List, Optional, Callable
-from fastcore.all import is_listy, store_attr
 import timeit
+from typing import Callable, List, Optional
 
-from torch import nn, Tensor
+from fastcore.all import is_listy, store_attr
+from torch import Tensor, nn
 
+from ...utils.misc import is_partially
+from ..models.model import Model
+from ..models.model_builder import ModelBuilder
 from .callback import Callback
 from .data_callbacks import TargReplace
-from ..models.model_builder import ModelBuilder
-from ..models.model import Model
-from ...utils.misc import is_partially
 
 __all__ = ["PivotTraining"]
 

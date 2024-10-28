@@ -1,12 +1,12 @@
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import h5py
 import numpy as np
 import pandas as pd
-from typing import List, Union, Optional, Any, Tuple, Dict
-import os
-from pathlib import Path
-import json
-
-from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.model_selection import KFold, StratifiedKFold
 
 __all__ = ["save_to_grp", "fold2foldfile", "df2foldfile", "add_meta_data"]
 

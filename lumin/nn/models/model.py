@@ -1,29 +1,29 @@
+import warnings
+from collections import OrderedDict
+from functools import partial
+from random import shuffle
+from typing import List, Optional, Tuple, Type, Union
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Tuple, Type
-from collections import OrderedDict
-from fastprogress import master_bar, progress_bar
-import warnings
-from fastcore.all import is_listy, partialler, Path
-from random import shuffle
-from functools import partial
-
 import torch
-from torch import Tensor
 import torch.nn as nn
+from fastcore.all import Path, is_listy, partialler
+from fastprogress import master_bar, progress_bar
+from torch import Tensor
 
-from .abs_model import AbsModel, FitParams
-from .model_builder import ModelBuilder
-from ..data.batch_yielder import BatchYielder
+from ...plotting.plot_settings import PlotSettings
+from ...utils.misc import is_partially, to_device, to_np
 from ..callbacks.abs_callback import AbsCallback
 from ..callbacks.cyclic_callbacks import AbsCyclicCallback
-from ..callbacks.pred_handlers import PredHandler
 from ..callbacks.monitors import MetricLogger
+from ..callbacks.pred_handlers import PredHandler
+from ..data.batch_yielder import BatchYielder
 from ..data.fold_yielder import FoldYielder
 from ..interpretation.features import get_nn_feat_importance
 from ..metrics.eval_metric import EvalMetric
-from ...plotting.plot_settings import PlotSettings
-from ...utils.misc import to_np, to_device, is_partially
+from .abs_model import AbsModel, FitParams
+from .model_builder import ModelBuilder
 
 __all__ = ["Model"]
 

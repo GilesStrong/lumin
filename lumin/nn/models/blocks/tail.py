@@ -1,12 +1,12 @@
+from typing import Callable, List, Optional, Tuple, Union
+
 import numpy as np
-from typing import Optional, Union, Tuple, Callable, List
-
-from ..initialisations import lookup_normal_init
-from ....utils.misc import hard_identity, to_device
-from .abs_block import AbsBlock
-
-from torch import Tensor
 import torch.nn as nn
+from torch import Tensor
+
+from ....utils.misc import hard_identity, to_device
+from ..initialisations import lookup_normal_init
+from .abs_block import AbsBlock
 
 __all__ = ["IdentTail", "ClassRegMulti"]
 

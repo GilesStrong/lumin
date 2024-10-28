@@ -1,12 +1,13 @@
 from __future__ import annotations
+
+import math
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Tuple, Any, Dict
-import math
+from torch import Tensor
 
 from ...utils.misc import to_device
-
-from torch import Tensor
 
 __all__ = ["BatchYielder", "TorchGeometricBatchYielder"]
 

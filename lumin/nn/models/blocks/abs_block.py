@@ -1,8 +1,8 @@
+from abc import ABCMeta, abstractmethod
 from typing import Callable, Optional
-from abc import abstractmethod, ABCMeta
 
-from torch import Tensor
 import torch.nn as nn
+from torch import Tensor
 
 from ..initialisations import lookup_normal_init
 

@@ -1,9 +1,9 @@
+from typing import Tuple
+
 import numpy as np
 import pandas as pd
-from typing import Tuple
-from fastprogress import progress_bar
-
 import torch
+from fastprogress import progress_bar
 from torch import Tensor
 
 __all__ = ["calc_ams", "calc_ams_torch", "ams_scan_quick", "ams_scan_slow"]

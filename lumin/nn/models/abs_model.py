@@ -1,13 +1,12 @@
+from abc import ABCMeta, abstractmethod
+from typing import Callable, Generator, List, Optional, Union
+
 import numpy as np
 import pandas as pd
-from typing import List, Optional, Union, Generator, Callable
-from abc import ABCMeta, abstractmethod
+from torch import Tensor, optim
 
-from torch import Tensor
-from torch import optim
-
-from ..data.fold_yielder import FoldYielder
 from ..callbacks.abs_callback import AbsCallback
+from ..data.fold_yielder import FoldYielder
 
 __all__ = []
 

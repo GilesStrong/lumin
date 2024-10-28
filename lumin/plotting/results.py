@@ -1,17 +1,17 @@
+import multiprocessing as mp
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.metrics import roc_auc_score, roc_curve
-from typing import List, Optional, Dict, Any, Union, Tuple
-import multiprocessing as mp
-from fastcore.all import is_listy
-
-from .plot_settings import PlotSettings
-from ..utils.statistics import uncert_round
-from ..utils.multiprocessing import mp_run
-
-from mpl_toolkits.axes_grid1.inset_locator import mark_inset, inset_axes
 import seaborn as sns
-import matplotlib.pyplot as plt
+from fastcore.all import is_listy
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes, mark_inset
+from sklearn.metrics import roc_auc_score, roc_curve
+
+from ..utils.multiprocessing import mp_run
+from ..utils.statistics import uncert_round
+from .plot_settings import PlotSettings
 
 __all__ = ["plot_roc", "plot_binary_class_pred", "plot_sample_pred"]
 

@@ -1,10 +1,11 @@
 from typing import List, Optional
-from sklearn.metrics import accuracy_score, roc_auc_score
-from fastcore.all import store_attr
 
-from .eval_metric import EvalMetric
+from fastcore.all import store_attr
+from sklearn.metrics import accuracy_score, roc_auc_score
+
 from ...evaluation.ams import ams_scan_quick, ams_scan_slow
 from ...utils.misc import to_binary_class
+from .eval_metric import EvalMetric
 
 __all__ = ["AMS", "MultiAMS", "BinaryAccuracy", "RocAucScore"]
 

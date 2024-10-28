@@ -1,13 +1,13 @@
-import numpy as np
 import math
-from typing import Tuple, Optional
-import pandas as pd
+from typing import Optional, Tuple
 
-from .callback import Callback
-from ...plotting.training import plot_lr_finders
-
-import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+from ...plotting.training import plot_lr_finders
+from .callback import Callback
 
 __all__ = ["LRFinder"]
 

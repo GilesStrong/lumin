@@ -1,17 +1,17 @@
-from typing import List, Callable, Any, Optional, Tuple, Union, Dict
-from fastcore.all import store_attr, is_listy
-from abc import abstractmethod, ABCMeta
-import numpy as np
+from abc import ABCMeta, abstractmethod
 from functools import partial
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
+import numpy as np
 import torch
-from torch import nn, Tensor
+from fastcore.all import is_listy, store_attr
+from torch import Tensor, nn
 
-from ..initialisations import lookup_normal_init
-from ..layers.batchnorms import LCBatchNorm1d
-from ..layers.activations import lookup_act
-from ..layers.self_attention import SelfAttention
 from ....utils.misc import hard_identity, to_device
+from ..initialisations import lookup_normal_init
+from ..layers.activations import lookup_act
+from ..layers.batchnorms import LCBatchNorm1d
+from ..layers.self_attention import SelfAttention
 
 __all__ = ["GraphCollapser", "NodePredictor", "InteractionNet", "GravNet", "GravNetLayer"]
 

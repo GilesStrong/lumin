@@ -1,9 +1,9 @@
-from typing import Optional
 import copy
 from distutils.version import LooseVersion
-from fastcore.all import store_attr
+from typing import Optional
 
 import torch
+from fastcore.all import store_attr
 
 from ..models.model import Model
 from .callback import Callback

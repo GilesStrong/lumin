@@ -1,22 +1,20 @@
-from typing import Tuple, Dict, List, Optional, Union
-from fastprogress import master_bar, progress_bar
-import numpy as np
-from collections import OrderedDict
 import timeit
+from collections import OrderedDict
 from functools import partial
-from fastcore.all import is_listy
-
-from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
-
-from ..nn.data.fold_yielder import FoldYielder
-from ..nn.models.model_builder import ModelBuilder
-from ..nn.models.model import Model
-from ..nn.callbacks.opt_callbacks import LRFinder
-from ..plotting.training import plot_lr_finders
-from ..plotting.plot_settings import PlotSettings
-
+from typing import Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+import numpy as np
+from fastcore.all import is_listy
+from fastprogress import master_bar, progress_bar
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
+from ..nn.callbacks.opt_callbacks import LRFinder
+from ..nn.data.fold_yielder import FoldYielder
+from ..nn.models.model import Model
+from ..nn.models.model_builder import ModelBuilder
+from ..plotting.plot_settings import PlotSettings
+from ..plotting.training import plot_lr_finders
 
 __all__ = ["get_opt_rf_params", "lr_find"]
 

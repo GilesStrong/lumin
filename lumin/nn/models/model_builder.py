@@ -1,23 +1,23 @@
-from typing import Dict, Union, Any, Callable, Tuple, Optional, List, Iterator
-import pickle
 import math
-import numpy as np
+import pickle
 import warnings
 from distutils.version import LooseVersion
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Union
 
+import numpy as np
+import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch import Tensor
-import torch
 
-from .layers.activations import lookup_act
-from .initialisations import lookup_normal_init
-from .helpers import CatEmbedder
-from .blocks.body import FullyConnected, AbsBody
-from .blocks.head import CatEmbHead, AbsHead
-from .blocks.tail import ClassRegMulti, AbsTail
-from ..losses.basic_weighted import WeightedCCE, WeightedMSE
 from ...utils.misc import to_device
+from ..losses.basic_weighted import WeightedCCE, WeightedMSE
+from .blocks.body import AbsBody, FullyConnected
+from .blocks.head import AbsHead, CatEmbHead
+from .blocks.tail import AbsTail, ClassRegMulti
+from .helpers import CatEmbedder
+from .initialisations import lookup_normal_init
+from .layers.activations import lookup_act
 
 __all__ = ["ModelBuilder"]
 

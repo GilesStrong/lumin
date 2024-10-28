@@ -1,8 +1,9 @@
+from typing import Callable, Optional
+
 import numpy as np
-from typing import Optional, Callable
 import pandas as pd
-from statsmodels.stats.weightstats import DescrStatsW
 from fastcore.all import store_attr
+from statsmodels.stats.weightstats import DescrStatsW
 
 from ...utils.statistics import bootstrap_stats
 from .eval_metric import EvalMetric

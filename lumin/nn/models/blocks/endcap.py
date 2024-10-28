@@ -1,8 +1,8 @@
+from abc import ABCMeta, abstractmethod
+from typing import Union
+
 import numpy as np
 import pandas as pd
-from typing import Union
-from abc import abstractmethod, ABCMeta
-
 import torch.nn as nn
 from torch import Tensor
 
