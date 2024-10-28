@@ -105,8 +105,8 @@ def to_binary_class(df: pd.DataFrame, zero_preds: List[str], one_preds: List[str
         one_preds: list of column names for predictions associated with class 0
     """
 
-    zero = df[zero_preds].max(axis=1)[:, None]
-    one = df[one_preds].max(axis=1)[:, None]
+    zero = df[zero_preds].max(axis=1).values[:, None]
+    one = df[one_preds].max(axis=1).values[:, None]
     tup = np.hstack((zero, one))
     predargs = np.argmax(tup, axis=1)
     preds = np.max(tup, axis=1)
