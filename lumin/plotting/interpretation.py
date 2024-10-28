@@ -169,22 +169,17 @@ def plot_1d_partial_dependence(
         _deprocess_iso(iso, input_pipe, feat, train_feats)
 
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
-        fig, ax = pdp.pdp_plot(
-            iso,
-            feat,
+        fig, ax = iso.plot(
             center=False,
             plot_lines=True,
             cluster=n_clusters is not None,
             n_cluster_centers=n_clusters,
-            plot_params={"title": None, "subtitle": None},
-            figsize=(settings.w_mid, settings.h_mid),
+            plot_params={"title": None, "subtitle": None, "pdp_hl": True},
+            engine="matplotlib",
+            template="plotly_white",
+            figsize=(settings.w_mid, max(10, settings.h_mid)),
             **pdp_plot_kargs,
         )
-        ax["title_ax"].remove()
-        ax["pdp_ax"].set_xlabel(feat, fontsize=settings.lbl_sz, color=settings.lbl_col)
-        ax["pdp_ax"].set_ylabel("Partial dependence", fontsize=settings.lbl_sz, color=settings.lbl_col)
-        if y_lim is not None:
-            ax["pdp_ax"].set_ylim(y_lim)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
@@ -257,16 +252,14 @@ def plot_2d_partial_dependence(
         _deprocess_interact(interact, input_pipe, feats, train_feats)
 
     with sns.axes_style(**settings.style), sns.color_palette(settings.cat_palette):
-        fig, ax = pdp.pdp_interact_plot(
-            interact,
-            feats,
+        fig, ax = interact.plot(
             figsize=(settings.h_large, settings.h_large),
             plot_params={"title": None, "subtitle": None, "cmap": settings.seq_palette},
+            engine="matplotlib",
+            template="plotly_white",
+            plot_type="contour",
             **pdp_interact_plot_kargs,
         )
-        ax["title_ax"].remove()
-        ax["pdp_inter_ax"].set_xlabel(feats[0], fontsize=settings.lbl_sz, color=settings.lbl_col)
-        ax["pdp_inter_ax"].set_ylabel(feats[1], fontsize=settings.lbl_sz, color=settings.lbl_col)
         plt.xticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.yticks(fontsize=settings.tk_sz, color=settings.tk_col)
         plt.title(settings.title, fontsize=settings.title_sz, color=settings.title_col, loc=settings.title_loc)
@@ -285,11 +278,10 @@ def _deprocess_iso(iso: PDPIsolate, input_pipe: Pipeline, feat: str, feats: Unio
         in_sz = input_pipe.steps[0][1].mean_.shape[0]
     if feat_id >= in_sz:
         return
-    x = iso.feature_grids
+    x = iso.feature_info.grids
     x = np.broadcast_to(x[:, None], (x.shape[0], in_sz))
     x = input_pipe.inverse_transform(x)[:, feat_id]
-    iso.feature_grids = x
-    iso.ice_lines.columns = x
+    iso.feature_info.grids = x
 
 
 def _deprocess_interact(
@@ -305,10 +297,15 @@ def _deprocess_interact(
             in_sz = input_pipe.steps[0][1].mean_.shape[0]
         if feat_id > in_sz:
             continue
-        x = interact.feature_grids[i]
+        x = interact.feature_grid_combos[:, i]
         x = np.broadcast_to(x[:, None], (x.shape[0], in_sz))
         x = input_pipe.inverse_transform(x)[:, feat_id]
-        interact.feature_grids[i] = x
+        interact.feature_grid_combos[:, i] = x
+
+        x = interact.pdp_isolate_objs[i].feature_info.grids
+        x = np.broadcast_to(x[:, None], (x.shape[0], in_sz))
+        x = input_pipe.inverse_transform(x)[:, feat_id]
+        interact.pdp_isolate_objs[i].feature_info.grids = x
 
 
 def plot_multibody_weighted_outputs(
