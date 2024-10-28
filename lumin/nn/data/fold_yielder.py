@@ -14,8 +14,10 @@ import pandas as pd
 from fastcore.all import is_listy
 from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
+from torch_geometric.data import Dataset as PyGDataset
+from torch_geometric.loader import DataLoader as PyGDataLoader
 
-from .batch_yielder import BatchYielder
+from .batch_yielder import BatchYielder, TorchGeometricBatchYielder
 
 __all__ = ["FoldYielder", "HEPAugFoldYielder", "TorchGeometricFoldYielder"]
 
@@ -815,11 +817,9 @@ class TorchGeometricFoldYielder(FoldYielder):
         batch_yielder_type: Class of :class:`~lumin.nn.data.batch_yielder.BatchYielder` to instantiate to yield inputs
     """
 
-    from .batch_yielder import TorchGeometricBatchYielder
-
     def __init__(
         self,
-        dataset: "Dataset",
+        dataset: PyGDataset,
         n_folds: Optional[int],
         fold_indices: Optional[List[List[int]]] = None,
         shuffle: bool = True,
@@ -842,10 +842,10 @@ class TorchGeometricFoldYielder(FoldYielder):
     def __len__(self) -> int:
         return self.n_folds
 
-    def __getitem__(self, idx: int) -> "Dataset":
+    def __getitem__(self, idx: int) -> PyGDataset:
         return self.get_fold(idx)
 
-    def __iter__(self) -> "Dataset":
+    def __iter__(self) -> PyGDataset:
         for i in range(self.n_folds):
             yield self.get_fold(i)
 

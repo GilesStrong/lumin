@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from torch import Tensor
+from torch_geometric.data import Dataset as PyGDataset
+from torch_geometric.loader import DataLoader as PyGDataLoader
 
 from ...utils.misc import to_device
 
@@ -159,16 +161,15 @@ class TorchGeometricBatchYielder(BatchYielder):
 
     def __init__(
         self,
-        inputs: "Dataset",
+        inputs: PyGDataset,
         bs: int,
         shuffle: bool = True,
         exclude_keys: Optional[List[str]] = None,
         use_weights: bool = True,
         **kwargs: Any,
     ):
-        from torch_geometric.loader import DataLoader
 
-        self.loader = DataLoader(inputs, batch_size=bs, shuffle=shuffle, exclude_keys=exclude_keys)
+        self.loader = PyGDataLoader(inputs, batch_size=bs, shuffle=shuffle, exclude_keys=exclude_keys)
         self.use_weights = use_weights
 
     def __iter__(self) -> Tuple[Dict[str, Tensor], Dict[str, Tensor], Optional[Dict[str, Tensor]]]:

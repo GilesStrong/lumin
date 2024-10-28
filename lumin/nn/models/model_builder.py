@@ -220,7 +220,7 @@ class ModelBuilder(object):
             freeze_tail=freeze_tail,
         )
 
-    def _parse_loss(self, loss: Union[Any, "auto"] = "auto") -> None:
+    def _parse_loss(self, loss: Union[Any, str] = "auto") -> None:
         if loss == "auto":
             if "class" in self.objective:
                 if self.n_out > 1 and "multiclass" in self.objective:
