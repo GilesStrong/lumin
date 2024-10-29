@@ -65,7 +65,7 @@ sphinx-rtd-theme = "<2.0.0"
 sphinx-autodoc-typehints = "<2.0.0"
 sphinx-autodoc-annotation = "^1.0.post1"
 m2r2 = "^0.3.3.post2"
-tomopt_sphinx_theme = { git = "https://github.com/GilesStrong/tomopt_sphinx_theme.git" }
+pytorch_sphinx_theme = { git = "https://github.com/GilesStrong/pytorch_sphinx_theme.git" }
 
 [build-system]
 requires = ["poetry-core"]

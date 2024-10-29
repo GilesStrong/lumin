@@ -3864,6 +3864,24 @@ files = [
 six = ">=1.5"
 
 [[package]]
+name = "pytorch_sphinx_theme"
+version = "0.0.24"
+description = "PyTorch Sphinx Theme"
+optional = false
+python-versions = "*"
+files = []
+develop = false
+
+[package.dependencies]
+sphinx = "*"
+
+[package.source]
+type = "git"
+url = "https://github.com/GilesStrong/pytorch_sphinx_theme.git"
+reference = "HEAD"
+resolved_reference = "a685f5913f47f5d2b469e96541bcd051e587ec9e"
+
+[[package]]
 name = "pytz"
 version = "2024.2"
 description = "World timezone definitions, modern and historical"
@@ -4988,24 +5006,6 @@ files = [
 ]
 
 [[package]]
-name = "tomopt_sphinx_theme"
-version = "0.0.24"
-description = "PyTorch Sphinx Theme"
-optional = false
-python-versions = "*"
-files = []
-develop = false
-
-[package.dependencies]
-sphinx = "*"
-
-[package.source]
-type = "git"
-url = "https://github.com/GilesStrong/tomopt_sphinx_theme.git"
-reference = "HEAD"
-resolved_reference = "1add09f655d64ef28ece5d64e90610adc73d78e3"
-
-[[package]]
 name = "torch"
 version = "2.5.0"
 description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
@@ -5673,4 +5673,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "3.10.12"
-content-hash = "8233fe80f50eec2b13159a1808f9dee3e23703787c62760812de7bfe4a8fb90b"
+content-hash = "679cd56683ee6a333ab675e27a41ae8c70c0153bfdf35559de5038cd08e4800b"
