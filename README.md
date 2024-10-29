@@ -112,42 +112,66 @@ And for a live tutorial, checkout my talk at PyHEP 2021: https://www.youtube.com
 
 Several examples are present in the form of Jupyter Notebooks in the `examples` folder. These can be run also on Google Colab to allow you to quickly try out the package.
 
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Simple_Binary_Classification_of_earnings.ipynb) `examples/Simple_Binary_Classification_of_earnings.ipynb`: Very basic binary-classification example
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Binary_Classification_Signal_versus_Background.ipynb) `examples/Binary_Classification_Signal_versus_Background.ipynb`: Binary-classification example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Multiclass_Classification_Signal_versus_Backgrounds.ipynb) `examples/Multiclass_Classification_Signal_versus_Backgrounds.ipynb`: Multiclass-classification example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Single_Target_Regression_Di-Higgs_mass_prediction.ipynb) `examples/Single_Target_Regression_Di-Higgs_mass_prediction.ipynb`: Single-target regression example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Multi_Target_Regression_Di-tau_momenta.ipynb) `examples/Multi_Target_Regression_Di-tau_momenta.ipynb`: Multi-target regression example in a high-energy physics context
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Feature_Selection.ipynb) `examples/Feature_Selection.ipynb`: In-depth walkthrough for automated feature-selection
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Advanced_Model_Building.ipynb) `examples/Advanced_Model_Building.ipynb`: In-depth look at building more complicated models and a few advanced interpretation techniques
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Model_Exporting.ipynb) `examples/Model_Exporting.ipynb`: Walkthough for exporting a trained model to ONNX and TensorFlow
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb) `examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb`: Various examples of applying RNNs, CNNs, and GNNs to matrix data (top-tagging on jet constituents)
-1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.8.0/examples/Learning_To_Pivot.ipynb) `examples/Learning_To_Pivot.ipynb`: Example of adversarial training for parameter invariance
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Simple_Binary_Classification_of_earnings.ipynb) `examples/Simple_Binary_Classification_of_earnings.ipynb`: Very basic binary-classification example
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Binary_Classification_Signal_versus_Background.ipynb) `examples/Binary_Classification_Signal_versus_Background.ipynb`: Binary-classification example in a high-energy physics context
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Multiclass_Classification_Signal_versus_Backgrounds.ipynb) `examples/Multiclass_Classification_Signal_versus_Backgrounds.ipynb`: Multiclass-classification example in a high-energy physics context
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Single_Target_Regression_Di-Higgs_mass_prediction.ipynb) `examples/Single_Target_Regression_Di-Higgs_mass_prediction.ipynb`: Single-target regression example in a high-energy physics context
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Multi_Target_Regression_Di-tau_momenta.ipynb) `examples/Multi_Target_Regression_Di-tau_momenta.ipynb`: Multi-target regression example in a high-energy physics context
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Feature_Selection.ipynb) `examples/Feature_Selection.ipynb`: In-depth walkthrough for automated feature-selection
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Advanced_Model_Building.ipynb) `examples/Advanced_Model_Building.ipynb`: In-depth look at building more complicated models and a few advanced interpretation techniques
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Model_Exporting.ipynb) `examples/Model_Exporting.ipynb`: Walkthough for exporting a trained model to ONNX and TensorFlow
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb) `examples/RNNs_CNNs_and_GNNs_for_matrix_data.ipynb`: Various examples of applying RNNs, CNNs, and GNNs to matrix data (top-tagging on jet constituents)
+1. [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/GilesStrong/lumin/blob/v0.9.0/examples/Learning_To_Pivot.ipynb) `examples/Learning_To_Pivot.ipynb`: Example of adversarial training for parameter invariance
 
 ## Installation
-
-Due to some strict version requirements on packages, it is recommended to install LUMIN in its own Python environment, e.g `conda create -n lumin python=3.6`
 
 ### From PyPI
 
 The main package can be installed via:
 `pip install lumin`
 
-Full functionality requires two additional packages as described below.
+Full functionality requires an additional package as described below.
 
-### From source
+### For development
 
-```
+Check out the repo locally:
+
+```bash
 git clone git@github.com:GilesStrong/lumin.git
 cd lumin
-pip install .
 ```
 
-Optionally, run pip install with `-e` flag for development installation.
+For development usage, we use [`poetry`](https://python-poetry.org/docs/#installing-with-the-official-installer) to handle dependency installation.
+Poetry can be installed via, e.g.
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+poetry self update
+```
+
+and ensuring that `poetry` is available in your `$PATH`
+
+Lumin requires `python >= 3.10`. This can be installed via e.g. [`pyenv`](https://github.com/pyenv/pyenv):
+
+```bash
+curl https://pyenv.run | bash
+pyenv update
+pyenv install 3.10
+pyenv local 3.10
+```
+
+Install the dependencies:
+
+```bash
+poetry install
+poetry self add poetry-plugin-export
+poetry config warnings.export false
+poetry run pre-commit install
+```
 
 ### Optional requirements
 
 - sparse: enables loading on COO sparse-format tensors, install via e.g. `pip install sparse`
-- PDPBox: model interpretation, requires numpy < 1.24.0
 
 ## Notes
 
@@ -181,10 +205,7 @@ Nope, the majority of the code-base does not conform to PEP8. PEP8 has its uses,
 
 ### Why is LUMIN called LUMIN?
 
-Aside from being a recursive acronym (and therefore the best kind of acronym) lumin is short for 'luminosity'. In high-energy physics, the integrated luminosity of the data collected by an experiment is the main driver in the results that analyses obtain. With the paradigm shift towards multivariate analyses, however, improved methods can be seen as providing 'artificial luminosity'; e.g. the gain offered by some DNN could be measured in terms of the amount of extra data that would have to be collected to achieve the same result with a more traditional analysis. Luminosity can also be connected to the fact that LUMIN is built around the python version of Torch.
-
-### Who develops LUMIN
-
+Aside from being a recursive acronym (and therefore the best kind of acronym) lumin is short for 'luminosity'. In high-energy physics, the integrated luminosity of the data collected by an experiment is the main driver in the results that analyses obtain. With the paradigm shift towards multivariate analyses, however, improved methods can be seen as providing 'artificial luminosity'; e.g. the gain offered by some DNN could be measured in terms of the amount of extra data that would have to be collected to achieve the same result with a more traditional analysis. Luminosity can also be connected to the fact that LUMIN is built a
 LUMIN is primarily developed by Giles Strong; a British-born doctor in particle physics, researcher at INFN-Padova (Italy), and a member of the CMS collaboration at CERN, and a founding member of the MODE Collaboration (differentiable optimisation for detector design).
 
 As LUMIN has grown, it has welcomed contributions from members of the scientific and software development community. Check out the [contributors page](https://github.com/GilesStrong/lumin/graphs/contributors) for a complete list.

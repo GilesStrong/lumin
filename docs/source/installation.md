@@ -1,21 +1,46 @@
-Due to some strict version requirements on packages, it is recommended to install LUMIN in its own Python environment, e.g `conda create -n lumin python=3.6`
-
-## From PyPI
+### From PyPI
 
 The main package can be installed via:
 `pip install lumin`
 
-Full functionality requires two additional packages as described below.
+Full functionality requires an additional package as described below.
 
-## From source
+### For development
 
-```
+Check out the repo locally:
+
+```bash
 git clone git@github.com:GilesStrong/lumin.git
 cd lumin
-pip install .
 ```
 
-Optionally, run pip install with `-e` flag for development installation.
+For development usage, we use [`poetry`](https://python-poetry.org/docs/#installing-with-the-official-installer) to handle dependency installation.
+Poetry can be installed via, e.g.
+
+```bash
+curl -sSL https://install.python-poetry.org | python3 -
+poetry self update
+```
+
+and ensuring that `poetry` is available in your `$PATH`
+
+Lumin requires `python >= 3.10`. This can be installed via e.g. [`pyenv`](https://github.com/pyenv/pyenv):
+
+```bash
+curl https://pyenv.run | bash
+pyenv update
+pyenv install 3.10
+pyenv local 3.10
+```
+
+Install the dependencies:
+
+```bash
+poetry install
+poetry self add poetry-plugin-export
+poetry config warnings.export false
+poetry run pre-commit install
+```
 
 ### Optional requirements
 

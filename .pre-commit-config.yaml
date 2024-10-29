@@ -1,0 +1,37 @@
+repos:
+  - repo: https://github.com/python-poetry/poetry
+    rev: '1.7.0'
+    hooks:
+      - id: poetry-check
+      - id: poetry-lock
+      - id: poetry-export
+        args: ["-f", "requirements.txt", "-o", "requirements.txt", "--with", "docs", "--with", "dev", "--without-hashes"]
+        
+  - repo: https://github.com/psf/black
+    rev: 24.2.0
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=120]
+    
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: ["--profile", "black", "--filter-files"]
+
+  - repo: https://github.com/pycqa/flake8.git
+    rev: 7.0.0
+    hooks:
+    - id: flake8
+      args: [--ignore=E203 E266 E501 W503 F403 F401 E741 C901 W405 E402 E211 --max-line-length=120]
+
+  # - repo: local
+  #   hooks:
+  #     - id: mypy
+  #       name: mypy
+  #       entry: "./run-mypy"
+  #       language: system
+  #       types: [python]
+  #       require_serial: true
+  #       verbose: true

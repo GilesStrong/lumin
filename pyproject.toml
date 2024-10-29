@@ -1,0 +1,92 @@
+
+[tool.poetry]
+name = "lumin"
+version = "0.9.0"
+description = "LUMIN Unifies Many Improvements for Networks: A PyTorch wrapper to make deep learning more accessable to scientists."
+license = "Apache Software License 2.0"
+authors = [
+    "Giles Strong <giles.c.strong@gmail.com>",
+]
+readme = "README.md"
+homepage = "https://mode-collaboration.github.io/"
+classifiers = [
+        'Programming Language :: Python :: 3.10',
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: MacOS",
+        "Operating System :: POSIX :: Linux",
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'Natural Language :: English',
+        'Development Status :: 4 - Beta',
+]
+documentation = "https://lumin.readthedocs.io/en/stable/?badge=stable"
+keywords = ["deep learning", "differential programming", "physics", "science", "statistics"]
+include = ["py.typed"]
+
+[tool.poetry.dependencies]
+python = "3.10.12"
+tqdm = "^4.66.5"
+fastcore = ">=1.0.16,<=1.3.5"
+prettytable = "^3.11.0"
+sympy = "^1.13.1"
+statsmodels = "^0.14.4"
+h5py = "^3.12.1"
+scipy = "^1.14.1"
+torch = "^2.5.0"
+rfpimp = "^1.3.7"
+scikit-learn = "^1.5.2"
+numpy = "<2.0.0"
+fastprogress = "0.1.21"
+pandas = "<2.1.0"
+matplotlib = "^3.8.0"
+seaborn = "^0.13.0"
+poetry-plugin-export = "^1.8.0"
+pdpbox = { git = "https://github.com/GilesStrong/PDPbox.git", branch = "refactor_requirements" }
+torch-geometric = "^2.6.1"
+plotly = ">=5.9.0"
+
+[tool.poetry.group.dev.dependencies]
+notebook = "<7.0.0"
+jupyter = "1.0.0"
+jupyter-server = "1.24.0"
+traitlets = "5.9.0"
+ipykernel = "^6.29.5"
+pre-commit = "^3.6.1"
+flake8 = "^7.0.0"
+isort = "^5.13.2"
+black = "^24.2.0"
+pandas-stubs = "^2.2.2"
+uproot = "^5.4.1"
+lxml-html-clean = "^0.3.1"
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "<7.0.0"
+sphinx-rtd-theme = "<2.0.0"
+sphinx-autodoc-typehints = "<2.0.0"
+sphinx-autodoc-annotation = "^1.0.post1"
+m2r2 = "^0.3.3.post2"
+tomopt_sphinx_theme = { git = "https://github.com/GilesStrong/tomopt_sphinx_theme.git" }
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 120
