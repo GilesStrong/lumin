@@ -1,7 +1,7 @@
 
 [tool.poetry]
 name = "lumin"
-version = "1.0.0"
+version = "0.9.0"
 description = "LUMIN Unifies Many Improvements for Networks: A PyTorch wrapper to make deep learning more accessable to scientists."
 license = "Apache Software License 2.0"
 authors = [
