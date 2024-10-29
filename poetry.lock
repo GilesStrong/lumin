@@ -3313,8 +3313,8 @@ xgboost = ">=1.7.1"
 [package.source]
 type = "git"
 url = "https://github.com/GilesStrong/PDPbox.git"
-reference = "refactor_requirements"
-resolved_reference = "519849d2613cf0111779b20b65d968fbc4d020c2"
+reference = "HEAD"
+resolved_reference = "1ad2c9eb3da880339b831948b80b5378eeb5fc2b"
 
 [[package]]
 name = "pexpect"
@@ -5698,4 +5698,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "8d6fb70e577970b32fe4692adac72101b9d8ec19ea6d8be8dfef230cbd268da8"
+content-hash = "35d78ac690118ae204849273b36a7bfbff4cc27e917acd813c012e3c065dfee3"

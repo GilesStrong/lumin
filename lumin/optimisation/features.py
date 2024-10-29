@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 import pkg_resources
-import rfpimp
 from fastprogress import progress_bar
 from prettytable import PrettyTable
 from rfpimp import feature_dependence_matrix, importances, plot_dependence_heatmap

@@ -15,7 +15,6 @@ from fastcore.all import is_listy
 from sklearn.model_selection import KFold
 from sklearn.pipeline import Pipeline
 from torch_geometric.data import Dataset as PyGDataset
-from torch_geometric.loader import DataLoader as PyGDataLoader
 
 from .batch_yielder import BatchYielder, TorchGeometricBatchYielder
 

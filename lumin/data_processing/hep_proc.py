@@ -1,4 +1,3 @@
-import warnings
 from typing import Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
@@ -404,15 +403,16 @@ def calc_pair_mass(
     df: pd.DataFrame, masses: Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]], feat_map: Dict[str, str]
 ) -> np.ndarray:
     r"""
-    Vectorised computation of invarient mass of pair of particles with given masses, using 3-momenta. Only works for vectors defined in Cartesian coordinates.
+        Vectorised computation of invarient mass o
+    f pair of particles with given masses, using 3-momenta. Only works for vectors defined in Cartesian coordinates.
 
-    Arguments:
-        df: DataFrame vector components
-        masses: tuple of masses of particles (either constant or different pair of masses per pair of particles)
-        feat_map: dictionary mapping of requested momentum components to the features in df
+        Arguments:
+            df: DataFrame vector components
+            masses: tuple of masses of particles (either constant or different pair of masses per pair of particles)
+            feat_map: dictionary mapping of requested momentum components to the features in df
 
-    Returns:
-        np.ndarray of invarient masses
+        Returns:
+            np.ndarray of invarient masses
     """
 
     # TODO: rewrite to not use a DataFrame for holding parent vector
