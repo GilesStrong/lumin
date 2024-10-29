@@ -48,7 +48,7 @@ plotly = ">=5.9.0"
 [tool.poetry.group.dev.dependencies]
 notebook = "<7.0.0"
 jupyter = "1.0.0"
-jupyter-server = "1.24.0"
+jupyter-server = "2.11.2"
 traitlets = "5.9.0"
 ipykernel = "^6.29.5"
 pre-commit = "^3.6.1"
